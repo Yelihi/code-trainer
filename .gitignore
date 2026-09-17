@@ -1,0 +1,53 @@
+# 비밀 설정·개인 인증 파일 (공유용 빈 설정 예시는 포함)
+.env
+.env.*
+*.env
+*.env.*
+!/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# 개인 계정·학습 자료·풀이·백업·Docker 로컬 상태
+/data/*
+!/data/.gitkeep
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+
+# 설치된 의존성·컴파일·빌드 산출물
+.venv/
+__pycache__/
+*.py[cod]
+node_modules/
+/frontend/dist/
+*.tsbuildinfo
+.vite/
+
+# 실행 로그·테스트 결과·캐시
+*.log
+*.log.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+playwright-report/
+test-results/
+
+# 이 컴퓨터의 AI 점검 기록·경로·상태 (로컬 파일은 유지)
+/.frontend-system/
+
+# 운영체제·편집기 임시 파일
+.DS_Store
+._*
+Thumbs.db
+*.swp
+*.swo
+*~

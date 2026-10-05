@@ -111,6 +111,8 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 
 2026-10-06 운영 확인: `ENABLE_CD=true`. 현재 운영 코드는 `15db6f3`이며 마지막 성공 Deployment ID는 `6864906652`다. 변경 범위별 실제 GitHub 실행과 Mac 배포 결과를 확인했다.
 
+구조도/Pages 연동 시 배포 경로 분류를 갱신한 `f7b963f`의 [제품 CI 실행](https://github.com/Yelihi/code-trainer/actions/runs/37347564919)은 검사를 통과했으나 Mac 배포 전 백업에서 중단됐다. 확인 당시 내장 백업 디스크 여유는 3.63GiB로 `host.backup()`의 최소 5GiB 조건보다 작았다. 새 이미지를 적용하지 않고 기존 앱을 다시 시작했으며 `/healthz` 정상 응답을 확인했다. 운영 앱은 위 `15db6f3`을 유지한다. 내장 여유 공간을 확보한 뒤 수동 재실행해야 한다. [GitHub Pages 게시](https://github.com/Yelihi/code-trainer/actions/runs/37347564955)는 별도로 성공했다.
+
 | 검증 범위 | 성공 실행 | 확인 결과 |
 | --- | --- | --- |
 | 프런트·백엔드 함께 | [37343451294](https://github.com/Yelihi/code-trainer/actions/runs/37343451294) | 양쪽 검사, 백업·서버 교체·실제 채점/격리 검사 후 Worker 게시 |

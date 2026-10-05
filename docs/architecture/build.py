@@ -101,7 +101,7 @@ def build(destination):
     data = catalog()
     destination.mkdir(parents=True, exist_ok=True)
     # Explicit allowlist: never publish configs, user data or the whole repository.
-    for name in ('index.html', 'site.css', 'site.js', 'journeys.json', 'overview.html', 'overview.json', 'overview.receipt.json', 'overview.svg', 'verification.json'):
+    for name in ('index.html', 'site.css', 'site.js', 'journeys.json', 'overview.html', 'overview.json', 'overview.receipt.json', 'overview.svg', 'verification.json', 'ARCHIFY-LICENSE.txt'):
         shutil.copyfile(HERE / name, destination / name)
     (destination / 'catalog.json').write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')) + '\n')
     (destination / '.nojekyll').touch()

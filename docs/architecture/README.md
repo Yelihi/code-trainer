@@ -24,3 +24,5 @@ python3 -m http.server 8025 --bind 127.0.0.1 --directory .architecture-site
 전체 구조나 이벤트 의미가 바뀌면 `overview.json`, `journeys.json`을 검토하고 Archify로 다시 검증·전달한 뒤 SVG를 내보냅니다. 함수 목록의 소스 SHA는 페이지 상단, 구조도 자체의 기준 SHA는 `overview.json`에 있습니다. 두 갱신 주기를 혼동하지 않습니다.
 
 설명은 한국어이며 Archify의 고정 Viewer UI와 HTML lang은 영어입니다. README는 정적 SVG를 표시하고 클릭하면 GitHub Pages의 탐색 화면으로 이동합니다.
+
+Archify Viewer는 [MIT 라이선스](ARCHIFY-LICENSE.txt)를 따릅니다. HTML에 포함된 JetBrains Mono 글꼴의 OFL 고지도 원본에 보존합니다.

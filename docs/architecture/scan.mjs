@@ -15,7 +15,7 @@ for (const file of files) {
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
       const p = node.parent;
       if (ts.isVariableDeclaration(p) || ts.isPropertyAssignment(p)) name = p.name.getText(source);
-      else if (ts.isCallExpression(p) && ts.isVariableDeclaration(p.parent)) name = p.parent.name.getText(source);
+      else if (ts.isCallExpression(p) && p.expression.getText(source) === 'useCallback' && ts.isVariableDeclaration(p.parent)) name = p.parent.name.getText(source);
     }
     if (name) {
       const qualified = [...parents, name].join('.');

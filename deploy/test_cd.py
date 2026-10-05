@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 DIRECTORY = Path(__file__).parent
 sys.path.insert(0, str(DIRECTORY))
@@ -12,6 +13,15 @@ import release
 
 
 class DeploymentChecks(unittest.TestCase):
+    def test_poll_waits_for_workflow_metadata_without_accepting_it(self):
+        deployment = {'id': 10, 'payload': {'run_id': 42, 'run_attempt': 1}}
+        responses = [[deployment], [], {'status': 'queued'}, {'jobs': []}, {'sha': 'a' * 40}]
+        with tempfile.TemporaryDirectory() as directory, patch.object(github, 'api', side_effect=responses), \
+                patch.object(github, 'status') as status, patch.object(release, 'deploy') as deploy:
+            github.poll(directory)
+            status.assert_not_called()
+            deploy.assert_not_called()
+
     def test_only_checked_current_main_run_can_deploy(self):
         sha = 'a' * 40
         deployment = {'environment': 'production', 'sha': sha, 'ref': sha,

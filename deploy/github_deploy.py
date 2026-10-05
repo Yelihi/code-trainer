@@ -107,7 +107,10 @@ def poll(state_directory):
         jobs = api(f'actions/runs/{run_id}/attempts/{payload.get("run_attempt", 0)}/jobs?per_page=100')['jobs']
         revision = api('commits/main')['sha']
         if not eligible(deployment, run, jobs, revision):
-            status(deployment, 'failure', 'Rejected: deployment must match the active checked main workflow')
+            # GitHub's run/job endpoints can lag the Deployment creation. Keep refusing
+            # execution, but wait for the next poll instead of failing a valid request early.
+            print('Waiting for matching checked main workflow:', run.get('status'),
+                  [(job.get('name'), job.get('status'), job.get('conclusion')) for job in jobs], flush=True)
             return
         status(deployment, 'in_progress', 'Mac is preparing the tested release and encrypted backup')
         try:

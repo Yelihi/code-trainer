@@ -12,8 +12,11 @@ if not source.exists():
     parser.error('No database exists yet')
 if args.destination.exists():
     parser.error('Destination exists; choose a new backup filename')
+os.close(os.open(args.destination, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600))
 with sqlite3.connect(f'{source.as_uri()}?mode=ro', uri=True) as live:
     with sqlite3.connect(args.destination) as target:
         live.backup(target)
+        if target.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+            raise SystemExit('Backup integrity check failed; do not use this snapshot')
 args.destination.chmod(0o600)
 print(f'Backup saved: {args.destination}')

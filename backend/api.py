@@ -5,12 +5,13 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from . import service, learning
+from . import service, learning, access
 from .schema import Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
 @asynccontextmanager
 async def lifespan(app):
+    access.validate_config()
     service.initialize()
     yield
 
@@ -37,6 +38,9 @@ async def validation_error(request, error):
 
 @app.middleware('http')
 async def local_boundary(request: Request, call_next):
+    deployed = access.enabled()
+    if deployed and request.url.path == '/healthz' and request.method in ('GET', 'HEAD'):
+        return JSONResponse({'ok': True}, headers={'Cache-Control': 'no-store'})
     try:
         host = urlsplit('http://' + request.headers.get('host', '')).hostname
     except ValueError:
@@ -45,8 +49,8 @@ async def local_boundary(request: Request, call_next):
         return JSONResponse({'detail': '로컬 주소로 접속해주세요.'}, status_code=403)
     if request.method not in ('GET', 'HEAD', 'OPTIONS'):
         origin = request.headers.get('origin')
-        allowed = {str(request.base_url).rstrip('/'), 'http://127.0.0.1:5173', 'http://localhost:5173'}
-        if (origin and origin not in allowed) or request.headers.get('sec-fetch-site') == 'cross-site':
+        allowed = {access.origin()} if deployed else {str(request.base_url).rstrip('/'), 'http://127.0.0.1:5173', 'http://localhost:5173'}
+        if (deployed and not origin) or (origin and origin not in allowed) or request.headers.get('sec-fetch-site') == 'cross-site':
             return JSONResponse({'detail': '허용되지 않은 요청 출처입니다.'}, status_code=403)
         if request.headers.get('content-type', '').split(';')[0] != 'application/json':
             return JSONResponse({'detail': 'JSON 요청을 사용해주세요.'}, status_code=415)
@@ -56,26 +60,42 @@ async def local_boundary(request: Request, call_next):
                 return JSONResponse({'detail': '요청 크기 제한을 초과했습니다.'}, status_code=413)
             body.extend(chunk)
         request._body = bytes(body)
+    if deployed:
+        try:
+            # JWKS retrieval is blocking I/O; keep it off the ASGI event loop.
+            from starlette.concurrency import run_in_threadpool
+            request.state.user = await run_in_threadpool(access.user, request)
+        except service.Error as error:
+            return JSONResponse({'detail': str(error)}, status_code=error.status,
+                                headers={'Cache-Control': 'no-store', 'X-Trainer-Auth': 'access'})
     response = await call_next(request)
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'no-referrer'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    if deployed:
+        response.headers['X-Trainer-Auth'] = 'access'
     return response
 
 
 def user(request: Request):
+    if access.enabled():
+        return request.state.user
     return service.require_user(request.cookies.get('trainer_session', ''))
 
 
 @app.get('/api/session')
 def session(request: Request):
+    if access.enabled():
+        return {'user': user(request), 'setup_required': False, 'auth_mode': 'access'}
     return service.session(request.cookies.get('trainer_session', ''))
 
 
 @app.post('/api/auth')
 def auth(body: Credentials):
+    if access.enabled():
+        raise service.Error('이메일 인증을 사용해주세요.', 403)
     token = service.authenticate(body)
     response = JSONResponse({'ok': True})
     response.set_cookie('trainer_session', token, httponly=True, samesite='strict', max_age=604800)
@@ -84,6 +104,8 @@ def auth(body: Credentials):
 
 @app.post('/api/logout')
 def logout(request: Request, current=Depends(user)):
+    if access.enabled():
+        return {'logout_url': '/cdn-cgi/access/logout'}
     service.logout(request.cookies.get('trainer_session', ''))
     response = JSONResponse({'ok': True})
     response.delete_cookie('trainer_session')

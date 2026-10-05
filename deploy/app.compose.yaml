@@ -1,0 +1,39 @@
+services:
+  app:
+    image: ${TRAINER_APP_IMAGE:?Set the verified app image ID}
+    container_name: code-trainer-app
+    restart: unless-stopped
+    env_file: ${TRAINER_APP_ENV:?Set the private server environment file}
+    environment:
+      TRAINER_MODE: server
+      TRAINER_DB: /data/trainer.sqlite3
+      TRAINER_RUNNER_CA: /tls/server-ca.crt
+      TRAINER_RUNNER_CERT: /tls/app.crt
+      TRAINER_RUNNER_KEY: /tls/app.key
+    user: '10001:10001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 128
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
+    ports: ['127.0.0.1:8010:8010']
+    volumes:
+      - trainer-data:/data
+      - app-tls:/tls:ro
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: 2m, max-file: '3'}
+volumes:
+  trainer-data:
+    external: true
+    name: code-trainer-data
+  app-tls:
+    external: true
+    name: ${TRAINER_APP_TLS_VOLUME:-code-trainer-app-tls}

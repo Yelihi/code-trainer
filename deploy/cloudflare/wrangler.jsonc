@@ -1,0 +1,15 @@
+{
+  "name": "code-trainer",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-05",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../../frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "vars": { "PUBLIC_ORIGIN": "https://code-trainer.example.invalid" },
+  "observability": { "enabled": false }
+}

@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import worker from './worker.mjs';
+
+test('private origin, authentication, CSRF, identity forwarding and upstream failure boundaries', async () => {
+  const origin = 'https://code-trainer.example.com';
+  let sent;
+  const env = { PUBLIC_ORIGIN: origin, ASSETS: { fetch: () => new Response('<html>app</html>') }, CODE_TRAINER_API: { fetch: req => { sent = req; return Response.json({ ok: true }); } } };
+  const headers = { 'cf-access-jwt-assertion': 'aaa.bbb.ccc', origin, 'content-type': 'application/json' };
+  const call = (path, options = {}) => worker.fetch(new Request(origin + path, options), env);
+  assert.equal((await call('/')).status, 401);
+  assert.equal((await call('/api/session')).status, 401);
+  assert.equal((await worker.fetch(new Request('https://preview.example.com/api/session', { headers }), env)).status, 403);
+  assert.equal((await call('/api/generations', { method: 'POST', headers: { ...headers, origin: 'https://evil.example' }, body: '{}' })).status, 403);
+  assert.equal((await call('/api/generations', { method: 'POST', headers: { 'cf-access-jwt-assertion': 'aaa.bbb.ccc' }, body: '{}' })).status, 403);
+  const page = await call('/', { headers });
+  assert.equal(page.status, 200);
+  assert.equal(await page.text(), '<html>app</html>');
+  const response = await call('/api/session', { headers: { ...headers, 'x-trainer-user-jwt': 'forged', cookie: 'trainer_session=forged', authorization: 'Bearer forged' } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+  assert.equal(sent.url, 'http://127.0.0.1:8010/api/session');
+  assert.equal(sent.headers.get('x-trainer-user-jwt'), 'aaa.bbb.ccc');
+  assert.equal(sent.headers.get('cookie'), null);
+  assert.equal(sent.headers.get('authorization'), null);
+  env.CODE_TRAINER_API.fetch = () => new Response(null, { status: 302, headers: { location: 'https://evil.example' } });
+  assert.equal((await call('/api/session', { headers })).status, 502);
+  env.CODE_TRAINER_API.fetch = () => { throw new Error('disconnected'); };
+  assert.equal((await call('/api/session', { headers })).status, 502);
+});

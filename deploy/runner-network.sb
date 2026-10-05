@@ -1,0 +1,10 @@
+; Colima/Lima's runner-only userspace network inherits this host-enforced policy.
+; The sole IP exception is the fixed host SSH forward back into this same VM.
+; Never share this COLIMA_HOME with the app VM or enable VZ/bridged networking.
+(version 1)
+(allow default)
+(deny network-outbound (remote ip "*:*"))
+(allow network-outbound (remote ip "localhost:56222"))
+(deny network-bind (local ip "*:*"))
+; Lima's host resolver requires ephemeral TCP and UDP listeners on loopback.
+(allow network-bind (local ip "localhost:*"))

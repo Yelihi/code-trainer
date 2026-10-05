@@ -1,0 +1,8 @@
+# Lima applies overrides before Colima's socket forwarding entries.
+# Putting the all-ports ignore rule first disables TCP/UDP discovery entirely.
+portForwards:
+  - guestIP: '0.0.0.0'
+    guestIPMustBeZero: false
+    guestPortRange: [1, 65535]
+    proto: any
+    ignore: true

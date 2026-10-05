@@ -381,15 +381,7 @@ def generate(owner, generation_id, request):
             db.execute("UPDATE generations SET state='ready',stage='개념 학습 준비 완료' WHERE id=?", (generation_id,))
             diagnostics.event('개념 학습 준비 완료 · 단원별로 문제를 생성할 수 있습니다.')
             return
-        image = runner.command(['image', 'inspect', '--format', '{{.Id}}', runner.IMAGE])
-        if image.returncode:
-            raise runner.Unavailable('실행 이미지를 확인하지 못했습니다.')
-        image_id = image.stdout.strip()
-        # Containerd may discard the previous image index when the build tag is moved.
-        # Retain one immutable tag per validated runtime so old problems remain executable.
-        pinned = runner.command(['tag', image_id, 'code-trainer-runtime:' + image_id.removeprefix('sha256:')])
-        if pinned.returncode:
-            raise runner.Unavailable('문제의 실행 환경 버전을 보존하지 못했습니다.')
+        image_id = runner.pin_runtime()
         completed = {s['unit_id'] for s in summaries(owner, context_id)}
         for index, unit in enumerate(context.units):
             if request.unit_id and unit.id != request.unit_id:

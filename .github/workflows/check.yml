@@ -1,0 +1,62 @@
+name: Code Trainer CI and deployment
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: code-trainer-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+      - run: uv venv --python 3.12 .venv
+      - run: uv pip sync --python .venv/bin/python deploy/requirements.txt
+      - run: .venv/bin/python -m unittest backend.test_app backend.test_deployment deploy.test_certificates deploy.test_volume -q
+      - run: python3 -m unittest deploy.test_cd -q
+      - run: .venv/bin/python scripts/check-start.py
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend run typecheck
+      - run: npm --prefix frontend run lint
+      - run: npm --prefix frontend run build
+      - run: npm --prefix deploy/cloudflare ci
+      - run: npm --prefix deploy/cloudflare test
+      - run: npm --prefix deploy/cloudflare run check
+      - run: docker build --target app -f deploy/Dockerfile -t trainer-app-check .
+      - run: docker build --target runner -f deploy/Dockerfile -t trainer-broker-check .
+      - run: docker run --rm --entrypoint python trainer-app-check -c "import shutil, pathlib; assert shutil.which('docker') is None; assert not pathlib.Path('/var/run/docker.sock').exists()"
+      - run: docker build -t code-trainer-runner:v1 sandbox
+      - run: .venv/bin/python scripts/check-sandbox.py
+  deploy:
+    needs: check
+    if: >-
+      github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+      vars.ENABLE_CD == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Request Mac backup, backend and Worker deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 deploy/github_deploy.py request

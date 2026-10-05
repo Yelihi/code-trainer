@@ -1,0 +1,9 @@
+**
+!backend/
+!backend/*.py
+!requirements.txt
+!deploy/
+!deploy/requirements.txt
+!deploy/Dockerfile
+!scripts/
+!scripts/backup.py

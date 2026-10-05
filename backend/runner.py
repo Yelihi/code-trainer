@@ -5,6 +5,11 @@ import subprocess
 import threading
 import time
 import uuid
+import ssl
+from functools import lru_cache
+from urllib.parse import urlsplit
+import httpx
+from .execution import ExecutionRequest, ExecutionResponse, Runtime
 
 IMAGE = os.environ.get('TRAINER_IMAGE', 'code-trainer-runner:v1')
 LIMIT = 16384
@@ -24,7 +29,57 @@ class Unavailable(Exception):
     pass
 
 
+def remote():
+    # Server mode must never fall back to Docker on the app host.
+    return os.environ.get('TRAINER_MODE') == 'server' or bool(os.environ.get('TRAINER_RUNNER_URL'))
+
+
+@lru_cache(maxsize=1)
+def remote_client():
+    url = os.environ.get('TRAINER_RUNNER_URL', '')
+    parsed = urlsplit(url)
+    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.path not in ('', '/') or parsed.query or parsed.fragment:
+        raise ValueError('TRAINER_RUNNER_URL must be an HTTPS origin')
+    context = ssl.create_default_context(cafile=os.environ['TRAINER_RUNNER_CA'])
+    context.load_cert_chain(os.environ['TRAINER_RUNNER_CERT'], os.environ['TRAINER_RUNNER_KEY'])
+    return httpx.Client(base_url=url.rstrip('/'), verify=context, trust_env=False,
+                        follow_redirects=False, timeout=httpx.Timeout(120, connect=5),
+                        limits=httpx.Limits(max_connections=2, max_keepalive_connections=1))
+
+
+def request(path, body=None):
+    try:
+        with remote_client().stream('GET' if body is None else 'POST', path, json=body) as response:
+            response.raise_for_status()
+            payload = bytearray()
+            for chunk in response.iter_bytes():
+                payload.extend(chunk)
+                if len(payload) > 512000:
+                    raise ValueError('Runner response too large')
+            return bytes(payload)
+    except (httpx.HTTPError, OSError, ValueError, KeyError) as error:
+        raise Unavailable('격리 실행 서비스에 연결하지 못했습니다.') from error
+
+
+def pin_runtime():
+    if remote():
+        try:
+            return Runtime.model_validate_json(request('/runtime')).image_id
+        except ValueError as error:
+            raise Unavailable('실행 서비스 응답이 올바르지 않습니다.') from error
+    image = command(['image', 'inspect', '--format', '{{.Id}}', IMAGE])
+    if image.returncode:
+        raise Unavailable('실행 이미지를 확인하지 못했습니다.')
+    image_id = image.stdout.strip()
+    # Keep runtimes referenced by saved problems even when the build tag changes.
+    if command(['tag', image_id, 'code-trainer-runtime:' + image_id.removeprefix('sha256:')]).returncode:
+        raise Unavailable('문제의 실행 환경 버전을 보존하지 못했습니다.')
+    return image_id
+
+
 def command(args, timeout=10):
+    if remote():
+        raise Unavailable('앱 서버에서는 Docker를 직접 제어할 수 없습니다.')
     try:
         return subprocess.run(['docker', *args], capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.TimeoutExpired) as error:
@@ -33,8 +88,11 @@ def command(args, timeout=10):
 
 def available():
     try:
+        if remote():
+            Runtime.model_validate_json(request('/runtime'))
+            return True
         return command(['image', 'inspect', IMAGE], 5).returncode == 0
-    except Unavailable:
+    except (Unavailable, ValueError):
         return False
 
 
@@ -48,6 +106,8 @@ def memory_limited(container):
 
 
 def cleanup():
+    if remote():
+        return  # Only the runner's own startup may clean its containers.
     result = command(['ps', '-aq', '--filter', 'label=code-trainer=true'])
     for container in result.stdout.split():
         command(['rm', '-f', container])
@@ -108,6 +168,15 @@ def capture(args, stdin='', seconds=3):
 
 
 def run(language, code, inputs, image_id=None):
+    if remote():
+        body = ExecutionRequest(language=language, code=code, inputs=inputs, image_id=image_id)
+        try:
+            result = ExecutionResponse.model_validate_json(request('/run', body.model_dump()))
+            if len(result.results) > len(inputs):
+                raise ValueError('Unexpected result count')
+            return [value.model_dump() for value in result.results]
+        except ValueError as error:
+            raise Unavailable('실행 서비스 응답이 올바르지 않습니다.') from error
     if not slot.acquire(timeout=1):
         raise Unavailable('실행 환경이 사용 중입니다. 잠시 후 다시 시도해주세요.')
     name = 'code-trainer-' + uuid.uuid4().hex

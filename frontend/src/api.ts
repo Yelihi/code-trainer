@@ -4,7 +4,7 @@ export const difficulties: Record<Difficulty, string> = { beginner: '초급', in
 export const difficultyDescriptions: Record<Difficulty, string> = { beginner: '한 가지 개념부터, 충분한 예시와 함께 연습합니다.', intermediate: '관련 개념을 조합하고 경계 조건과 상태 변화를 다룹니다.', advanced: '자료 안의 개념을 응용해 여러 단계의 동작과 복잡한 조건을 다룹니다.' };
 export const languages: Record<Language, string> = { javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python', cpp: 'C++', rust: 'Rust' };
 export const filenames: Record<Language, string> = { javascript: 'main.js', typescript: 'main.ts', python: 'main.py', cpp: 'main.cpp', rust: 'main.rs' };
-export type Session = { user: { id: string; username: string; admin: number } | null; setup_required: boolean };
+export type Session = { user: { id: string; username: string; admin: number } | null; setup_required: boolean; auth_mode?: 'local' | 'access' };
 export type Health = { sandbox: boolean; ai: boolean; languages: string[] };
 export type SetSummary = { id: string; title: string; unit_id?: string | null; completed: number; total: number; withdrawn: boolean };
 export type LearningUnit = { id: string; title: string; objective: string; concepts: string[]; prerequisites: string[]; rationale: string; lesson: { title: string; body: string; code: string; output: string; walkthrough: string }[]; pitfalls: string[]; checkpoints: { question: string; answer: string }[] };
@@ -30,9 +30,10 @@ export async function api<T>(path: string, method = 'GET', data?: unknown, signa
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new Event('session-expired'));
+    if (response.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('session-expired', { detail: response.headers.get('X-Trainer-Auth') }));
     throw new ApiError(response.status, typeof body?.detail === 'string' ? body.detail : `요청을 처리하지 못했습니다 (${response.status}).`);
   }
+  if (body === null) throw new ApiError(502, '서버 응답을 확인하지 못했습니다. 화면을 새로고침해주세요.');
   return body as T;
 }
 

@@ -34,19 +34,27 @@ export function App() {
   }, []);
   useEffect(() => {
     refreshSession(); refreshHealth();
-    const expired = () => setSession({ user: null, setup_required: false });
+    const expired = (event: Event) => {
+      setOpened(false);
+      setSession(previous => ({ user: null, setup_required: false, auth_mode: (event as CustomEvent).detail === 'access' ? 'access' : previous?.auth_mode }));
+    };
     window.addEventListener('session-expired', expired);
     return () => window.removeEventListener('session-expired', expired);
   }, [refreshSession, refreshHealth]);
   async function logout() {
     if (!window.confirm('저장하지 않은 코드가 있다면 먼저 저장해주세요. 로그아웃할까요?')) return;
-    try { await api('/logout', 'POST', {}); setSession({ user: null, setup_required: false }); } catch (error) { setError(errorMessage(error)); }
+    try {
+      await api('/logout', 'POST', {});
+      setOpened(false);
+      if (session?.auth_mode === 'access') window.location.assign('/cdn-cgi/access/logout');
+      else setSession({ user: null, setup_required: false });
+    } catch (error) { setError(errorMessage(error)); }
   }
   return <div className="app-shell">
     <a className="skip-link" href="#workspace">본문으로 이동</a>
     <header className="topbar">
       <button className="icon-button menu-toggle" aria-label="메뉴 열기" aria-expanded={menu} onClick={() => setMenu(!menu)}>☰</button>
-      <Link className="brand" to="/"><span className="brand-mark" aria-hidden="true">‹/›</span> code<span>trainer</span><span className="version">LOCAL</span></Link>
+      <Link className="brand" to="/"><span className="brand-mark" aria-hidden="true">‹/›</span> code<span>trainer</span><span className="version">{session?.auth_mode === 'access' ? 'PRIVATE' : 'LOCAL'}</span></Link>
       <div className="topbar-center"><span className="tiny-square" /> PRACTICE WORKSPACE</div>
       <div className="account">{session?.user && <><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span><button className="text-button" onClick={logout}>로그아웃</button></>}</div>
     </header>
@@ -68,11 +76,11 @@ export function App() {
       {opened && <Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin } satisfies AppContext} />}
       {!session && !error && <div className="loading" role="status">학습 공간을 여는 중…</div>}
     </div>
-    {session && !session.user && <Login setup={session.setup_required} onSuccess={() => { refreshSession(); refreshHealth(); }} />}
+    {session && !session.user && <Login access={session.auth_mode === 'access'} setup={session.setup_required} onSuccess={() => { refreshSession(); refreshHealth(); }} />}
   </div>;
 }
 
-function Login({ setup, onSuccess }: { setup: boolean; onSuccess: () => void }) {
+function Login({ setup, access, onSuccess }: { setup: boolean; access: boolean; onSuccess: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { const element = dialog.current; element?.showModal(); return () => element?.close(); }, []);
   const [busy, setBusy] = useState(false);
@@ -83,6 +91,11 @@ function Login({ setup, onSuccess }: { setup: boolean; onSuccess: () => void }) 
     try { await api('/auth', 'POST', { username: fields.get('username'), password: fields.get('password'), ...(setup ? { admin_password: fields.get('admin_password') || '' } : {}) }); onSuccess(); }
     catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
   }
+  if (access) return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" onCancel={event => event.preventDefault()}><section className="auth-card">
+    <span className="eyebrow">YOUR PRIVATE WORKSPACE</span><h1 id="auth-title">다시 로그인해주세요.</h1>
+    <p>허용된 이메일로 인증하면 기존 학습 기록을 이어갈 수 있습니다.</p>
+    <a className="button primary" href="/">이메일 인증으로 연결 →</a>
+  </section></dialog>;
   return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" onCancel={event => event.preventDefault()}><section className="auth-card">
     <span className="eyebrow">YOUR LOCAL WORKSPACE</span><h1 id="auth-title">이해는 코드에서<br />시작됩니다.</h1>
     <p>{setup ? '이 컴퓨터에서 사용할 계정을 만드세요. 코드와 풀이 기록이 로컬에 저장됩니다.' : '다시 만나 반갑습니다. 로그인하고 연습을 이어가세요.'}</p>

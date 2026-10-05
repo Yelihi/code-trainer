@@ -7,8 +7,8 @@ COPY deploy/requirements.txt /app/deploy/requirements.txt
 RUN pip install --no-cache-dir -r /app/deploy/requirements.txt
 
 FROM base AS app
-COPY backend /app/backend
-COPY scripts/backup.py /app/scripts/backup.py
+COPY --chown=10001:10001 backend /app/backend
+COPY --chown=10001:10001 scripts/backup.py /app/scripts/backup.py
 USER 10001:10001
 ENV TRAINER_MODE=server TRAINER_DB=/data/trainer.sqlite3
 # No Docker executable, socket, VM-management keys or runner server key in this image.

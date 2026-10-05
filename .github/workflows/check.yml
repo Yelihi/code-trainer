@@ -37,9 +37,11 @@ jobs:
       - run: npm --prefix deploy/cloudflare ci
       - run: npm --prefix deploy/cloudflare test
       - run: npm --prefix deploy/cloudflare run check
+      # Mac deployment checkouts are private (umask 077). Exercise COPY permissions too.
+      - run: chmod -R go-rwx backend scripts
       - run: docker build --target app -f deploy/Dockerfile -t trainer-app-check .
       - run: docker build --target runner -f deploy/Dockerfile -t trainer-broker-check .
-      - run: docker run --rm --entrypoint python trainer-app-check -c "import shutil, pathlib; assert shutil.which('docker') is None; assert not pathlib.Path('/var/run/docker.sock').exists()"
+      - run: docker run --rm --entrypoint python trainer-app-check -c "import shutil, pathlib, backend.api; assert shutil.which('docker') is None; assert not pathlib.Path('/var/run/docker.sock').exists()"
       - run: docker build -t code-trainer-runner:v1 sandbox
       - run: .venv/bin/python scripts/check-sandbox.py
   deploy:

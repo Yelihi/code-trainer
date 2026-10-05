@@ -107,7 +107,7 @@ def deploy(revision, still_authorized):
         if target == 'runner':
             run([*RUNNER, 'image', 'load', '-i', str(archive)])
     run([*APP, 'run', '--rm', '--network', 'none', '--entrypoint', 'python', ids['app'], '-c',
-         "import pathlib,shutil; assert not shutil.which('docker'); assert not pathlib.Path('/var/run/docker.sock').exists()"])
+         "import pathlib,shutil,backend.api; assert not shutil.which('docker'); assert not pathlib.Path('/var/run/docker.sock').exists()"])
     compose_path = CONFIG / 'compose.env'
     previous = compose_path.read_text()
     candidate = replace_images(previous, ids['app'], ids['runner'])

@@ -115,7 +115,7 @@ Mac의 `com.code-trainer.deploy` LaunchAgent가 60초마다 요청을 확인한�
 
 1. 외장 SSD의 전용 bare checkout에서 검사한 SHA를 fetch하고 `release/<SHA>` 작업 트리를 만든다. 개발 저장소의 미커밋 파일은 배포하지 않는다.
 2. 화면을 빌드하고 앱 VM에서 앱·브로커 arm64 이미지를 만든다. 브로커 이미지는 archive로 실행 VM에 전달한다. 실행 VM의 외부 연결 차단을 유지한다. 두 이미지의 ID와 archive를 보존한다.
-3. 오래 걸린 준비 후 GitHub의 최신 SHA/실행 상태를 다시 확인한다. 앱을 정지하고 **기존 앱 이미지**로 DB의 읽기 전용 볼륨에서 SQLite 사본과 암호화 백업을 만든다. 정기 백업과 겹치면 배포 전 백업은 실패하고 기존 앱을 재시작한다.
+3. 오래 걸린 준비 후 GitHub의 최신 SHA/실행 상태를 다시 확인한다. 앱을 정지하고 **기존 앱 이미지**로 SQLite 사본과 암호화 백업을 만든다. DB 연결은 `mode=ro`이며, 정지 후 WAL 보조 파일을 생성할 수 있도록 백업 컨테이너의 데이터 볼륨은 쓰기 가능하게 연결한다. 정기 백업과 겹치면 배포 전 백업은 실패하고 기존 앱을 재시작한다.
 4. 백업 성공 후 브로커·앱의 image ID를 교체한다. health와 설치된 `check-host.py`의 실제 채점/mTLS/VM 격리 검사를 수행한다.
 5. Mac의 기존 Wrangler 로그인으로 같은 SHA의 Worker/정적 화면을 게시한다. GitHub에 Cloudflare 토큰을 복사하지 않는다. 성공하면 `release/current`를 해당 SHA로 바꾸고 Deployment 성공을 보고한다.
 

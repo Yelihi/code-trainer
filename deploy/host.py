@@ -71,7 +71,8 @@ def backup(stopped_image=None):
             container = stage.name
             run([*docker, 'run', '-d', '--name', container, '--network', 'none', '--read-only',
                  '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
-                 '--mount', 'type=volume,src=code-trainer-data,dst=/data,readonly',
+                 # SQLite mode=ro still needs to create WAL shared-memory bookkeeping after stop.
+                 '--mount', 'type=volume,src=code-trainer-data,dst=/data',
                  '--tmpfs', '/tmp:rw,noexec,nosuid,size=256m',
                  '--entrypoint', 'sleep', stopped_image, '600'])
         try:

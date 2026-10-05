@@ -133,6 +133,11 @@ class DeploymentChecks(unittest.TestCase):
                 self.assertEqual(backup.call_count, int(backend))
                 self.assertEqual(any(cmd[0] == 'npm' for cmd in commands), frontend)
                 self.assertEqual(any(cmd[0] == 'node' and '--dry-run' not in cmd for cmd in commands), frontend)
+                if backend:
+                    first_build = next(i for i, cmd in enumerate(commands) if 'build' in cmd)
+                    retained = [i for i, cmd in enumerate(commands) if 'tag' in cmd]
+                    self.assertEqual(len(retained), 2)
+                    self.assertTrue(all(i < first_build for i in retained))
                 if frontend and backend:
                     verified = next(i for i, cmd in enumerate(commands) if cmd[0] == '/usr/bin/python3')
                     published = next(i for i, cmd in enumerate(commands) if cmd[0] == 'node' and '--dry-run' not in cmd)

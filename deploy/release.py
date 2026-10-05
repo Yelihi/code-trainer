@@ -122,6 +122,14 @@ def deploy(revision, still_authorized, requested):
         run([*wrangler, '--dry-run'])
     ids = {}
     if selected['backend']:
+        # Rebuilding an existing SHA tag can evict an untagged containerd image index.
+        # Preserve the running images and their exact archives BEFORE replacing tags.
+        for docker, name in [(APP, 'app'), (RUNNER, 'broker')]:
+            current_image = output([*docker, 'inspect', 'code-trainer-' + name, '--format', '{{.Image}}'])
+            run([*docker, 'image', 'tag', current_image, 'code-trainer-' + name + ':retained-' + current_image[7:]])
+            retained = ROOT / 'images' / ('retained-' + name + '-' + current_image[7:] + '.tar')
+            if not retained.exists():
+                run([*docker, 'image', 'save', '-o', str(retained), current_image])
         # Build in the app VM, which has Internet. The runner VM remains egress-blocked.
         for target in ('app', 'runner'):
             tag = 'code-trainer-' + target + ':' + revision

@@ -1,6 +1,6 @@
 # Mac mini 배포와 운영
 
-2026-10-06: **Mac 내부 검증과 Cloudflare Worker/VPC 게시 완료. 소유자가 운영 사이트 로그인 후 기존 문제 목록 표시를 확인했다.**
+2026-10-06: **Mac·Cloudflare 배포와 GitHub 자동 배포 검증 완료. 소유자가 운영 사이트 로그인 후 기존 문제 목록 표시를 확인했다.**
 운영 주소는 `https://code-trainer.yelihi19.workers.dev`다. 사용자가 생성한 전용 Access 앱의 AUD를 서버에 반영했다. 비로그인 루트 요청이 해당 AUD의 Access 로그인으로 이동하는 것을 확인했다. 기존 resume-agent는 변경하지 않았다.
 
 ## 실제 구성
@@ -62,13 +62,13 @@ curl --fail http://127.0.0.1:8010/healthz
 
 - Access: 사용자 화면에서 `Owner only` Allow 정책과 소유자 이메일, 운영 hostname 연결을 확인했다. 전달받은 전용 AUD는 `~/.config/code-trainer/server.env`에 적용하고 앱 컨테이너를 재생성했다.
 - VPC Service: `code-trainer-api`, ID `01a10c90-5876-7e83-b4f0-5ac84a06bfa6`. 기존 Tunnel을 경유해 Mac `127.0.0.1:8010`에 연결한다. 8443/18443은 Cloudflare에 연결하지 않는다.
-- Worker: `code-trainer`, 게시 버전 `00c9efaf-f084-4b82-b009-d002dd88ab38`. 운영 PUBLIC_ORIGIN과 `CODE_TRAINER_API` binding을 설정했다. workers.dev는 활성화하고 preview URL은 비활성화했다.
+- Worker: `code-trainer`, 자동 배포 확인 버전 `bfe46deb-0971-4725-8448-757ef0c3ea96` (커밋 `fd61ffc`). 운영 PUBLIC_ORIGIN과 `CODE_TRAINER_API` binding을 설정했다. workers.dev는 활성화하고 preview URL은 비활성화했다.
 - 운영 설정: `~/.config/code-trainer/deployment/wrangler.production.json`. 저장소의 `wrangler.jsonc`는 배포되지 않는 기본값을 유지한다. 운영 설정의 소스/빌드 경로는 이 Mac의 절대 경로다.
 - 확인: 프런트 빌드, 운영 Wrangler dry-run/게시, Cloudflare API의 binding/주소 활성 상태, 비로그인 루트 요청의 Access 리다이렉트 및 AUD 일치, AUD 반영 후 `check-host.py` 통과.
 - 사용자 확인(2026-10-06): 운영 사이트에서 로그인 후 기존 문제 목록이 표시된다. 이 결과로 소유자 신원 연결과 목록 조회에 사용하는 Worker → VPC → Mac API 경로의 동작을 확인했다. 에이전트가 직접 브라우저로 검증한 결과는 아니다.
 - 미확인: 외부 API/정적 파일 전체의 인증 경계, 문제 상세 조회·채점·AI 생성·로그아웃. 로컬 인증 테스트 성공만으로 외부 검증을 대체하지 않는다.
 
-CLI의 Access 앱 생성 권한이 없어 사용자가 앱을 직접 생성했다. 자동 승인 검토가 대시보드와 운영 사이트의 브라우저 접근을 사용자 설정에 따라 거부했으므로 브라우저 로그인 검증은 사용자에게 요청했다. GitHub CI/CD 구성은 아래와 같으며 실제 첫 실행 결과는 운영 확인 후 기록한다.
+CLI의 Access 앱 생성 권한이 없어 사용자가 앱을 직접 생성했다. 자동 승인 검토가 대시보드와 운영 사이트의 브라우저 접근을 사용자 설정에 따라 거부했으므로 브라우저 로그인 검증은 사용자에게 요청했다. GitHub CI/CD의 실제 성공 실행은 아래에 기록했다.
 
 운영 설정을 재사용해 화면을 갱신할 때는 프런트 검사/빌드 후 아래 명령을 사용한다. 게시 전 VPC 목적지와 Access 보호가 유지되는지 확인한다.
 
@@ -99,15 +99,19 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 
 업데이트는 이미지 준비 → 작업 중단 → 기존 이미지로 일관된 백업 → immutable 이미지 교체 → health/인증/채점 검사 → 같은 SHA의 Worker 게시 순서다. DB 변경 뒤 이전 코드만 자동 롤백하지 않는다.
 
-검증 완료: Python 42개 검사, 프런트 테스트/타입/lint/빌드, Worker 테스트와 dry-run, 두 Linux 이미지 빌드, 실제 Docker 다섯 언어·메모리/시간/출력/PID/파일/네트워크 제한과 정리, 실제 mTLS, VM 네트워크 차단, LaunchAgent 기동, restic 백업·복원.
+검증 완료: Python 46개 검사(배포 조건·실패 처리 4개 포함), 프런트 테스트/타입/lint/빌드, Worker 테스트와 dry-run, 두 Linux 이미지 빌드, 실제 Docker 다섯 언어·메모리/시간/출력/PID/파일/네트워크 제한과 정리, 실제 mTLS, VM 네트워크 차단, LaunchAgent 기동, restic 백업·복원, GitHub push부터 실제 자동 배포와 성공 보고.
 
-남은 검증: 운영 사이트의 채점·AI 생성·로그아웃, 외부 모바일망 접속, 전체 Mac 재부팅, 두 앱 최대 작업 부하, 장치 밖 복구, GitHub CI/CD. TLS leaf 인증서는 발급일부터 90일이며 만료 전에 별도 빈 TLS volume으로 교체해야 한다. 자동 갱신은 없다.
+남은 검증: 운영 사이트의 채점·AI 생성·로그아웃, 외부 모바일망 접속, 전체 Mac 재부팅, 두 앱 최대 작업 부하, 장치 밖 복구. TLS leaf 인증서는 발급일부터 90일이며 만료 전에 별도 빈 TLS volume으로 교체해야 한다. 자동 갱신은 없다.
 
 현재 네트워크 격리는 macOS sandbox-exec와 Colima/Lima 동작에 의존한다. macOS·Colima·Lima 업데이트 후 `check-host.py`와 재기동 검증을 다시 수행한다. 동일 macOS 사용자를 완전히 격리하는 구성은 아니다. 타인 초대 전에는 사용자별 계정·AI 키·인가·사용량 제한을 별도로 구현/검증한다.
 
 참고: [Lima 포트 전달](https://lima-vm.io/docs/config/network/port/), [Access JWT 검증](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/), [VPC Service](https://developers.cloudflare.com/workers-vpc/configuration/vpc-services/).
 
 ## GitHub 자동 배포
+
+2026-10-06 운영 확인: `ENABLE_CD=true`. [`fd61ffc`의 GitHub 실행](https://github.com/Yelihi/code-trainer/actions/runs/37333653427)에서 검사와 배포가 성공했다. Deployment ID는 `6863172458`, Mac의 `release/current`와 두 컨테이너 image ID가 해당 SHA의 `release-state.json`과 일치함을 확인했다. Worker 게시 버전은 위에 기록했다.
+
+첫 연결 과정에서는 정지한 SQLite의 WAL 보조 파일 생성 권한과 비공개 checkout의 파일 권한 문제를 실제로 발견해 수정했다. 전자는 백업 실패 시 기존 앱이 자동 재시작되는 것을 확인했고, 후자는 API import 이전 실패를 확인한 뒤 이전 이미지로 복구했다. 이제 교체 전 비루트 API import 검사와 GitHub의 비공개 파일 권한 빌드 검사가 실행된다. 정지 상태의 수정된 백업도 별도로 복원해 SQLite 무결성과 계정 1개·문제 세트 8개를 확인했다. GitHub 실행 상태가 완전히 확인되기 전에는 다음 조회까지 대기한다.
 
 `.github/workflows/check.yml`의 `check`가 GitHub 임시 runner에서 Python/프런트/Worker 검사, 앱·브로커 이미지 빌드와 실제 Docker sandbox 검사를 실행한다. PR은 검사만 한다. `main` push(문서만 변경한 경우 제외) 또는 수동 실행에서 검사를 통과하고 GitHub Variable `ENABLE_CD=true`이면 `deploy`가 `production` Deployment를 요청한다. 진행 중 workflow는 새 push로 취소하지 않는다.
 

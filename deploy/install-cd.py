@@ -23,7 +23,7 @@ def install():
         node = shutil.which('node')
         if not node or subprocess.check_output([node, '--version'], text=True).split('.')[0] != 'v24':
             raise RuntimeError('Node 24 must be available before installation')
-        for name in ['github_deploy.py', 'release.py', 'host.py', 'check-host.py',
+        for name in ['github_deploy.py', 'release.py', 'changes.py', 'host.py', 'check-host.py',
                      'runner-network.sb', 'runner-lima-override.yaml']:
             shutil.copyfile(source / name, target / name)
             (target / name).chmod(0o600)

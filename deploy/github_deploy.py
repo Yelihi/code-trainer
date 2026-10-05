@@ -35,6 +35,11 @@ def status(deployment, state, description):
 
 def request():
     revision = os.environ['GITHUB_SHA']
+    scope = {'frontend': os.environ['DEPLOY_FRONTEND'] == 'true',
+             'backend': os.environ['DEPLOY_BACKEND'] == 'true',
+             'base_sha': os.environ['DEPLOY_BASE_SHA'], 'force': os.environ['DEPLOY_FORCE']}
+    if not scope['frontend'] and not scope['backend']:
+        raise ValueError('No component needs deployment')
     if (os.environ['GITHUB_REPOSITORY'] != REPOSITORY
             or os.environ['GITHUB_REF'] != 'refs/heads/main'
             or api('commits/main')['sha'] != revision):
@@ -42,8 +47,8 @@ def request():
     deployment = api('deployments', {
         'ref': revision, 'environment': ENVIRONMENT, 'auto_merge': False,
         'required_contexts': [], 'production_environment': True,
-        'payload': {'run_id': int(os.environ['GITHUB_RUN_ID']), 'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT'])},
-        'description': 'Back up and deploy the CI-tested app, broker and Worker',
+        'payload': {'run_id': int(os.environ['GITHUB_RUN_ID']), 'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), **scope},
+        'description': 'Deploy checked changed components: ' + ', '.join(k for k in ('frontend', 'backend') if scope[k]),
     })
     print(f'Deployment {deployment["id"]}: waiting for the Mac', flush=True)
     for _ in range(210):
@@ -51,7 +56,7 @@ def request():
         if states:
             state = states[0]['state']
             if state == 'success':
-                print('Backup, container release and health check succeeded')
+                print('Selected component deployment succeeded')
                 return
             if state in ('failure', 'error', 'inactive'):
                 raise RuntimeError('Mac deployment failed; inspect its deployment log')
@@ -62,7 +67,15 @@ def request():
 def eligible(deployment, run, jobs, revision):
     payload = deployment.get('payload') or {}
     return (
-        deployment.get('environment') == ENVIRONMENT
+        all(type(payload.get(component)) is bool for component in ('frontend', 'backend'))
+        and (payload['frontend'] or payload['backend'])
+        and payload.get('force') in ('auto', 'frontend', 'backend', 'all')
+        and (run.get('event') == 'workflow_dispatch' or payload.get('force') == 'auto')
+        and isinstance(payload.get('base_sha'), str)
+        and (not payload['base_sha'] or re.fullmatch(r'[0-9a-f]{40}', payload['base_sha']) is not None)
+        and all(not payload[component] or any(job.get('name') == component and job.get('conclusion') == 'success' for job in jobs)
+                for component in ('frontend', 'backend'))
+        and deployment.get('environment') == ENVIRONMENT
         and deployment.get('sha') == revision
         and deployment.get('creator', {}).get('login') == 'github-actions[bot]'
         and deployment.get('ref') == revision
@@ -112,14 +125,14 @@ def poll(state_directory):
             print('Waiting for matching checked main workflow:', run.get('status'),
                   [(job.get('name'), job.get('status'), job.get('conclusion')) for job in jobs], flush=True)
             return
-        status(deployment, 'in_progress', 'Mac is preparing the tested release and encrypted backup')
+        status(deployment, 'in_progress', 'Mac is preparing the checked changed components')
         try:
             from release import deploy
             deploy(revision, lambda: eligible(
                 deployment, api(f'actions/runs/{run_id}'),
                 api(f'actions/runs/{run_id}/attempts/{payload["run_attempt"]}/jobs?per_page=100')['jobs'],
-                api('commits/main')['sha']))
-            status(deployment, 'success', 'Encrypted backup, container release and health check succeeded')
+                api('commits/main')['sha']), payload)
+            status(deployment, 'success', 'Selected component deployment and checks succeeded')
             print(f'Deployed {revision}', flush=True)
         except BaseException:
             status(deployment, 'failure', 'Inspect Mac deployment log and backup before retrying')

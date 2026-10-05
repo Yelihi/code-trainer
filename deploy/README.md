@@ -113,17 +113,26 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 
 첫 연결 과정에서는 정지한 SQLite의 WAL 보조 파일 생성 권한과 비공개 checkout의 파일 권한 문제를 실제로 발견해 수정했다. 전자는 백업 실패 시 기존 앱이 자동 재시작되는 것을 확인했고, 후자는 API import 이전 실패를 확인한 뒤 이전 이미지로 복구했다. 이제 교체 전 비루트 API import 검사와 GitHub의 비공개 파일 권한 빌드 검사가 실행된다. 정지 상태의 수정된 백업도 별도로 복원해 SQLite 무결성과 계정 1개·문제 세트 8개를 확인했다. GitHub 실행 상태가 완전히 확인되기 전에는 다음 조회까지 대기한다.
 
-`.github/workflows/check.yml`의 `check`가 GitHub 임시 runner에서 Python/프런트/Worker 검사, 앱·브로커 이미지 빌드와 실제 Docker sandbox 검사를 실행한다. PR은 검사만 한다. `main` push(문서만 변경한 경우 제외) 또는 수동 실행에서 검사를 통과하고 GitHub Variable `ENABLE_CD=true`이면 `deploy`가 `production` Deployment를 요청한다. 진행 중 workflow는 새 push로 취소하지 않는다.
+`.github/workflows/check.yml`의 `plan`이 마지막 성공한 `production` Deployment의 SHA부터 현재 SHA까지 변경 경로를 계산한다. `frontend`와 `backend` job은 선택된 범위만 검사하고, 공통 `check`가 필요한 job의 성공과 배포 로직 테스트를 확인한다. Mac도 로컬의 마지막 성공 SHA와 Git diff로 같은 범위를 다시 검증한다. 실패한 배포나 건너뛴 커밋의 변경을 누락하지 않는다.
+
+| 변경 경로 | 검사·배포 범위 |
+| --- | --- |
+| `frontend/**`, `deploy/cloudflare/**` | 프런트·Worker 검사/빌드와 Cloudflare 게시. Docker와 백업을 실행하지 않음 |
+| `backend/**`, `scripts/**`, `sandbox/**`, `requirements.txt`, `deploy/requirements.txt`, `deploy/Dockerfile`, `.dockerignore`, `start.sh` | 백엔드 검사/이미지 빌드·실제 sandbox 검사, Mac 백업·교체·상태 확인. Worker를 게시하지 않음 |
+| 양쪽 변경, workflow/배포 제어 코드, 기타 미분류 파일 | 양쪽 검사, 백엔드 검증 후 프런트 게시 |
+| Markdown만 변경 | 자동 배포 생략 |
+
+수동 실행의 `scope`는 기본 `auto`다. `frontend`, `backend`, `all`을 선택하면 변경이 없어도 해당 범위를 추가로 배포한다. 감지한 미배포 변경을 제외하는 옵션은 아니다. 최초 배포 기준이 없으면 양쪽을 검사한다. PR은 검사만 한다. `main` push(문서만 변경한 경우 제외) 또는 수동 실행에서 검사를 통과하고 GitHub Variable `ENABLE_CD=true`이면 `deploy`가 `production` Deployment를 요청한다. 진행 중 workflow는 새 push로 취소하지 않는다.
 
 Mac의 `com.code-trainer.deploy` LaunchAgent가 60초마다 요청을 확인한다. 고정 저장소명, 요청 생성자 `github-actions[bot]`, 최신 main SHA, workflow 경로, 실행 ID/재시도 번호, push/수동 이벤트와 성공한 check job, 진행 중 deploy job을 모두 검증한다. 실패/진행 중으로 기록된 요청은 자동 재시도하지 않는다. main 반영 권한은 운영 Mac에서 배포 코드를 실행할 수 있는 권한이다.
 
 1. 외장 SSD의 전용 bare checkout에서 검사한 SHA를 fetch하고 `release/<SHA>` 작업 트리를 만든다. 개발 저장소의 미커밋 파일은 배포하지 않는다.
-2. 화면을 빌드하고 앱 VM에서 앱·브로커 arm64 이미지를 만든다. 브로커 이미지는 archive로 실행 VM에 전달한다. 실행 VM의 외부 연결 차단을 유지한다. 두 이미지의 ID와 archive를 보존한다.
-3. 오래 걸린 준비 후 GitHub의 최신 SHA/실행 상태를 다시 확인한다. 앱을 정지하고 **기존 앱 이미지**로 SQLite 사본과 암호화 백업을 만든다. DB 연결은 `mode=ro`이며, 정지 후 WAL 보조 파일을 생성할 수 있도록 백업 컨테이너의 데이터 볼륨은 쓰기 가능하게 연결한다. 정기 백업과 겹치면 배포 전 백업은 실패하고 기존 앱을 재시작한다.
-4. 백업 성공 후 브로커·앱의 image ID를 교체한다. health와 설치된 `check-host.py`의 실제 채점/mTLS/VM 격리 검사를 수행한다.
-5. Mac의 기존 Wrangler 로그인으로 같은 SHA의 Worker/정적 화면을 게시한다. GitHub에 Cloudflare 토큰을 복사하지 않는다. 성공하면 `release/current`를 해당 SHA로 바꾸고 Deployment 성공을 보고한다.
+2. 프런트가 선택됐으면 화면을 빌드하고 Worker dry-run을 수행한다. 백엔드가 선택됐으면 앱 VM에서 앱·브로커 arm64 이미지를 만든다. 브로커 이미지는 archive로 실행 VM에 전달한다. 실행 VM의 외부 연결 차단을 유지한다. 두 이미지의 ID와 archive를 보존한다.
+3. 오래 걸린 준비 후 GitHub의 최신 SHA/실행 상태를 다시 확인한다. 백엔드가 선택된 경우 앱을 정지하고 **기존 앱 이미지**로 SQLite 사본과 암호화 백업을 만든다. DB 연결은 `mode=ro`이며, 정지 후 WAL 보조 파일을 생성할 수 있도록 백업 컨테이너의 데이터 볼륨은 쓰기 가능하게 연결한다. 정기 백업과 겹치면 배포 전 백업은 실패하고 기존 앱을 재시작한다.
+4. 백엔드가 선택된 경우 백업 성공 후 브로커·앱의 image ID를 교체한다. health와 설치된 `check-host.py`의 실제 채점/mTLS/VM 격리 검사를 수행한다.
+5. 프런트가 선택된 경우 Mac의 기존 Wrangler 로그인으로 해당 SHA의 Worker/정적 화면을 게시한다. GitHub에 Cloudflare 토큰을 복사하지 않는다. 선택한 배포가 모두 성공하면 `release/current`를 비교 기준 SHA로 바꾸고 Deployment 성공을 보고한다. 실제 구성요소별 SHA는 `deployment/components.json`과 `release/current-frontend`, `release/current-backend`에 따로 기록한다.
 
-배포 중에는 짧은 서비스 중단이 발생하고 진행 중 AI/채점 작업이 끊길 수 있다. 화면과 API는 순차 배포되므로 이전 화면과 호환되는 API 변경을 유지한다. Workers 게시 성공은 브라우저에서의 새 버전 실사용 검증을 대체하지 않는다.
+백엔드 배포 중에는 짧은 서비스 중단이 발생하고 진행 중 AI/채점 작업이 끊길 수 있다. 프런트 전용 배포는 Mac 서버를 재시작하지 않는다. 화면과 API는 순차 배포되므로 이전 화면과 호환되는 API 변경을 유지한다. Workers 게시 성공은 브라우저에서의 새 버전 실사용 검증을 대체하지 않는다.
 
 실패 시:
 
@@ -143,6 +152,8 @@ gh variable set ENABLE_CD --body true --repo Yelihi/code-trainer
 gh variable set ENABLE_CD --body false --repo Yelihi/code-trainer
 # 실행 상태와 Mac 로그
 gh run list --workflow check.yml --repo Yelihi/code-trainer
+# 필요 시 선택한 범위 재배포 (미배포 변경도 함께 반영)
+gh workflow run check.yml --ref main -f scope=frontend --repo Yelihi/code-trainer
 tail -n 80 ~/.config/code-trainer/deploy.log
 cat ~/.config/code-trainer/deployment/release-state.json
 ```

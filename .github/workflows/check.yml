@@ -5,17 +5,62 @@ on:
     paths-ignore: ['**/*.md']
   pull_request:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Force a component rebuild in addition to detected changes'
+        type: choice
+        default: auto
+        options: [auto, frontend, backend, all]
 permissions:
   contents: read
+  deployments: read
 concurrency:
   group: code-trainer-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  check:
+  plan:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    outputs:
+      frontend: ${{ steps.scope.outputs.frontend }}
+      backend: ${{ steps.scope.outputs.backend }}
+      base_sha: ${{ steps.scope.outputs.base_sha }}
+      force: ${{ steps.scope.outputs.force }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 deploy/changes.py
+  frontend:
+    needs: plan
+    if: needs.plan.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend run typecheck
+      - run: npm --prefix frontend run lint
+      - run: npm --prefix frontend run build
+      - run: npm --prefix deploy/cloudflare ci
+      - run: npm --prefix deploy/cloudflare test
+      - run: npm --prefix deploy/cloudflare run check
+  backend:
+    needs: plan
+    if: needs.plan.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -27,16 +72,7 @@ jobs:
       - run: uv venv --python 3.12 .venv
       - run: uv pip sync --python .venv/bin/python deploy/requirements.txt
       - run: .venv/bin/python -m unittest backend.test_app backend.test_deployment deploy.test_certificates deploy.test_volume -q
-      - run: python3 -m unittest deploy.test_cd -q
       - run: .venv/bin/python scripts/check-start.py
-      - run: npm --prefix frontend ci
-      - run: npm --prefix frontend test
-      - run: npm --prefix frontend run typecheck
-      - run: npm --prefix frontend run lint
-      - run: npm --prefix frontend run build
-      - run: npm --prefix deploy/cloudflare ci
-      - run: npm --prefix deploy/cloudflare test
-      - run: npm --prefix deploy/cloudflare run check
       # Mac deployment checkouts are private (umask 077). Exercise COPY permissions too.
       - run: chmod -R go-rwx backend scripts
       - run: docker build --target app -f deploy/Dockerfile -t trainer-app-check .
@@ -44,11 +80,34 @@ jobs:
       - run: docker run --rm --entrypoint python trainer-app-check -c "import shutil, pathlib, backend.api; assert shutil.which('docker') is None; assert not pathlib.Path('/var/run/docker.sock').exists()"
       - run: docker build -t code-trainer-runner:v1 sandbox
       - run: .venv/bin/python scripts/check-sandbox.py
+  check:
+    needs: [plan, frontend, backend]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Require successful checks for every selected component
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          FRONTEND_NEEDED: ${{ needs.plan.outputs.frontend }}
+          BACKEND_NEEDED: ${{ needs.plan.outputs.backend }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+        run: |
+          test "$PLAN_RESULT" = success
+          if [ "$FRONTEND_NEEDED" = true ]; then test "$FRONTEND_RESULT" = success; else test "$FRONTEND_RESULT" = skipped; fi
+          if [ "$BACKEND_NEEDED" = true ]; then test "$BACKEND_RESULT" = success; else test "$BACKEND_RESULT" = skipped; fi
+      - run: python3 -m unittest deploy.test_cd -q
   deploy:
-    needs: check
+    needs: [plan, check]
     if: >-
+      always() && !cancelled() && needs.check.result == 'success' &&
       github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
-      vars.ENABLE_CD == 'true'
+      vars.ENABLE_CD == 'true' &&
+      (needs.plan.outputs.frontend == 'true' || needs.plan.outputs.backend == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
@@ -58,7 +117,11 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Request Mac backup, backend and Worker deployment
+      - name: Request selected component deployment
         env:
           GH_TOKEN: ${{ github.token }}
+          DEPLOY_FRONTEND: ${{ needs.plan.outputs.frontend }}
+          DEPLOY_BACKEND: ${{ needs.plan.outputs.backend }}
+          DEPLOY_BASE_SHA: ${{ needs.plan.outputs.base_sha }}
+          DEPLOY_FORCE: ${{ needs.plan.outputs.force }}
         run: python3 deploy/github_deploy.py request

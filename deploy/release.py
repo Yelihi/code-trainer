@@ -10,13 +10,14 @@ import time
 import urllib.request
 
 from host import CONFIG, ENV, ROOT, backup, storage
+from changes import scope as changed_scope
 
 APP = ['docker', '--context', 'colima-code-trainer-app']
 RUNNER = ['docker', '--context', 'colima-code-trainer-runner']
 PRIVATE = CONFIG / 'deployment'
 PROTECTED = ('deploy/host.py', 'deploy/service-launcher.swift', 'deploy/runner-network.sb',
              'deploy/runner-lima-override.yaml', 'deploy/app.compose.yaml', 'deploy/runner.compose.yaml',
-             'sandbox/Dockerfile', 'deploy/github_deploy.py', 'deploy/release.py', 'deploy/check-host.py')
+             'sandbox/Dockerfile', 'deploy/github_deploy.py', 'deploy/release.py', 'deploy/check-host.py', 'deploy/changes.py')
 
 
 def run(args, **kwargs):
@@ -66,7 +67,16 @@ def transition(stop, save, restart_old, switch, verify, publish):
     publish()
 
 
-def deploy(revision, still_authorized):
+def selected_scope(checkout, base, revision, requested):
+    if requested['base_sha'] != base:
+        raise ValueError('GitHub and Mac deployment baselines differ; inspect before retrying')
+    selected = changed_scope(checkout, base, revision, requested['force'])
+    if selected != {name: requested[name] for name in ('frontend', 'backend')} or not any(selected.values()):
+        raise ValueError('Requested scope does not match changes since the last successful deployment')
+    return selected
+
+
+def deploy(revision, still_authorized, requested):
     os.umask(0o077)
     storage()
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
@@ -93,38 +103,56 @@ def deploy(revision, still_authorized):
             ['git', '-C', str(release), 'status', '--porcelain', '--untracked-files=no']):
         raise ValueError('Release checkout has changed')
     validate_release(release, config)
-    for package in ('frontend', 'deploy/cloudflare'):
-        run(['npm', '--prefix', str(release / package), 'ci'])
-    run(['npm', '--prefix', str(release / 'frontend'), 'run', 'build'])
-    # Build in the app VM, which has Internet. The runner VM remains egress-blocked.
+    base = (releases / 'current').resolve(strict=True).name if (releases / 'current').exists() else ''
+    selected = selected_scope(checkout, base, revision, requested)
+    components_path = PRIVATE / 'components.json'
+    components = json.loads(components_path.read_text()) if components_path.exists() else {'frontend': base, 'backend': base}
+    print('Selected components:', selected, 'since', base, flush=True)
+    if selected['frontend']:
+        for package in ('frontend', 'deploy/cloudflare'):
+            run(['npm', '--prefix', str(release / package), 'ci'])
+        run(['npm', '--prefix', str(release / 'frontend'), 'run', 'build'])
+        worker_config = json.loads((PRIVATE / 'wrangler.production.json').read_text())
+        worker_config['main'] = str(release / 'deploy/cloudflare/worker.mjs')
+        worker_config['assets']['directory'] = str(release / 'frontend/dist')
+        worker_path = PRIVATE / 'wrangler.candidate.json'
+        write_private(worker_path, json.dumps(worker_config, indent=2) + '\n')
+        wrangler = ['node', str(release / 'deploy/cloudflare/node_modules/wrangler/bin/wrangler.js'),
+                    'deploy', '--config', str(worker_path)]
+        run([*wrangler, '--dry-run'])
     ids = {}
-    for target in ('app', 'runner'):
-        tag = 'code-trainer-' + target + ':' + revision
-        run([*APP, 'build', '--target', target, '-f', str(release / 'deploy/Dockerfile'), '-t', tag, str(release)])
-        ids[target] = output([*APP, 'image', 'inspect', tag, '--format', '{{.Id}}'])
-        archive = ROOT / 'images' / (target + '-' + revision + '.tar')
-        run([*APP, 'image', 'save', '-o', str(archive), ids[target]])
-        if target == 'runner':
-            run([*RUNNER, 'image', 'load', '-i', str(archive)])
-    run([*APP, 'run', '--rm', '--network', 'none', '--entrypoint', 'python', ids['app'], '-c',
-         "import pathlib,shutil,backend.api; assert not shutil.which('docker'); assert not pathlib.Path('/var/run/docker.sock').exists()"])
-    compose_path = CONFIG / 'compose.env'
-    previous = compose_path.read_text()
-    candidate = replace_images(previous, ids['app'], ids['runner'])
-    old_image = output([*APP, 'inspect', 'code-trainer-app', '--format', '{{.Image}}'])
-    worker_config = json.loads((PRIVATE / 'wrangler.production.json').read_text())
-    worker_config['main'] = str(release / 'deploy/cloudflare/worker.mjs')
-    worker_config['assets']['directory'] = str(release / 'frontend/dist')
-    worker_path = PRIVATE / 'wrangler.candidate.json'
-    write_private(worker_path, json.dumps(worker_config, indent=2) + '\n')
-    wrangler = ['node', str(release / 'deploy/cloudflare/node_modules/wrangler/bin/wrangler.js'),
-                'deploy', '--config', str(worker_path)]
-    run([*wrangler, '--dry-run'])
+    if selected['backend']:
+        # Build in the app VM, which has Internet. The runner VM remains egress-blocked.
+        for target in ('app', 'runner'):
+            tag = 'code-trainer-' + target + ':' + revision
+            run([*APP, 'build', '--target', target, '-f', str(release / 'deploy/Dockerfile'), '-t', tag, str(release)])
+            ids[target] = output([*APP, 'image', 'inspect', tag, '--format', '{{.Id}}'])
+            archive = ROOT / 'images' / (target + '-' + revision + '.tar')
+            run([*APP, 'image', 'save', '-o', str(archive), ids[target]])
+            if target == 'runner':
+                run([*RUNNER, 'image', 'load', '-i', str(archive)])
+        run([*APP, 'run', '--rm', '--network', 'none', '--entrypoint', 'python', ids['app'], '-c',
+             "import pathlib,shutil,backend.api; assert not shutil.which('docker'); assert not pathlib.Path('/var/run/docker.sock').exists()"])
+        compose_path = CONFIG / 'compose.env'
+        previous = compose_path.read_text()
+        candidate = replace_images(previous, ids['app'], ids['runner'])
+        old_image = output([*APP, 'inspect', 'code-trainer-app', '--format', '{{.Image}}'])
     # Recheck after slow builds, immediately before any interruption of production.
     if not still_authorized():
         raise ValueError('Main or its workflow changed before deployment')
-    write_private(PRIVATE / 'compose.previous.env', previous)
-    state = {'sha': revision, 'app_image': ids['app'], 'broker_image': ids['runner'], 'phase': 'prepared'}
+    if selected['backend']:
+        write_private(PRIVATE / 'compose.previous.env', previous)
+    state = {'sha': revision, 'scope': selected, 'base_sha': base, 'phase': 'prepared'}
+    if selected['backend']:
+        state.update(app_image=ids['app'], broker_image=ids['runner'])
+
+    def record_component(name):
+        components[name] = revision
+        write_private(components_path, json.dumps(components, indent=2) + '\n')
+        next_link = releases / ('.' + name + '-next')
+        next_link.unlink(missing_ok=True)
+        next_link.symlink_to(release, target_is_directory=True)
+        os.replace(next_link, releases / ('current-' + name))
 
     def phase(name):
         state['phase'] = name
@@ -155,18 +183,26 @@ def deploy(revision, still_authorized):
             run([*APP, 'stop', '--time', '120', 'code-trainer-app'])
             raise
 
+        record_component('backend')
+
     def publish():
+        if not selected['frontend']:
+            return
         phase('publishing-worker')
         run(wrangler)
         write_private(PRIVATE / 'wrangler.production.json', worker_path.read_text())
+        record_component('frontend')
 
-    phase('stopping-app')
-    transition(lambda: run([*APP, 'stop', '--time', '120', 'code-trainer-app']),
-               lambda: backup(stopped_image=old_image),
-               lambda: run([*APP, 'start', 'code-trainer-app']), switch, verify, publish)
+    if selected['backend']:
+        phase('stopping-app')
+        transition(lambda: run([*APP, 'stop', '--time', '120', 'code-trainer-app']),
+                   lambda: backup(stopped_image=old_image),
+                   lambda: run([*APP, 'start', 'code-trainer-app']), switch, verify, publish)
+    else:
+        publish()
     next_link = releases / '.current-next'
     next_link.unlink(missing_ok=True)
     next_link.symlink_to(release, target_is_directory=True)
     os.replace(next_link, releases / 'current')
     phase('complete')
-    print('Deployed backend and Worker from', revision, flush=True)
+    print('Deployed selected components from', revision, selected, flush=True)

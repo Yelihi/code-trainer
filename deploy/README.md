@@ -62,7 +62,7 @@ curl --fail http://127.0.0.1:8010/healthz
 
 - Access: 사용자 화면에서 `Owner only` Allow 정책과 소유자 이메일, 운영 hostname 연결을 확인했다. 전달받은 전용 AUD는 `~/.config/code-trainer/server.env`에 적용하고 앱 컨테이너를 재생성했다.
 - VPC Service: `code-trainer-api`, ID `01a10c90-5876-7e83-b4f0-5ac84a06bfa6`. 기존 Tunnel을 경유해 Mac `127.0.0.1:8010`에 연결한다. 8443/18443은 Cloudflare에 연결하지 않는다.
-- Worker: `code-trainer`, 자동 배포 확인 버전 `bfe46deb-0971-4725-8448-757ef0c3ea96` (커밋 `fd61ffc`). 운영 PUBLIC_ORIGIN과 `CODE_TRAINER_API` binding을 설정했다. workers.dev는 활성화하고 preview URL은 비활성화했다.
+- Worker: `code-trainer`, 자동 배포 확인 버전 `6348b649-2e4e-48f8-b765-fdab615e4cf9` (커밋 `15db6f3`). 운영 PUBLIC_ORIGIN과 `CODE_TRAINER_API` binding을 설정했다. workers.dev는 활성화하고 preview URL은 비활성화했다.
 - 운영 설정: `~/.config/code-trainer/deployment/wrangler.production.json`. 저장소의 `wrangler.jsonc`는 배포되지 않는 기본값을 유지한다. 운영 설정의 소스/빌드 경로는 이 Mac의 절대 경로다.
 - 확인: 프런트 빌드, 운영 Wrangler dry-run/게시, Cloudflare API의 binding/주소 활성 상태, 비로그인 루트 요청의 Access 리다이렉트 및 AUD 일치, AUD 반영 후 `check-host.py` 통과.
 - 사용자 확인(2026-10-06): 운영 사이트에서 로그인 후 기존 문제 목록이 표시된다. 이 결과로 소유자 신원 연결과 목록 조회에 사용하는 Worker → VPC → Mac API 경로의 동작을 확인했다. 에이전트가 직접 브라우저로 검증한 결과는 아니다.
@@ -97,9 +97,9 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 
 앱/브로커 이미지 빌드를 실제 arm64 Docker 29.5.2에서 확인했다. Python·Docker CLI 베이스는 digest로 고정했다. Compose의 이미지 값도 `sha256:...`로 지정하며 개인 설정의 `compose.env`에 보관한다. Linux 배포판의 오래된 Docker CLI 대신 Docker 29 CLI를 사용한다.
 
-업데이트는 이미지 준비 → 작업 중단 → 기존 이미지로 일관된 백업 → immutable 이미지 교체 → health/인증/채점 검사 → 같은 SHA의 Worker 게시 순서다. DB 변경 뒤 이전 코드만 자동 롤백하지 않는다.
+양쪽을 업데이트할 때는 이미지 준비 → 작업 중단 → 기존 이미지로 일관된 백업 → immutable 이미지 교체 → health/인증/채점 검사 → 같은 SHA의 Worker 게시 순서다. 프런트 또는 백엔드만 변경하면 아래 변경 범위에 따라 해당 단계만 실행한다. DB 변경 뒤 이전 코드만 자동 롤백하지 않는다.
 
-검증 완료: Python 46개 검사(배포 조건·실패 처리 4개 포함), 프런트 테스트/타입/lint/빌드, Worker 테스트와 dry-run, 두 Linux 이미지 빌드, 실제 Docker 다섯 언어·메모리/시간/출력/PID/파일/네트워크 제한과 정리, 실제 mTLS, VM 네트워크 차단, LaunchAgent 기동, restic 백업·복원, GitHub push부터 실제 자동 배포와 성공 보고.
+검증 완료: Python 50개 검사(변경 범위·배포 조건·실패 처리 8개 포함), 프런트 테스트/타입/lint/빌드, Worker 테스트와 dry-run, 두 Linux 이미지 빌드, 실제 Docker 다섯 언어·메모리/시간/출력/PID/파일/네트워크 제한과 정리, 실제 mTLS, VM 네트워크 차단, LaunchAgent 기동, restic 백업·복원, GitHub push부터 실제 자동 배포와 성공 보고.
 
 남은 검증: 운영 사이트의 채점·AI 생성·로그아웃, 외부 모바일망 접속, 전체 Mac 재부팅, 두 앱 최대 작업 부하, 장치 밖 복구. TLS leaf 인증서는 발급일부터 90일이며 만료 전에 별도 빈 TLS volume으로 교체해야 한다. 자동 갱신은 없다.
 
@@ -109,7 +109,15 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 
 ## GitHub 자동 배포
 
-2026-10-06 운영 확인: `ENABLE_CD=true`. [`fd61ffc`의 GitHub 실행](https://github.com/Yelihi/code-trainer/actions/runs/37333653427)에서 검사와 배포가 성공했다. Deployment ID는 `6863172458`, Mac의 `release/current`와 두 컨테이너 image ID가 해당 SHA의 `release-state.json`과 일치함을 확인했다. Worker 게시 버전은 위에 기록했다.
+2026-10-06 운영 확인: `ENABLE_CD=true`. 현재 운영 코드는 `15db6f3`이며 마지막 성공 Deployment ID는 `6864906652`다. 변경 범위별 실제 GitHub 실행과 Mac 배포 결과를 확인했다.
+
+| 검증 범위 | 성공 실행 | 확인 결과 |
+| --- | --- | --- |
+| 프런트·백엔드 함께 | [37343451294](https://github.com/Yelihi/code-trainer/actions/runs/37343451294) | 양쪽 검사, 백업·서버 교체·실제 채점/격리 검사 후 Worker 게시 |
+| 프런트만 수동 재배포 | [37342284689](https://github.com/Yelihi/code-trainer/actions/runs/37342284689) | 백엔드 job 생략. 앱·브로커 컨테이너 ID/이미지/시작 시각과 마지막 백업·Compose 설정 유지. Worker 버전만 변경 |
+| 백엔드만 같은 SHA 재배포 | [37344208703](https://github.com/Yelihi/code-trainer/actions/runs/37344208703) | 프런트 job 생략. 백업·서버 재시작·실제 채점/격리 검사 성공. Worker 배포 이력과 게시 설정 유지 |
+
+같은 SHA의 백엔드를 다시 빌드하는 시험에서 기존 이미지 태그가 교체되어 배포 전 백업이 실패하는 문제를 발견했다. 기존 앱은 다시 시작됐으며 DB 복원 없이 백업의 이전 이미지 archive만 복구했다. 빌드 전에 실행 중 이미지의 digest별 태그와 archive를 보존하도록 수정했고, 위 마지막 실행에서 같은 SHA 재배포·기존 이미지 유지·백업 성공을 확인했다.
 
 첫 연결 과정에서는 정지한 SQLite의 WAL 보조 파일 생성 권한과 비공개 checkout의 파일 권한 문제를 실제로 발견해 수정했다. 전자는 백업 실패 시 기존 앱이 자동 재시작되는 것을 확인했고, 후자는 API import 이전 실패를 확인한 뒤 이전 이미지로 복구했다. 이제 교체 전 비루트 API import 검사와 GitHub의 비공개 파일 권한 빌드 검사가 실행된다. 정지 상태의 수정된 백업도 별도로 복원해 SQLite 무결성과 계정 1개·문제 세트 8개를 확인했다. GitHub 실행 상태가 완전히 확인되기 전에는 다음 조회까지 대기한다.
 
@@ -127,7 +135,7 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 Mac의 `com.code-trainer.deploy` LaunchAgent가 60초마다 요청을 확인한다. 고정 저장소명, 요청 생성자 `github-actions[bot]`, 최신 main SHA, workflow 경로, 실행 ID/재시도 번호, push/수동 이벤트와 성공한 check job, 진행 중 deploy job을 모두 검증한다. 실패/진행 중으로 기록된 요청은 자동 재시도하지 않는다. main 반영 권한은 운영 Mac에서 배포 코드를 실행할 수 있는 권한이다.
 
 1. 외장 SSD의 전용 bare checkout에서 검사한 SHA를 fetch하고 `release/<SHA>` 작업 트리를 만든다. 개발 저장소의 미커밋 파일은 배포하지 않는다.
-2. 프런트가 선택됐으면 화면을 빌드하고 Worker dry-run을 수행한다. 백엔드가 선택됐으면 앱 VM에서 앱·브로커 arm64 이미지를 만든다. 브로커 이미지는 archive로 실행 VM에 전달한다. 실행 VM의 외부 연결 차단을 유지한다. 두 이미지의 ID와 archive를 보존한다.
+2. 프런트가 선택됐으면 화면을 빌드하고 Worker dry-run을 수행한다. 백엔드가 선택됐으면 먼저 실행 중인 앱·브로커 이미지에 digest별 보존 태그를 붙이고 `images/retained-<component>-<digest>.tar`로 저장한 뒤 앱 VM에서 새 arm64 이미지를 만든다. 같은 SHA를 다시 빌드해 태그가 바뀌어도 기존 이미지로 백업하고 복구할 수 있게 하기 위함이다. 브로커 이미지는 archive로 실행 VM에 전달한다. 실행 VM의 외부 연결 차단을 유지한다. 두 이미지의 ID와 archive를 보존한다.
 3. 오래 걸린 준비 후 GitHub의 최신 SHA/실행 상태를 다시 확인한다. 백엔드가 선택된 경우 앱을 정지하고 **기존 앱 이미지**로 SQLite 사본과 암호화 백업을 만든다. DB 연결은 `mode=ro`이며, 정지 후 WAL 보조 파일을 생성할 수 있도록 백업 컨테이너의 데이터 볼륨은 쓰기 가능하게 연결한다. 정기 백업과 겹치면 배포 전 백업은 실패하고 기존 앱을 재시작한다.
 4. 백엔드가 선택된 경우 백업 성공 후 브로커·앱의 image ID를 교체한다. health와 설치된 `check-host.py`의 실제 채점/mTLS/VM 격리 검사를 수행한다.
 5. 프런트가 선택된 경우 Mac의 기존 Wrangler 로그인으로 해당 SHA의 Worker/정적 화면을 게시한다. GitHub에 Cloudflare 토큰을 복사하지 않는다. 선택한 배포가 모두 성공하면 `release/current`를 비교 기준 SHA로 바꾸고 Deployment 성공을 보고한다. 실제 구성요소별 SHA는 `deployment/components.json`과 `release/current-frontend`, `release/current-backend`에 따로 기록한다.

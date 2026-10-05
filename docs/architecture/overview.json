@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Code Trainer · 구조와 실행 경계",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Yelihi/code-trainer",
+      "revision": "d24e42fbc7dc44dc07184a8a3518fd13ff496aad",
+      "provider": "github"
+    },
+    "viewBox": [
+      1380,
+      820
+    ],
+    "views": [
+      {
+        "id": "request",
+        "label": "화면 → API",
+        "focus": [
+          "browser",
+          "edge",
+          "api",
+          "service"
+        ],
+        "note": "화면 이벤트가 인증 경계를 지나 서비스 함수에 도착합니다."
+      },
+      {
+        "id": "grading",
+        "label": "격리 실행",
+        "focus": [
+          "service",
+          "broker",
+          "sandbox"
+        ],
+        "note": "FastAPI는 mTLS로 실행을 요청하고, 별도 VM의 브로커만 Docker를 제어합니다."
+      },
+      {
+        "id": "generation",
+        "label": "AI와 영구 데이터",
+        "focus": [
+          "service",
+          "database",
+          "ai"
+        ],
+        "note": "생성 상태는 SQLite에 저장하고 브라우저가 주기적으로 조회합니다."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "React 화면",
+      "sublabel": "App · Learning · Practice",
+      "pos": [
+        70,
+        150
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "frontend/src/App.tsx",
+          "label": "화면·생성 이벤트"
+        },
+        {
+          "path": "frontend/src/Practice.tsx",
+          "label": "풀이 이벤트"
+        },
+        {
+          "path": "frontend/src/Learning.tsx",
+          "label": "단원 이벤트"
+        }
+      ]
+    },
+    {
+      "id": "edge",
+      "type": "cloud",
+      "label": "Cloudflare",
+      "sublabel": "Access → Worker → VPC/Tunnel",
+      "pos": [
+        410,
+        150
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "deploy/cloudflare/worker.mjs",
+          "label": "인증 전달·프록시"
+        },
+        {
+          "path": "deploy/README.md",
+          "label": "운영 연결 구조"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "security",
+      "label": "FastAPI 진입",
+      "sublabel": "local_boundary() · user()",
+      "pos": [
+        750,
+        150
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "backend/api.py",
+          "label": "HTTP 이벤트"
+        },
+        {
+          "path": "backend/access.py",
+          "label": "JWT·소유자 검증"
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "학습 서비스",
+      "sublabel": "generate() · execute()",
+      "pos": [
+        750,
+        420
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "backend/service.py",
+          "label": "생성·채점·저장"
+        },
+        {
+          "path": "backend/learning.py",
+          "label": "학습 정리"
+        },
+        {
+          "path": "backend/schema.py",
+          "label": "입출력 계약"
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "자료 · 후보 · 진도 · 제출",
+      "pos": [
+        750,
+        670
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "backend/db.py",
+          "label": "DB 초기화·연결"
+        },
+        {
+          "path": "backend/diagnostics.py",
+          "label": "진단 이벤트"
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "type": "external",
+      "label": "AI 제공자",
+      "sublabel": "분석 · 문제 생성 · 학습 정리",
+      "pos": [
+        410,
+        420
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "backend/ai.py",
+          "label": "Structured Outputs"
+        },
+        {
+          "path": "backend/source.py",
+          "label": "자료 읽기"
+        }
+      ]
+    },
+    {
+      "id": "broker",
+      "type": "backend",
+      "label": "실행 브로커",
+      "sublabel": "runner_api.run() → runner.run()",
+      "pos": [
+        1090,
+        420
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "backend/runner_api.py",
+          "label": "mTLS 실행 API"
+        },
+        {
+          "path": "backend/runner.py",
+          "label": "실행·정리"
+        },
+        {
+          "path": "deploy/runner.compose.yaml",
+          "label": "브로커 구성"
+        }
+      ]
+    },
+    {
+      "id": "sandbox",
+      "type": "security",
+      "label": "일회용 컨테이너",
+      "sublabel": "JS · TS · Python · C++ · Rust",
+      "pos": [
+        1090,
+        670
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "sandbox/Dockerfile",
+          "label": "고정 실행 환경"
+        },
+        {
+          "path": "backend/runner.py",
+          "label": "자원·권한 제한"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "앱 VM · Docker 제어 권한 없음",
+      "wraps": [
+        "api",
+        "service",
+        "database"
+      ],
+      "pad": 28
+    },
+    {
+      "kind": "security-group",
+      "label": "실행 VM · 외부 연결 차단",
+      "wraps": [
+        "broker",
+        "sandbox"
+      ],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "id": "screen-edge",
+      "from": "browser",
+      "to": "edge",
+      "label": "HTTPS"
+    },
+    {
+      "id": "edge-api",
+      "from": "edge",
+      "to": "api",
+      "label": "JWT 전달"
+    },
+    {
+      "id": "api-service",
+      "from": "api",
+      "to": "service",
+      "label": "소유자 확인",
+      "labelDy": 70
+    },
+    {
+      "id": "service-db",
+      "from": "service",
+      "to": "database",
+      "label": "조회·저장",
+      "labelDy": 70
+    },
+    {
+      "id": "service-ai",
+      "from": "service",
+      "to": "ai",
+      "label": "HTTPS / JSON"
+    },
+    {
+      "id": "service-broker",
+      "from": "service",
+      "to": "broker",
+      "label": "mTLS /run"
+    },
+    {
+      "id": "broker-sandbox",
+      "from": "broker",
+      "to": "sandbox",
+      "label": "Docker 실행",
+      "labelDy": 70
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "사용자 이벤트",
+      "items": [
+        "자료 생성 → 단원 → 연습 → 학습 정리"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "함수와 소스",
+      "items": [
+        "노드를 선택하면 해당 구현 파일을 확인"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "실행 경계",
+      "items": [
+        "앱 DB·AI 키는 풀이 컨테이너에 전달하지 않음"
+      ]
+    }
+  ]
+}

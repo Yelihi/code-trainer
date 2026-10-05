@@ -44,6 +44,8 @@ test-results/
 
 # 이 컴퓨터의 AI 점검 기록·경로·상태 (로컬 파일은 유지)
 /.frontend-system/
+/.architecture-site/
+/docs/architecture/overview.visual-check.*
 
 # 운영체제·편집기 임시 파일
 .DS_Store

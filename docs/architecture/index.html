@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Code Trainer의 구조, 사용자 이벤트, 함수 호출을 소스와 함께 탐색합니다.">
+  <title>Code Trainer — 구조와 이벤트</title>
+  <link rel="stylesheet" href="site.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#content">본문으로 이동</a>
+  <header><a class="brand" href="#overview"><span class="mark">CT</span> Code Trainer <span class="muted">/ 구조와 이벤트</span></a><a href="https://github.com/Yelihi/code-trainer">GitHub ↗</a></header>
+  <main id="content">
+    <div class="heading"><div><p class="eyebrow">PROJECT ATLAS</p><h1>구조에서 함수까지,<br>이벤트를 따라 읽기.</h1></div><p class="intro">화면에서 시작한 요청이 인증, 학습 서비스, 격리 실행을 거쳐 데이터로 남는 과정을 살펴보세요.<span id="revision">소스 정보를 읽고 있습니다.</span></p></div>
+    <nav aria-label="문서 보기"><a href="#overview" data-tab="overview">01 전체 구조</a><a href="#events" data-tab="events">02 이벤트 흐름</a><a href="#functions" data-tab="functions">03 함수 탐색</a></nav>
+    <section id="overview" aria-label="전체 구조">
+      <div class="section-line"><p>노드·관계를 탐색하고 구현 파일을 확인하세요.</p><a href="overview.html">Archify 전체 화면 ↗</a></div>
+      <a class="preview" href="overview.html" aria-label="인터랙티브 Archify 구조도 열기"><img src="overview.svg" alt="React에서 Cloudflare와 FastAPI를 거쳐 학습 서비스로 연결됩니다. 서비스는 SQLite, AI 제공자 및 별도 실행 VM의 브로커에 연결됩니다."><span>구조도 탐색 ↗</span></a>
+      <div class="layers" id="layers"></div>
+      <p class="footnote">설명은 한국어입니다. Archify 고정 뷰어 메뉴와 HTML 언어 설정은 영어로 제공됩니다.</p>
+    </section>
+    <section id="events" aria-label="이벤트 흐름" hidden><div class="event-layout"><aside id="event-menu" aria-label="이벤트 선택"></aside><article id="event-detail"></article></div></section>
+    <section id="functions" aria-label="함수 탐색" hidden>
+      <div class="filter"><label for="search">함수 · 경로 · 이벤트 검색<input id="search" type="search" placeholder="예: execute, onClick, BackgroundTasks" autocomplete="off"></label><label for="area">영역<select id="area"><option value="">전체 영역</option><option value="frontend/">프런트엔드</option><option value="backend/">백엔드</option><option value="deploy/">배포·운영</option><option value="scripts/">검증·백업 도구</option></select></label></div>
+      <p id="catalog-note" class="footnote"></p><p id="result-count" role="status"></p><div id="tree"></div>
+    </section>
+    <footer><span>소스 코드에서 확인한 구조 · 실행 추적 로그가 아닌 정적 참조 지도</span><a href="verification.json">검증 기록 ↗</a></footer>
+  </main>
+</body>
+</html>

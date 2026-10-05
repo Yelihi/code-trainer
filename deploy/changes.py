@@ -13,7 +13,7 @@ def classify(paths, force='auto'):
         raise ValueError('Invalid deployment scope')
     frontend, backend = force in ('frontend', 'all'), force in ('backend', 'all')
     for path in paths:
-        if path.endswith('.md'):
+        if path.endswith('.md') or path.startswith('docs/architecture/') or path == '.github/workflows/pages.yml':
             continue
         if path.startswith(('frontend/', 'deploy/cloudflare/')):
             frontend = True

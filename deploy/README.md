@@ -129,6 +129,7 @@ restic --repo "$HOME/Library/Application Support/code-trainer-backup/restic" \
 | `backend/**`, `scripts/**`, `sandbox/**`, `requirements.txt`, `deploy/requirements.txt`, `deploy/Dockerfile`, `.dockerignore`, `start.sh` | 백엔드 검사/이미지 빌드·실제 sandbox 검사, Mac 백업·교체·상태 확인. Worker를 게시하지 않음 |
 | 양쪽 변경, workflow/배포 제어 코드, 기타 미분류 파일 | 양쪽 검사, 백엔드 검증 후 프런트 게시 |
 | Markdown만 변경 | 자동 배포 생략 |
+| `docs/architecture/**`, `.github/workflows/pages.yml`만 변경 | GitHub Pages 문서만 게시, 제품 자동 배포 생략 |
 
 수동 실행의 `scope`는 기본 `auto`다. `frontend`, `backend`, `all`을 선택하면 변경이 없어도 해당 범위를 추가로 배포한다. 감지한 미배포 변경을 제외하는 옵션은 아니다. 최초 배포 기준이 없으면 양쪽을 검사한다. PR은 검사만 한다. `main` push(문서만 변경한 경우 제외) 또는 수동 실행에서 검사를 통과하고 GitHub Variable `ENABLE_CD=true`이면 `deploy`가 `production` Deployment를 요청한다. 진행 중 workflow는 새 push로 취소하지 않는다.
 

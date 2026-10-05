@@ -1,0 +1,52 @@
+{
+  "diagram_type": "architecture",
+  "output": "overview.html",
+  "specification": {
+    "sha256": "4d67a49a0df27cfcbce85d2335c6ddc60d483804017f3e204e66b1429ce03db2",
+    "bytes": 7142
+  },
+  "artifact": {
+    "sha256": "7799f8abb4750254bb0fef32cb5d3b7f01a635e89221122420561f59b0f7fb69",
+    "bytes": 811481
+  },
+  "validation": "9/9 showcase, 0 errors, 0 warnings",
+  "browser_evidence": "passed",
+  "visual_review": "passed",
+  "correction_rounds": 1,
+  "viewports": [
+    [
+      1440,
+      900
+    ],
+    [
+      1600,
+      1000
+    ],
+    [
+      1920,
+      1080
+    ],
+    [
+      2048,
+      1320
+    ]
+  ],
+  "review": "Light 2048x1320 and Dark 1440x900 screenshots inspected. Cloudflare outside app VM boundary; labels and routes clear. Viewer fixed UI uses English.",
+  "documentation_browser_checks": {
+    "status": "passed",
+    "widths": [
+      390,
+      768,
+      1440,
+      1920
+    ],
+    "checks": [
+      "event/function deep links",
+      "nested expansion",
+      "search and empty results",
+      "no horizontal overflow",
+      "no page errors"
+    ],
+    "visual_review": "passed"
+  }
+}

@@ -62,6 +62,8 @@ class DeploymentChecks(unittest.TestCase):
                  (['backend/api.py', 'requirements.txt'], (False, True)), (['deploy/Dockerfile'], (False, True)),
                  (['frontend/a.ts', 'backend/a.py'], (True, True)), (['README.md', 'deploy/README.md'], (False, False)),
                  (['.github/workflows/check.yml'], (True, True)), (['deploy/release.py'], (True, True)),
+                 (['docs/architecture/index.html', 'docs/architecture/site.js', '.github/workflows/pages.yml'], (False, False)),
+                 (['docs/architecture/overview.svg', 'backend/api.py'], (False, True)),
                  (['unknown-config'], (True, True)), ([], (False, False))]
         for paths, expected in cases:
             self.assertEqual(changes.classify(paths), dict(zip(('frontend', 'backend'), expected)))

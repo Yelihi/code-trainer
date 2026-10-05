@@ -3,7 +3,17 @@
 자료의 개념과 선행 관계를 분석해 학습 과정을 만들고, 단원별 개념 페이지와 READ → FIX → MODIFY → BUILD 문제를 연결하는 로컬 연습 앱입니다.
 React·TypeScript·Vite, FastAPI·Pydantic, SQLite를 사용합니다.
 
-Mac mini의 앱/실행 VM 분리와 Cloudflare 배포 준비는 [배포 절차와 검증 상태](deploy/README.md)를 참고하세요. 로컬 실행은 아래와 같으며, 실제 운영 배포는 아직 완료하지 않았습니다.
+단일 소유자용 Mac mini·Cloudflare 배포와 GitHub 자동 배포를 운영 중입니다. 앱/실행 VM 분리와 검증 범위는 [배포 절차와 검증 상태](deploy/README.md)를 참고하세요. 아래 절차는 개인 컴퓨터에서 로컬로 실행하는 방법입니다.
+
+## 구조와 함수·이벤트 지도
+
+[![Code Trainer 구조도 — 클릭하면 상세 지도로 이동](docs/architecture/overview.svg)](https://yelihi.github.io/code-trainer/)
+
+**[인터랙티브 구조·이벤트 지도 열기 ↗](https://yelihi.github.io/code-trainer/)** · [Archify 전체 화면](https://yelihi.github.io/code-trainer/overview.html)
+
+전체 구조 → 영역 → 파일 → 함수 → 호출·이벤트 순서로 탐색할 수 있습니다. 로그인, 자료 분석, 단원 문제 생성, Run/Test/Submit, 초안 충돌, 학습 정리, 자동 배포의 흐름을 실제 함수와 연결했습니다. 함수 검색과 구현 코드 링크도 제공합니다.
+
+GitHub Pages의 함수 목록은 `main` 변경 시 소스에서 자동 갱신합니다. 구조도와 설명형 이벤트 흐름은 검토한 스냅샷이며, 정적 호출 관계가 모든 조건의 실제 실행 순서를 뜻하지는 않습니다. [생성·검증 방법](docs/architecture/README.md)을 참고하세요.
 
 ## 처음 실행하기
 
@@ -43,7 +53,7 @@ export DOCKER_CONTEXT=colima-code-trainer
 
 서버를 끄려면 `Ctrl+C`, 프로젝트 VM까지 끄려면 `colima --profile code-trainer stop`을 실행합니다.
 `colima-code-trainer` 프로필이 있으면 `./start.sh`가 자동으로 해당 환경을 사용합니다.
-이 앱은 단일 프로세스·loopback 전용입니다. 외부 공개 배포 설정은 포함하지 않습니다.
+로컬 모드는 단일 프로세스·loopback 전용입니다. Mac mini·Cloudflare 운영 모드는 별도의 [배포 설정](deploy/README.md)을 사용합니다.
 
 ## 업데이트·문제 해결
 

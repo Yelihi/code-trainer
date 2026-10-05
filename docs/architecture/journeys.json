@@ -1,0 +1,298 @@
+[
+  {
+    "id": "auth",
+    "title": "로그인과 인증",
+    "trigger": "사이트 진입 · 세션 조회 · 로그아웃",
+    "note": "운영 모드는 Cloudflare Access, 로컬 모드는 세션 쿠키를 사용합니다.",
+    "steps": [
+      {
+        "title": "화면에서 세션 조회",
+        "detail": "App이 /api/session을 조회합니다. 인증 만료 이벤트가 오면 보호된 화면을 비웁니다.",
+        "functions": [
+          "frontend/src/App.tsx::App",
+          "frontend/src/api.ts::api"
+        ]
+      },
+      {
+        "title": "Cloudflare 경유",
+        "detail": "Access 인증 후 Worker가 JWT와 허용된 헤더만 전달합니다. 정적 자산은 Worker가 제공합니다.",
+        "functions": [
+          "deploy/cloudflare/worker.mjs::fetch"
+        ]
+      },
+      {
+        "title": "JWT와 소유자 검증",
+        "detail": "local_boundary가 요청 출처를 확인하고 access.user가 서명·issuer·AUD·만료와 명시적 소유자 연결을 검사합니다.",
+        "functions": [
+          "backend/api.py::local_boundary",
+          "backend/access.py::user",
+          "backend/api.py::session"
+        ]
+      },
+      {
+        "title": "로그아웃",
+        "detail": "운영에서는 Access 로그아웃 주소로 이동하고 로컬에서는 서버 세션 쿠키를 제거합니다.",
+        "functions": [
+          "frontend/src/App.tsx::App.logout",
+          "backend/api.py::logout"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "source",
+    "title": "자료 → 개념과 단원",
+    "trigger": "연습 만들기에서 자료 제출",
+    "note": "작업은 프로세스 내부 BackgroundTasks로 실행됩니다. 브라우저는 상태 API를 조회하며 별도 메시지 큐나 SSE는 없습니다.",
+    "steps": [
+      {
+        "title": "생성 요청",
+        "detail": "자료·언어·난이도와 request_id를 POST /api/generations로 보냅니다.",
+        "functions": [
+          "frontend/src/App.tsx::Create.generate",
+          "backend/api.py::begin_generation"
+        ]
+      },
+      {
+        "title": "중복 방지와 상태 저장",
+        "detail": "동일 request_id를 재사용하면 기존 작업을 반환합니다. 소유권·동시 작업·호출 제한을 확인하고 원문과 작업을 보관합니다.",
+        "functions": [
+          "backend/service.py::begin_generation"
+        ]
+      },
+      {
+        "title": "자료 분석",
+        "detail": "신규 작업만 generate를 백그라운드로 시작합니다. URL/텍스트를 준비하고 AI로 개념·단원 구성을 분석합니다.",
+        "functions": [
+          "backend/service.py::generate",
+          "backend/source.py::fetch",
+          "backend/source.py::prepare",
+          "backend/ai.py::analyze"
+        ]
+      },
+      {
+        "title": "상태 조회와 화면 이동",
+        "detail": "진단 이벤트와 ready/failed 상태를 저장합니다. 화면이 주기적으로 조회하고 완성된 과정으로 이동합니다.",
+        "functions": [
+          "backend/diagnostics.py::event",
+          "backend/service.py::generation",
+          "frontend/src/App.tsx::Create.poll"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unit",
+    "title": "단원 → 검증된 문제",
+    "trigger": "이 단원 문제 생성 · 실패한 문제 재시도",
+    "note": "READ → FIX → MODIFY → BUILD 후보를 검증합니다. 최대 3회 수정하며 저장된 후보를 재사용할 수 있습니다.",
+    "steps": [
+      {
+        "title": "단원 선택",
+        "detail": "context_id와 unit_id로 생성 요청을 만들고 2초 간격으로 진행 상황을 조회합니다.",
+        "functions": [
+          "frontend/src/Learning.tsx::useCourse.generate",
+          "frontend/src/Learning.tsx::useCourse",
+          "backend/service.py::begin_generation"
+        ]
+      },
+      {
+        "title": "후보 생성",
+        "detail": "단원 설명·원문 예제·이전 검증 피드백을 AI에 전달합니다. 후보와 진단은 서버에 저장합니다.",
+        "functions": [
+          "backend/service.py::generate",
+          "backend/ai.py::create_set"
+        ]
+      },
+      {
+        "title": "실행 검증과 수정",
+        "detail": "기준 풀이·테스트·READ 예상 출력·FIX 시작 코드의 오류를 실제 실행으로 확인하고 실패 부분을 수정합니다.",
+        "functions": [
+          "backend/service.py::validate_set",
+          "backend/service.py::evaluate",
+          "backend/runner.py::run"
+        ]
+      },
+      {
+        "title": "공개 또는 실패 기록",
+        "detail": "전체 검증에 성공하면 세트를 저장하고 후보를 정리합니다. 실패하면 원인과 재시도 가능한 상태를 남깁니다.",
+        "functions": [
+          "backend/service.py::generate",
+          "frontend/src/App.tsx::GenerationStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "execute",
+    "title": "Run · Test · Submit",
+    "trigger": "풀이 화면의 실행 버튼",
+    "note": "Run은 임의 입력, Test는 공개 테스트, Submit은 공개·비공개 테스트와 제출 기록을 사용합니다. READ Submit은 앱에서 정답 출력을 비교합니다.",
+    "steps": [
+      {
+        "title": "요청 스냅샷",
+        "detail": "코드·답안·action·문제 버전·request_id를 /execute로 전송합니다.",
+        "functions": [
+          "frontend/src/Practice.tsx::PracticeEditor.execute",
+          "backend/api.py::execute"
+        ]
+      },
+      {
+        "title": "소유권과 실행 종류 확인",
+        "detail": "문제 소유권·버전·제공 중단 여부를 확인합니다. Submit만 중복 요청을 방지하고 attempts를 생성합니다.",
+        "functions": [
+          "backend/service.py::execute",
+          "backend/service.py::exercise_owned"
+        ]
+      },
+      {
+        "title": "mTLS 실행 위임",
+        "detail": "앱 VM의 runner.run은 원격 모드에서 제한된 /run 계약으로 별도 실행 VM의 브로커에 요청합니다.",
+        "functions": [
+          "backend/runner.py::run",
+          "backend/runner.py::request",
+          "backend/runner_api.py::run"
+        ]
+      },
+      {
+        "title": "일회용 컨테이너 실행",
+        "detail": "허용된 고정 이미지를 사용합니다. 네트워크·권한·메모리·시간·출력을 제한하고 finally에서 컨테이너를 제거합니다.",
+        "functions": [
+          "backend/runner.py::run",
+          "backend/runner.py::capture"
+        ]
+      },
+      {
+        "title": "앱에서 판정과 저장",
+        "detail": "기대값은 앱에 남겨 비교합니다. 비공개 테스트의 세부 값은 숨기고 Submit 결과만 저장합니다. 실행 환경 장애는 실패 제출로 남기지 않습니다.",
+        "functions": [
+          "backend/service.py::evaluate",
+          "backend/service.py::execute"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "draft",
+    "title": "초안 저장과 충돌",
+    "trigger": "저장 · 단계 이동 · 학습 마무리",
+    "note": "자동 덮어쓰기를 하지 않습니다. revision이 다르면 409를 반환하고 사용자가 서버 내용 또는 현재 코드를 선택합니다.",
+    "steps": [
+      {
+        "title": "변경 여부와 저장",
+        "detail": "save가 코드·답안·revision을 PUT /progress로 보냅니다. 단계 이동도 저장 성공 후 진행합니다.",
+        "functions": [
+          "frontend/src/Practice.tsx::PracticeEditor.save",
+          "frontend/src/Practice.tsx::PracticeEditor.move",
+          "frontend/src/Practice.tsx::PracticeEditor.finish"
+        ]
+      },
+      {
+        "title": "낙관적 동시성 검사",
+        "detail": "서버가 현재 revision을 비교하고 일치하는 경우에만 초안을 갱신합니다.",
+        "functions": [
+          "backend/api.py::progress",
+          "backend/service.py::save_progress"
+        ]
+      },
+      {
+        "title": "충돌 해결",
+        "detail": "최신 문제 세트를 다시 읽고 사용자가 선택한 코드로 편집 상태를 갱신합니다.",
+        "functions": [
+          "frontend/src/Practice.tsx::PracticeEditor.resolveConflict"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "summary",
+    "title": "통과 기록 → 학습 정리",
+    "trigger": "AI로 배운 내용 정리",
+    "note": "통과한 문제의 근거와 요약 날짜를 별도 보관합니다. 자료 삭제 후에도 기존 요약은 남습니다.",
+    "steps": [
+      {
+        "title": "요약 요청",
+        "detail": "학습 지도에서 POST /api/me/learning-summary를 요청합니다.",
+        "functions": [
+          "frontend/src/LearningMap.tsx::LearningMap.summarize",
+          "backend/api.py::summarize_learning"
+        ]
+      },
+      {
+        "title": "근거 수집과 중복 방지",
+        "detail": "문제별 첫 통과 기록을 모으고 fingerprint로 현재 근거와 이전 요약을 비교합니다.",
+        "functions": [
+          "backend/learning.py::evidence",
+          "backend/learning.py::begin",
+          "backend/learning.py::fingerprint"
+        ]
+      },
+      {
+        "title": "백그라운드 AI 정리",
+        "detail": "AI가 근거 문제를 연결한 학습 내용을 만들고 날짜별 learning_records에 저장합니다.",
+        "functions": [
+          "backend/learning.py::summarize",
+          "backend/ai.py::generate"
+        ]
+      },
+      {
+        "title": "결과와 이전 기록 조회",
+        "detail": "화면을 이동해도 서버 작업은 계속됩니다. 날짜별 요약과 삭제된 문제 상태를 조회합니다.",
+        "functions": [
+          "backend/learning.py::status",
+          "frontend/src/LearningMap.tsx::LearningMap.load"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "deploy",
+    "title": "GitHub → Mac · Cloudflare",
+    "trigger": "main push · 수동 workflow 실행",
+    "note": "프런트만 변경하면 Cloudflare만, 백엔드만 변경하면 Mac만 배포합니다. 둘 다 바뀌면 백엔드 검증 후 프런트를 게시합니다.",
+    "steps": [
+      {
+        "title": "변경 범위와 검사",
+        "detail": "마지막 성공 production SHA 이후 변경을 분류하고 필요한 frontend/backend job만 검사합니다.",
+        "functions": [
+          "deploy/changes.py::plan",
+          "deploy/changes.py::classify"
+        ]
+      },
+      {
+        "title": "배포 요청과 검증",
+        "detail": "GitHub Deployment를 만들고 Mac이 60초마다 조회합니다. 최신 SHA·워크플로·실행 ID·검사 결과와 범위를 검증합니다.",
+        "functions": [
+          "deploy/github_deploy.py::request",
+          "deploy/github_deploy.py::poll",
+          "deploy/github_deploy.py::eligible",
+          "deploy/release.py::selected_scope"
+        ]
+      },
+      {
+        "title": "백엔드 선택 시",
+        "detail": "현재 이미지를 보존하고 새 이미지를 준비합니다. 기존 앱 정지 → 기존 이미지로 백업 → 교체 → 실제 채점/격리 검사 순서입니다.",
+        "functions": [
+          "deploy/release.py::deploy",
+          "deploy/host.py::backup",
+          "deploy/release.py::transition"
+        ]
+      },
+      {
+        "title": "프런트 선택 시",
+        "detail": "정적 화면을 빌드하고 Wrangler로 Worker에 게시합니다. 프런트 전용이면 Docker와 백업을 실행하지 않습니다.",
+        "functions": [
+          "deploy/release.py::deploy.publish"
+        ]
+      },
+      {
+        "title": "완료 또는 실패 상태 기록",
+        "detail": "구성요소별 SHA를 기록합니다. 선택한 단계가 모두 성공해야 전체 current를 전환하고 성공을 보고합니다.",
+        "functions": [
+          "deploy/release.py::deploy.record_component",
+          "deploy/github_deploy.py::status"
+        ]
+      }
+    ]
+  }
+]

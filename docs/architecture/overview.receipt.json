@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Volumes/Storage2TB/Projects/github/1.personal-project/8.code-trainer/docs/architecture/overview.json",
+  "output": "/Volumes/Storage2TB/Projects/github/1.personal-project/8.code-trainer/docs/architecture/overview.html",
+  "specification": {
+    "sha256": "4d67a49a0df27cfcbce85d2335c6ddc60d483804017f3e204e66b1429ce03db2",
+    "bytes": 7142
+  },
+  "artifact": {
+    "sha256": "7799f8abb4750254bb0fef32cb5d3b7f01a635e89221122420561f59b0f7fb69",
+    "bytes": 811481
+  },
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "evidence": {
+    "verified": true,
+    "repository": "https://github.com/Yelihi/code-trainer",
+    "revision": "d24e42fbc7dc44dc07184a8a3518fd13ff496aad",
+    "references": 19
+  }
+}

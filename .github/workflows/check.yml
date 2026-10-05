@@ -2,7 +2,7 @@ name: Code Trainer CI and deployment
 on:
   push:
     branches: [main]
-    paths-ignore: ['**/*.md']
+    paths-ignore: ['**/*.md', 'docs/architecture/**', '.github/workflows/pages.yml']
   pull_request:
   workflow_dispatch:
     inputs:

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { LearningMap } from './LearningMap';
+import { UsagePanel } from './Reviews';
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, isPending, languages, difficulties, difficultyDescriptions, timestamp, type Difficulty, type Generation, type Health, type History, type Language, type LearningContext, type Session } from './api';
 
@@ -63,8 +64,10 @@ export function App() {
       <nav aria-label="주요 탐색" onClick={() => setMenu(false)}>
         <NavLink to="/" end><span aria-hidden="true">▦</span> 학습 공간</NavLink>
         <NavLink to="/create"><span aria-hidden="true">＋</span> 연습 만들기</NavLink>
+        <NavLink to="/reviews"><span aria-hidden="true">↻</span> 오늘의 복습</NavLink>
         <NavLink to="/me"><span aria-hidden="true">◷</span> 나의 기록</NavLink>
         {!!session?.user?.admin && <NavLink to="/admin/sources"><span aria-hidden="true">▤</span> 원본 자료 · 관리자</NavLink>}
+        {!!session?.user?.admin && <NavLink to="/admin/operations"><span aria-hidden="true">◉</span> 운영 상태</NavLink>}
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-label">THE PRACTICE LOOP</div>
@@ -237,6 +240,7 @@ export function Me() {
   return <main className="page knowledge-page"><div className="breadcrumb">Workspace<span>/</span> 나의 기록</div>
     <span className="eyebrow">MY LEARNING MAP</span><h1>내가 배운 개념</h1>
     <LearningMap />
+    <UsagePanel />
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
     {!!data?.reports.length && <details className="report-history"><summary>내 문제 제보 · {data.reports.length}개</summary>{data.reports.map(report => <div className="list-row" key={report.id}><div><small>{report.exercise_title}</small><p>{report.message}</p></div><span>{report.status}<small>{timestamp(report.created_at)}</small></span></div>)}</details>}
     {isAdmin && <AdminReports />}

@@ -7,6 +7,8 @@ import { cpp } from "@codemirror/lang-cpp";
 import { rust } from "@codemirror/lang-rust";
 import {
   api,
+  assistanceLabels,
+  type Assistance,
   ApiError,
   errorMessage,
   filenames,
@@ -31,9 +33,9 @@ const statuses: Record<string, string> = {
   compile_output_limit: "컴파일 출력 제한 초과",
 };
 
-export function Practice() {
+export function Practice({ review = false }: { review?: boolean }) {
   const { id } = useParams();
-  const { data, error, reload } = useResource<ProblemSet>(`/sets/${id}`);
+  const { data, error, reload } = useResource<ProblemSet>(review ? `/reviews/${id}` : `/sets/${id}`);
   const [params, setParams] = useSearchParams();
   const index = Math.max(0, data?.exercises.findIndex(exercise => exercise.id === params.get('exercise')) ?? 0);
   if (error)
@@ -51,7 +53,7 @@ export function Practice() {
     );
   return (
     <PracticeEditor
-      key={data.exercises[index].id}
+      key={data.review_id ?? data.exercises[index].id}
       problemSet={data}
       exercise={data.exercises[index]}
       index={index}
@@ -75,6 +77,9 @@ function PracticeEditor({
   onMove: (index: number) => void;
 }) {
   const navigate = useNavigate();
+  const reviewId = problemSet.review_id;
+  const helpQuery = reviewId ? `?review_id=${encodeURIComponent(reviewId)}` : "";
+  const [assistance, setAssistance] = useState<Assistance>(exercise.assistance ?? "none");
   const initial = {
     code: exercise.progress?.code ?? exercise.starter,
     answer: exercise.progress?.answer ?? "",
@@ -119,8 +124,8 @@ function PracticeEditor({
   const completedCount = problemSet.exercises.filter((item, i) => i === index ? passed : item.passed).length;
 
   useEffect(() => {
-    if (finishing && !saving && !dirty && !busy) navigate(`/learn/${problemSet.context_id}`);
-  }, [finishing, saving, dirty, busy, navigate, problemSet.context_id]);
+    if (finishing && !saving && !dirty && !busy) navigate(reviewId ? "/reviews" : `/learn/${problemSet.context_id}`);
+  }, [finishing, saving, dirty, busy, navigate, problemSet.context_id, reviewId]);
   const extensions = useMemo(
     () => [
       problemSet.language === "python"
@@ -157,7 +162,7 @@ function PracticeEditor({
     const snapshot = { code, answer };
     try {
       const value = await api<{ revision: number }>(
-        `/exercises/${exercise.id}/progress`,
+        reviewId ? `/reviews/${reviewId}/progress` : `/exercises/${exercise.id}/progress`,
         "PUT",
         { ...snapshot, revision: revision.current },
       );
@@ -181,7 +186,7 @@ function PracticeEditor({
   async function resolveConflict(keepLocal: boolean) {
     setSaving(true);
     try {
-      const latest = await api<ProblemSet>(`/sets/${problemSet.id}`);
+      const latest = await api<ProblemSet>(reviewId ? `/reviews/${reviewId}` : `/sets/${problemSet.id}`);
       const progress = latest.exercises.find(
         (item) => item.id === exercise.id,
       )?.progress;
@@ -220,8 +225,8 @@ function PracticeEditor({
     setSolutionLoading(true);
     setSolutionError("");
     try {
-      const value = await api<{ code: string; answer: string }>(`/exercises/${exercise.id}/solution`);
-      if (mounted.current) setSolution(value);
+      const value = await api<{ code: string; answer: string }>(`/exercises/${exercise.id}/solution${helpQuery}`);
+      if (mounted.current) { setSolution(value); setAssistance("solution"); }
     } catch (error) {
       if (mounted.current) setSolutionError(errorMessage(error));
     } finally {
@@ -243,12 +248,15 @@ function PracticeEditor({
         {
           ...snapshot,
           action,
+          ...(reviewId ? { review_id: reviewId } : {}),
           version: problemSet.version,
           request_id: submission.current.id,
         },
       );
       if (mounted.current) {
         setResult({ data, ...snapshot, action });
+        if (data.assistance) setAssistance(data.assistance);
+        else if (exercise.kind === "READ" && action !== "submit" && data.status === "ok") setAssistance("solution");
         setResultTab("result");
         setPanel("result");
         if (action === "submit" && data.status === "passed") setPassed(true);
@@ -266,9 +274,9 @@ function PracticeEditor({
     setError("");
     try {
       const value = await api<{ hint: string }>(
-        `/exercises/${exercise.id}/hints/${hints.length + 1}`,
+        `/exercises/${exercise.id}/hints/${hints.length + 1}${helpQuery}`,
       );
-      if (mounted.current) setHints((values) => [...values, value.hint]);
+      if (mounted.current) { setHints((values) => [...values, value.hint]); setAssistance(old => old === "solution" ? old : "hint"); }
     } catch (error) {
       setError(errorMessage(error));
     } finally {
@@ -302,7 +310,8 @@ function PracticeEditor({
           <Link to={`/learn/${problemSet.context_id}${problemSet.unit_id ? `/units/${problemSet.unit_id}` : ""}`} className="text-link">
             {problemSet.unit_id ? "← 개념 학습" : "← 학습 자료"}
           </Link>
-          <h1>{problemSet.title}</h1>
+          <h1>{reviewId ? "복습 · " : ""}{problemSet.title}</h1>
+          <p className="muted">{assistanceLabels[assistance]} · {reviewId ? "이전 풀이와 별도로 저장됩니다." : "도움 사용은 제출 기록에 함께 남습니다."}</p>
         </div>
         <span className="language-tag">{languages[problemSet.language]} · {difficulties[problemSet.difficulty ?? 'beginner']}</span>
       </div>
@@ -447,7 +456,7 @@ function PracticeEditor({
               className="primary"
               onClick={() => void execute("submit")}
               disabled={
-                !!busy ||
+                !!busy || (!!reviewId && passed) ||
                 problemSet.withdrawn ||
                 (exercise.kind === "READ" && !answer.trim())
               }
@@ -554,7 +563,7 @@ function PracticeEditor({
                     ))}
                     {result.action === "submit" && (
                       <small className="muted">
-                        제출 기록이 저장되었습니다. 자동 평가는 입력·출력 동작을
+                        제출 기록이 저장되었습니다. {assistanceLabels[result.data.assistance ?? "unknown"]}. 자동 평가는 입력·출력 동작을
                         확인합니다.
                       </small>
                     )}
@@ -566,7 +575,7 @@ function PracticeEditor({
         </section>
         <aside className="problem-panel">
           <div className="problem-top">
-            <span className="eyebrow">EXERCISE 0{index + 1} / 04</span>
+            <span className="eyebrow">{reviewId ? "REVIEW" : `EXERCISE 0${index + 1} / 04`}</span>
             <span className={passed ? "completion-badge" : "muted"}>
               {passed ? "✓ 완료" : `${exercise.attempt_count}회 제출`}
             </span>
@@ -688,7 +697,7 @@ function PracticeEditor({
               ← 이전
             </button>
             <button
-              disabled={index === 3 || !!busy || saving}
+              disabled={index === problemSet.exercises.length - 1 || !!busy || saving}
               onClick={() => void move(index + 1)}
             >
               다음 →
@@ -696,10 +705,10 @@ function PracticeEditor({
           </div>
         </aside>
       </div>
-      {exercise.kind === 'BUILD' && passed && <section className="practice-completion" aria-labelledby="completion-title">
+      {(reviewId || exercise.kind === 'BUILD') && passed && <section className="practice-completion" aria-labelledby="completion-title">
         <div>
-          <span className="eyebrow">BUILD COMPLETE</span>
-          <h2 id="completion-title">{completedCount === problemSet.exercises.length ? '이번 세트를 완료했습니다' : 'BUILD를 통과했습니다'}</h2>
+          <span className="eyebrow">{reviewId ? "REVIEW COMPLETE" : "BUILD COMPLETE"}</span>
+          <h2 id="completion-title">{reviewId ? '복습을 완료했습니다' : completedCount === problemSet.exercises.length ? '이번 세트를 완료했습니다' : 'BUILD를 통과했습니다'}</h2>
           <p>{completedCount} / {problemSet.exercises.length} 단계 완료 · 제출한 풀이는 나의 기록에 저장되어 있습니다.</p>
         </div>
         <button className="primary" disabled={!!busy || saving || finishing || conflict} onClick={() => void finish()}>

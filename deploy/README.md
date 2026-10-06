@@ -170,3 +170,12 @@ cat ~/.config/code-trainer/deployment/release-state.json
 ```
 
 `Code Trainer Deploy.app`도 실제 LaunchAgent에서 외장 볼륨 접근 권한을 허용해야 한다. Node 설치 경로와 보호 파일 해시는 `~/.config/code-trainer/deployment/cd.json`, 직전 Compose 설정은 `compose.previous.env`에 둔다. 배포 요청 조회/상태 보고는 기존 Mac `gh` 인증을 사용한다. Wrangler 인증이 만료되면 Mac에서 재로그인한다. 두 인증의 비밀 값은 GitHub 저장소에 넣지 않는다. release/이미지 archive는 자동 삭제하지 않으므로 디스크를 관리한다.
+
+
+## 운영 상태 수집 (2026-10-06 추가)
+
+관리자 메뉴의 운영 상태는 `com.code-trainer.monitor`가 5분마다 수집한 스냅샷을 읽는다. `python3 deploy/install-cd.py`가 검토한 monitor.py·host.py·실행 앱과 LaunchAgent를 함께 설치한다. 이 호스트 변경은 일반 release 배포만으로 자동 적용되지 않는다. 기존 보호 파일 해시 검사를 유지한다.
+
+수집기는 실제 앱/브로커 컨테이너에 마운트된 **공개 인증서**의 만료일, 내장/외장 디스크 여유, last-backup.json의 성공 시각만 전달한다. 앱 컨테이너의 `/data/operations.json`을 원자적으로 교체하며 API에 Docker 소켓·호스트 키·추가 마운트를 주지 않는다. 관리자 API는 공개할 필드만 반환한다. 수집 실패 시 이전 파일이 남으며 15분 이후 오래된 정보로 표시된다. 새로고침은 저장된 정보를 다시 읽으며 즉시 호스트 작업을 실행하지 않는다.
+
+화면 안내 기준은 내장 여유 10GiB 미만, 백업 성공 후 36시간 초과, leaf 인증서 만료 14일 이내다. 배포 전 백업의 기존 최소 5GiB 검사는 유지한다. 인증서 자동 갱신·외부 알림 발송·Mac 전체 재부팅 검증·장치 밖 복구 사본은 이번 변경에 포함하지 않는다.

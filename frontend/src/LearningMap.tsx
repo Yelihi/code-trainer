@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { api, errorMessage, languages, type Language } from './api';
+import { api, errorMessage, languages, assistanceLabels, type Assistance, type Language } from './api';
 
-type Evidence = { id: string; root_key: string; root_label: string; framework: boolean; set_id: string; context_id: string; unit_id: string | null; withdrawn: boolean; deleted?: boolean; title: string; kind: string };
+type Evidence = { assistance?: Assistance; id: string; root_key: string; root_label: string; framework: boolean; set_id: string; context_id: string; unit_id: string | null; withdrawn: boolean; deleted?: boolean; title: string; kind: string };
 type Summary = {
   state: 'empty' | 'stale' | 'running' | 'ready' | 'failed'; error: string; updated_at: string | null; ai_available: boolean;
   exercises: Evidence[]; current_passed_count: number; created_at: string | null; record_id: string | null; records: { id: string; created_at: string }[];
@@ -55,7 +55,7 @@ function AnimatedDetails({ summary, children, className = '', initiallyOpen = fa
 
 function ProblemLinks({ exercises }: { exercises: Evidence[] }) {
   return <ul>{exercises.map(exercise => <li key={exercise.id}>
-    <span className="success-text">✓ 통과</span>{exercise.deleted || exercise.withdrawn ? <span>{exercise.kind} · {exercise.title} ({exercise.deleted ? '학습 자료 삭제됨' : '제공 중단'})</span> :
+    <span className="success-text">✓ 통과 · {assistanceLabels[exercise.assistance ?? "unknown"]}</span>{exercise.deleted || exercise.withdrawn ? <span>{exercise.kind} · {exercise.title} ({exercise.deleted ? '학습 자료 삭제됨' : '제공 중단'})</span> :
       <Link to={`/practice/${exercise.set_id}?exercise=${exercise.id}`}>{exercise.kind} · {exercise.title} →</Link>}
     {!exercise.deleted && <Link className="text-link" to={exercise.unit_id ? `/learn/${exercise.context_id}/units/${exercise.unit_id}` : `/learn/${exercise.context_id}`}>개념 다시 읽기</Link>}
   </li>)}</ul>;

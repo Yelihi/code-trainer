@@ -24,7 +24,7 @@ def install():
         if not node or subprocess.check_output([node, '--version'], text=True).split('.')[0] != 'v24':
             raise RuntimeError('Node 24 must be available before installation')
         for name in ['github_deploy.py', 'release.py', 'changes.py', 'host.py', 'check-host.py',
-                     'runner-network.sb', 'runner-lima-override.yaml']:
+                     'runner-network.sb', 'runner-lima-override.yaml', 'monitor.py']:
             shutil.copyfile(source / name, target / name)
             (target / name).chmod(0o600)
         config = {'node_directory': str(Path(node).resolve().parent),
@@ -52,6 +52,15 @@ def install():
         # The lock prevents replacing an active deployer; reloading idle timer is safe.
         subprocess.run(['launchctl', 'bootout', domain + '/com.code-trainer.deploy'], capture_output=True)
         subprocess.run(['launchctl', 'bootstrap', domain, str(agent)], check=True)
+        monitor_agent = agent.with_name('com.code-trainer.monitor.plist')
+        with monitor_agent.open('wb') as stream:
+            plistlib.dump({'Label': 'com.code-trainer.monitor', 'ProgramArguments': [str(binary), 'monitor'],
+                          'StartInterval': 300, 'RunAtLoad': True, 'ThrottleInterval': 60,
+                          'WorkingDirectory': str(Path.home()), 'ProcessType': 'Background',
+                          'StandardOutPath': str(CONFIG / 'monitor.log'), 'StandardErrorPath': str(CONFIG / 'monitor.log')}, stream)
+        monitor_agent.chmod(0o600)
+        subprocess.run(['launchctl', 'bootout', domain + '/com.code-trainer.monitor'], capture_output=True)
+        subprocess.run(['launchctl', 'bootstrap', domain, str(monitor_agent)], check=True)
     print('Installed 60-second deployment polling; enable ENABLE_CD in GitHub after verification.')
 
 

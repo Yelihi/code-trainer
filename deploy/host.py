@@ -100,10 +100,13 @@ def backup(stopped_image=None):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or sys.argv[1] not in ('runner', 'app', 'forward', 'backup', 'check-storage'):
+    if len(sys.argv) != 2 or sys.argv[1] not in ('runner', 'app', 'forward', 'backup', 'check-storage', 'monitor'):
         raise SystemExit('Usage: host.py runner|app|forward|backup|check-storage')
     storage()
-    if sys.argv[1] == 'runner':
+    if sys.argv[1] == 'monitor':
+        from monitor import main
+        main()
+    elif sys.argv[1] == 'runner':
         start_runner()
     elif sys.argv[1] == 'app':
         subprocess.run(['colima', 'start', 'code-trainer-app', '--mount', 'none',

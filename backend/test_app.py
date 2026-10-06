@@ -748,6 +748,8 @@ class AppTest(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {'code': expected.evaluation.reference if expected.kind != 'READ' else '',
                                               'answer': expected.evaluation.read_answer if expected.kind == 'READ' else ''})
+        for exercise in problem_set['exercises']:
+            exercise['assistance'] = 'solution'
         self.assertEqual(self.client.get('/api/sets/' + problem_set['id']).json(), problem_set)
         self.assertEqual(db.all('SELECT * FROM attempts'), [])
         self.assertEqual(db.all('SELECT * FROM progress'), [])
@@ -848,7 +850,11 @@ class AppTest(unittest.TestCase):
                 self.assertEqual(exercise['starter']['minLength'], 1)
                 self.assertEqual(exercise['public_tests']['items']['properties']['id']['const'], 'public')
                 self.assertNotIn('alternative', schema['$defs']['Evaluation']['properties'])
-                self.assertNotIn('wrong_solutions', schema['$defs']['Evaluation']['properties'])
+                if kind == 'READ':
+                    self.assertNotIn('wrong_solutions', schema['$defs']['Evaluation']['properties'])
+                else:
+                    wrong = schema['$defs']['Evaluation']['properties']['wrong_solutions']
+                    self.assertEqual((wrong['minItems'], wrong['maxItems']), (1, 1))
                 hidden = schema['$defs']['Evaluation']['properties']['hidden_tests']
                 self.assertEqual(hidden['maxItems'], 0 if kind == 'READ' else 1)
             reply = {'data': None, 'error': 'private-source-do-not-echo'}

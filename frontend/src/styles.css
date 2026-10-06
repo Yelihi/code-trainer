@@ -1686,3 +1686,10 @@ button.text-button,
   .learning-record-footer { padding: 14px 18px; font-size: 11px; }
   .learning-record-footer time { display: block; margin-left: 0; }
 }
+
+.usage-panel { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.operation-facts { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.operation-facts > div { padding: 1rem; border: 1px solid var(--line); border-radius: 8px; }
+.operation-facts dd { margin: .5rem 0 0; overflow-wrap: anywhere; }
+.review-row { flex-wrap: wrap; gap: 1rem; }
+.review-row > div { min-width: 0; overflow-wrap: anywhere; }

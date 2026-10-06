@@ -8,7 +8,7 @@ import traceback
 import uuid
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-from . import ai, db, diagnostics, runner, source
+from . import ai, db, diagnostics, runner, source, practice, usage
 from .sample import sample
 from .schema import ContextDraft, ExerciseDraft, SetDraft
 
@@ -197,15 +197,18 @@ def get_set(owner, set_id):
             progress=db.one('SELECT code,answer,revision FROM progress WHERE owner=? AND exercise_id=?', (owner, item['id'])),
             passed=bool(db.one("SELECT id FROM attempts WHERE owner=? AND exercise_id=? AND status='passed'", (owner, item['id']))),
             attempt_count=db.one("SELECT COUNT(*) AS n FROM attempts WHERE owner=? AND exercise_id=? AND status!='running'", (owner, item['id']))['n'])
+        helped = db.one('SELECT level FROM assistance WHERE owner=? AND exercise_id=?', (owner, item['id']))
+        public['assistance'] = helped['level'] if helped else 'none'
         exercises.append(public)
     return {'id': row['id'], 'context_id': row['context_id'], 'title': row['title'], 'version': row['version'],
         'unit_id': row['unit_id'], 'language': json.loads(row['context_data'])['language'],
         'difficulty': json.loads(row['context_data']).get('difficulty', 'beginner'), 'withdrawn': bool(row['withdrawn']), 'exercises': exercises}
 
 
-def solution(owner, exercise_id):
+def solution(owner, exercise_id, review_id=None):
     row, _ = exercise_owned(owner, exercise_id, active=False)
     exercise = ExerciseDraft.model_validate_json(row['data'])
+    practice.help_used(owner, exercise_id, 'solution', review_id)
     return {'code': exercise.evaluation.reference if exercise.kind != 'READ' else '',
             'answer': exercise.evaluation.read_answer if exercise.kind == 'READ' else ''}
 
@@ -346,6 +349,7 @@ def validate_set(language, draft, image_id=None):
 
 
 def generate(owner, generation_id, request):
+    usage_token = usage.scope.set((owner, generation_id))
     token = diagnostics.job.set(generation_id)
     try:
         diagnostics.event('단원 문제 생성 시작' if request.unit_id else '학습 과정 생성 시작', phase='단원별 세트 생성' if request.unit_id else '개념 분리 · 학습 순서')
@@ -453,6 +457,7 @@ def generate(owner, generation_id, request):
     finally:
         request.source = ''
         diagnostics.job.reset(token)
+        usage.scope.reset(usage_token)
 
 
 def save_progress(owner, exercise_id, request):
@@ -477,6 +482,8 @@ def execute(owner, exercise_id, request):
     image_id = json.loads(problem_set['validation'])['runtime']
     payload = dump({'exercise_id': exercise_id, **request.model_dump()})
     attempt_id = None
+    if request.review_id:
+        practice.session(owner, request.review_id, exercise_id)
     if request.action == 'submit':
         with db.connect(write=True) as c:
             if not c.execute('SELECT id FROM exercises WHERE id=?', (exercise_id,)).fetchone():
@@ -488,6 +495,10 @@ def execute(owner, exercise_id, request):
                 if existing['status'] == 'running':
                     raise Error('같은 제출을 처리 중입니다. 잠시 후 다시 시도해주세요.', 409)
                 return json.loads(existing['result'])
+            if request.review_id:
+                review = c.execute('SELECT state FROM review_sessions WHERE id=?', (request.review_id,)).fetchone()
+                if review['state'] != 'active':
+                    raise Error('이미 마친 복습입니다.', 409)
             attempt_id = uid()
             c.execute('INSERT INTO attempts VALUES (?,?,?,?,?,?,?,?)', (attempt_id, owner, exercise_id, request.request_id, payload, 'running', '{}', now()))
     try:
@@ -500,6 +511,8 @@ def execute(owner, exercise_id, request):
                 result = {'status': 'passed' if passed else 'failed', 'stdout': '', 'stderr': '', 'exit_code': None, 'tests': []}
             else:
                 result = {**runner.run(json.loads(problem_set['context_data'])['language'], exercise.starter, [''], image_id=image_id)[0], 'tests': []}
+                if result['status'] == 'ok':
+                    practice.help_used(owner, exercise_id, 'solution', request.review_id)
         elif request.action == 'run':
             if exercise.test_mode == 'code' and not request.test_code.strip():
                 raise Error('실행할 테스트 코드를 입력해주세요.')
@@ -520,6 +533,7 @@ def execute(owner, exercise_id, request):
             with db.connect(write=True) as c:
                 if c.execute('SELECT withdrawn FROM sets WHERE id=?', (problem_set['id'],)).fetchone()['withdrawn']:
                     raise Error('검토 중 문제가 중단되었습니다. 이번 결과는 기록하지 않았습니다.', 409)
+                result['assistance'] = practice.record(c, owner, exercise_id, attempt_id, result['status'] == 'passed', request.review_id)
                 c.execute('UPDATE attempts SET status=?,result=? WHERE id=?', ('passed' if result['status'] == 'passed' else 'failed', dump(result), attempt_id))
         return result
     except BaseException:
@@ -528,11 +542,12 @@ def execute(owner, exercise_id, request):
         raise
 
 
-def hints(owner, exercise_id, step):
+def hints(owner, exercise_id, step, review_id=None):
     item, _ = exercise_owned(owner, exercise_id)
     values = json.loads(item['data'])['hints']
     if step < 1 or step > len(values):
         raise Error('힌트를 찾을 수 없습니다.', 404)
+    practice.help_used(owner, exercise_id, 'hint', review_id)
     return {'hint': values[step - 1]}
 
 

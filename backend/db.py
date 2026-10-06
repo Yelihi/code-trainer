@@ -84,6 +84,29 @@ def initialize():
           id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), fingerprint TEXT NOT NULL,
           data TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(owner, fingerprint));
         ''')
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS assistance (
+          owner TEXT NOT NULL REFERENCES users(id), exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+          level TEXT NOT NULL DEFAULT 'none', PRIMARY KEY(owner,exercise_id));
+        CREATE TABLE IF NOT EXISTS review_schedule (
+          owner TEXT NOT NULL REFERENCES users(id), exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+          due_at TEXT NOT NULL, streak INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(owner,exercise_id));
+        CREATE TABLE IF NOT EXISTS review_sessions (
+          id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id),
+          exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+          state TEXT NOT NULL DEFAULT 'active', assistance TEXT NOT NULL DEFAULT 'none',
+          code TEXT NOT NULL, answer TEXT NOT NULL DEFAULT '', revision INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL, completed_at TEXT);
+        CREATE UNIQUE INDEX IF NOT EXISTS active_review ON review_sessions(owner,exercise_id) WHERE state='active';
+        CREATE TABLE IF NOT EXISTS attempt_learning (
+          attempt_id TEXT PRIMARY KEY REFERENCES attempts(id) ON DELETE CASCADE,
+          assistance TEXT NOT NULL, review_id TEXT REFERENCES review_sessions(id) ON DELETE CASCADE);
+        CREATE TABLE IF NOT EXISTS ai_usage (
+          id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), generation_id TEXT,
+          operation TEXT NOT NULL, model TEXT NOT NULL, repair INTEGER NOT NULL,
+          input_tokens INTEGER, output_tokens INTEGER, state TEXT NOT NULL, created_at TEXT NOT NULL);
+        CREATE INDEX IF NOT EXISTS usage_owner ON ai_usage(owner,created_at);
+        """)
         if 'unit_id' not in {row['name'] for row in c.execute('PRAGMA table_info(sets)')}:
             c.execute('ALTER TABLE sets ADD COLUMN unit_id TEXT')
         if 'events' not in {row['name'] for row in c.execute('PRAGMA table_info(generations)')}:

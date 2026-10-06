@@ -225,6 +225,7 @@ class DraftInput(Model):
 
 
 class ExecutionInput(Model):
+    review_id: str | None = Field(default=None, min_length=1, max_length=80)
     request_id: str = Field(min_length=8, max_length=80)
     version: int = Field(ge=1)
     action: Literal['run', 'test', 'submit']

@@ -1,14 +1,15 @@
 """Persisted, evidence-backed summaries of passed exercises."""
 import hashlib
 import json
-from . import ai, db, service
+from . import ai, db, service, usage
 from .schema import LearningSummary
 
 
 def evidence(owner):
     # One passed submission per problem: retries and later failures do not duplicate learning.
     rows = db.all('''SELECT e.id,e.data,e.kind,s.id AS set_id,s.unit_id,s.withdrawn,
-        c.id AS context_id,c.data AS context,a.payload
+        c.id AS context_id,c.data AS context,a.payload,
+        COALESCE((SELECT assistance FROM attempt_learning WHERE attempt_id=a.id),'unknown') AS assistance
         FROM exercises e JOIN sets s ON s.id=e.set_id JOIN contexts c ON c.id=s.context_id
         JOIN attempts a ON a.id=(SELECT p.id FROM attempts p
           WHERE p.owner=? AND p.exercise_id=e.id AND p.status='passed'
@@ -24,7 +25,7 @@ def evidence(owner):
             'root_label': framework or context['language'], 'framework': bool(framework),
             'language': context['language'], 'set_id': row['set_id'], 'context_id': row['context_id'],
             'unit_id': row['unit_id'], 'withdrawn': bool(row['withdrawn']),
-            'title': problem['title'], 'kind': row['kind'], 'unit_title': unit['title'],
+            'title': problem['title'], 'kind': row['kind'], 'assistance': row['assistance'], 'unit_title': unit['title'],
             'concept_labels': unit['concepts'], 'description': problem['description'],
             'requirements': problem['requirements'], 'starter': problem['starter'],
             'submitted_code': submission.get('code', ''), 'submitted_answer': submission.get('answer', ''),
@@ -37,7 +38,7 @@ def fingerprint(items):
 
 
 def public_evidence(items):
-    keys = ('id', 'root_key', 'root_label', 'framework', 'set_id', 'context_id', 'unit_id', 'withdrawn', 'title', 'kind')
+    keys = ('id', 'root_key', 'root_label', 'framework', 'set_id', 'context_id', 'unit_id', 'withdrawn', 'title', 'kind', 'assistance')
     return [{k: item[k] for k in keys} for item in items]
 
 
@@ -107,6 +108,7 @@ def begin(owner):
 
 
 def summarize(owner, items):
+    usage_token = usage.scope.set((owner, None))
     try:
         draft = ai.generate(LearningSummary, '''Build a concept map from ONLY the supplied PASSED exercises.
 Merge semantic synonyms across courses and units into one canonical topic within each root_key.
@@ -119,7 +121,7 @@ starter, and passed submission. Explain what the learner practiced and why/how i
 생성자에서 전달받은 값을 인스턴스 속성에 저장해 객체마다 서로 다른 상태를 갖도록 구성하는 방법을 연습했습니다.).
 READ supports tracing/explaining behavior, not claiming implementation. FIX supports repairing the
 specific bug; MODIFY/BUILD support implementing the requested behavior. Never claim expert mastery,
-independent authorship, or untested abilities; a passed submission may follow a provided solution.
+independent authorship, or untested abilities; assistance is app-observed help (unknown for legacy records), not proof of independence; a passed submission may follow a provided solution.
 Consolidate repeated outcomes from multiple exercises; retain distinct subskills as separate sentences.
 Every outcome must cite exercise_ids from that SAME root which directly support the sentence.
 Cover all supplied exercises where possible; a problem can support more than one outcome.
@@ -149,3 +151,6 @@ Use plain text, not markdown, for names and sentences.''', {'passed_exercises': 
         message = str(error) if isinstance(error, ai.AIError) else '학습 내용을 정리하지 못했습니다. 잠시 후 다시 시도해주세요.'
         db.execute("UPDATE learning_summaries SET state='failed',error=?,updated_at=? WHERE owner=? AND fingerprint=?",
                    (message, service.now(), owner, fingerprint(items)))
+
+    finally:
+        usage.scope.reset(usage_token)

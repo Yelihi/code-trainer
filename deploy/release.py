@@ -17,7 +17,7 @@ RUNNER = ['docker', '--context', 'colima-code-trainer-runner']
 PRIVATE = CONFIG / 'deployment'
 PROTECTED = ('deploy/host.py', 'deploy/service-launcher.swift', 'deploy/runner-network.sb',
              'deploy/runner-lima-override.yaml', 'deploy/app.compose.yaml', 'deploy/runner.compose.yaml',
-             'sandbox/Dockerfile', 'deploy/github_deploy.py', 'deploy/release.py', 'deploy/check-host.py', 'deploy/changes.py')
+             'sandbox/Dockerfile', 'deploy/github_deploy.py', 'deploy/release.py', 'deploy/check-host.py', 'deploy/changes.py', 'deploy/monitor.py')
 
 
 def run(args, **kwargs):

@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 
 let arguments = Array(CommandLine.arguments.dropFirst())
-guard arguments.count == 1, ["app", "runner", "forward", "backup", "deploy"].contains(arguments[0]) else {
+guard arguments.count == 1, ["app", "runner", "forward", "backup", "deploy", "monitor"].contains(arguments[0]) else {
     fputs("Usage: CodeTrainerService app|runner|forward|backup|deploy\n", stderr)
     exit(64)
 }

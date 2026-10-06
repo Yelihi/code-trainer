@@ -5,7 +5,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access
+from . import service, learning, access, practice, usage, operations
 from .schema import Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -171,13 +171,13 @@ def execute(exercise_id: str, body: ExecutionInput, current=Depends(user)):
 
 
 @app.get('/api/exercises/{exercise_id}/hints/{step}')
-def hints(exercise_id: str, step: int, current=Depends(user)):
-    return service.hints(current['id'], exercise_id, step)
+def hints(exercise_id: str, step: int, review_id: str | None = None, current=Depends(user)):
+    return service.hints(current['id'], exercise_id, step, review_id)
 
 
 @app.get('/api/exercises/{exercise_id}/solution')
-def solution(exercise_id: str, current=Depends(user)):
-    return service.solution(current['id'], exercise_id)
+def solution(exercise_id: str, review_id: str | None = None, current=Depends(user)):
+    return service.solution(current['id'], exercise_id, review_id)
 
 
 @app.post('/api/exercises/{exercise_id}/reports', status_code=201)
@@ -226,6 +226,38 @@ def source_document(source_id: str, current=Depends(user)):
 @app.patch('/api/admin/reports/{report_id}')
 def review_report(report_id: str, body: ReportUpdate, current=Depends(user)):
     return service.review_report(current, report_id, body)
+
+
+@app.get('/api/me/reviews')
+def review_queue(current=Depends(user)):
+    return practice.queue(current['id'])
+
+
+@app.post('/api/exercises/{exercise_id}/reviews')
+def start_review(exercise_id: str, current=Depends(user)):
+    return practice.begin(current['id'], exercise_id)
+
+
+@app.get('/api/reviews/{review_id}')
+def review_session(review_id: str, current=Depends(user)):
+    return practice.view(current['id'], review_id)
+
+
+@app.put('/api/reviews/{review_id}/progress')
+def review_progress(review_id: str, body: DraftInput, current=Depends(user)):
+    return practice.save(current['id'], review_id, body)
+
+
+@app.get('/api/me/ai-usage')
+def ai_usage(current=Depends(user)):
+    return usage.summary(current['id'])
+
+
+@app.get('/api/admin/operations')
+def operation_status(current=Depends(user)):
+    if not current['admin']:
+        raise service.Error('관리자만 확인할 수 있습니다.', 403)
+    return operations.status()
 
 
 dist = Path(__file__).resolve().parent.parent / 'frontend' / 'dist'

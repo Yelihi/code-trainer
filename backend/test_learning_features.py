@@ -42,6 +42,18 @@ class LearningFeaturesTest(unittest.TestCase):
         self.assertEqual(learning.evidence(self.owner)[0]['assistance'], 'hint')
         self.assertEqual(len(db.all('SELECT * FROM attempt_learning')), 2)
 
+    def test_pre_upgrade_submission_replay_keeps_its_result(self):
+        exercise = self.make_set()['exercises'][0]['id']
+        result = self.submit(exercise, 'before-upgrade').json()
+        row = db.one('SELECT id,payload FROM attempts')
+        payload = json.loads(row['payload'])
+        payload.pop('review_id', None)
+        db.execute('UPDATE attempts SET payload=? WHERE id=?', (service.dump(payload), row['id']))
+        replay = self.submit(exercise, 'before-upgrade')
+        self.assertEqual(replay.status_code, 200, replay.text)
+        self.assertEqual(replay.json(), result)
+        self.assertEqual(len(db.all('SELECT id FROM attempts')), 1)
+
     def test_legacy_evidence_is_unknown_and_review_due_is_backfilled(self):
         exercise = self.make_set()['exercises'][0]['id']
         self.submit(exercise, 'legacy-pass')

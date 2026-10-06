@@ -480,7 +480,7 @@ def execute(owner, exercise_id, request):
         raise Error('문제 버전이 다릅니다. 화면을 다시 열어주세요.', 409)
     exercise = ExerciseDraft.model_validate_json(item['data'])
     image_id = json.loads(problem_set['validation'])['runtime']
-    payload = dump({'exercise_id': exercise_id, **request.model_dump()})
+    payload = dump({'exercise_id': exercise_id, **request.model_dump(exclude_none=True)})
     attempt_id = None
     if request.review_id:
         practice.session(owner, request.review_id, exercise_id)

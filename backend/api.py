@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds
-from .schema import Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
+from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
 @asynccontextmanager
@@ -123,14 +123,30 @@ def health():
 
 
 @app.get('/api/feed-posts')
-def feed_posts(current=Depends(user), page: int = Query(default=1, ge=1)):
-    return feeds.inbox(current['id'], page)
+def feed_posts(current=Depends(user), page: int = Query(default=1, ge=1), feed_id: str | None = Query(default=None, max_length=80)):
+    return feeds.inbox(current['id'], page, feed_id)
 
 
 @app.post('/api/feed-posts/refresh')
 def refresh_feed(current=Depends(user)):
     feeds.refresh(manual=True)
     return feeds.inbox(current['id'])
+
+
+@app.post('/api/feed-sources', status_code=201)
+def add_feed(body: FeedInput, current=Depends(user)):
+    return feeds.add(current, body.name, body.url)
+
+
+@app.patch('/api/feed-sources/{feed_id}')
+def update_feed(feed_id: str, body: FeedUpdate, current=Depends(user)):
+    return feeds.set_enabled(current, feed_id, body.enabled)
+
+
+@app.post('/api/feed-sources/{feed_id}/refresh')
+def refresh_source(feed_id: str, current=Depends(user)):
+    updated = feeds.refresh(manual=True, feed_id=feed_id)
+    return {'updated': updated}
 
 
 @app.get('/api/contexts')

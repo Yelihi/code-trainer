@@ -1,3 +1,4 @@
+import hashlib
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -89,6 +90,10 @@ def initialize():
           id INTEGER PRIMARY KEY CHECK(id=1), attempted REAL NOT NULL DEFAULT 0,
           succeeded TEXT, error TEXT NOT NULL DEFAULT '');
         INSERT OR IGNORE INTO feed_sync(id) VALUES (1);
+        CREATE TABLE IF NOT EXISTS feed_sources (
+          id TEXT PRIMARY KEY, name TEXT NOT NULL, url TEXT UNIQUE NOT NULL,
+          enabled INTEGER NOT NULL DEFAULT 1, attempted REAL NOT NULL DEFAULT 0,
+          succeeded TEXT, error TEXT NOT NULL DEFAULT '');
         CREATE TABLE IF NOT EXISTS feed_posts (
           id TEXT PRIMARY KEY, guid TEXT UNIQUE NOT NULL, url TEXT UNIQUE NOT NULL,
           title TEXT NOT NULL, summary TEXT NOT NULL, published TEXT NOT NULL,
@@ -119,6 +124,14 @@ def initialize():
           input_tokens INTEGER, output_tokens INTEGER, state TEXT NOT NULL, created_at TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS usage_owner ON ai_usage(owner,created_at);
         """)
+        c.execute("""INSERT OR IGNORE INTO feed_sources(id,name,url,attempted,succeeded,error)
+            SELECT 'korean-fe-article','Korean FE Article','https://kofearticle.substack.com/feed',
+                attempted,succeeded,error FROM feed_sync WHERE id=1""")
+        if 'feed_id' not in {row['name'] for row in c.execute('PRAGMA table_info(feed_posts)')}:
+            c.execute("ALTER TABLE feed_posts ADD COLUMN feed_id TEXT NOT NULL DEFAULT 'korean-fe-article'")
+            for row in c.execute('SELECT id,guid FROM feed_posts').fetchall():
+                c.execute('UPDATE feed_posts SET guid=? WHERE id=?', (feed_guid('korean-fe-article', row['guid']), row['id']))
+        c.execute('CREATE INDEX IF NOT EXISTS posts_feed ON feed_posts(feed_id)')
         if 'unit_id' not in {row['name'] for row in c.execute('PRAGMA table_info(sets)')}:
             c.execute('ALTER TABLE sets ADD COLUMN unit_id TEXT')
         if 'events' not in {row['name'] for row in c.execute('PRAGMA table_info(generations)')}:
@@ -149,3 +162,8 @@ def all(sql, params=()):
 def execute(sql, params=()):
     with connect(write=True) as c:
         c.execute(sql, params)
+
+
+def feed_guid(feed_id, guid):
+    # RSS identifiers are unique only within their feed.
+    return hashlib.sha256((feed_id + '\n' + guid).encode()).hexdigest()

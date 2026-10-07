@@ -50,11 +50,11 @@ class FeedTest(unittest.TestCase):
             self.assertFalse(feeds.refresh(manual=True))
             fetch.assert_not_called()
         for payload in (RSS.replace(b'one</guid>', b'changed</guid>'), RSS.replace(b'/post?', b'/new?')):
-            db.execute('UPDATE feed_sync SET attempted=0')
+            db.execute('UPDATE feed_sources SET attempted=0')
             with patch.object(source, 'fetch_bytes', return_value=(payload, 'application/rss+xml')):
                 self.assertTrue(feeds.refresh())
         self.assertEqual(feeds.inbox(self.owner)['total'], 1)
-        db.execute('UPDATE feed_sync SET attempted=0')
+        db.execute('UPDATE feed_sources SET attempted=0')
         with patch.object(source, 'fetch_bytes', side_effect=source.SourceError('private detail')):
             self.assertFalse(feeds.refresh())
         inbox = feeds.inbox(self.owner)
@@ -121,7 +121,7 @@ class FeedTest(unittest.TestCase):
             with patch.object(feeds.asyncio, 'sleep', side_effect=[None, asyncio.CancelledError]), patch.object(feeds, 'refresh') as refresh:
                 with self.assertRaises(asyncio.CancelledError):
                     await feeds.poll()
-                refresh.assert_called_once_with()
+                refresh.assert_called_once_with(feed_id=feeds.DEFAULT_FEED)
         asyncio.run(check())
 
     def test_safe_fetch_checks_redirect_destination_before_connecting(self):
@@ -148,3 +148,102 @@ class FeedTest(unittest.TestCase):
         connection.close.assert_called_once()
         with patch.object(source, 'fetch_bytes', return_value=(b'<article><p>A public article long enough.</p><script>secret()</script></article>', 'text/html')):
             self.assertEqual(source.fetch('http://example.com/post'), 'A public article long enough.')
+
+    def add_feed(self, name='Second blog', url='https://second.example/feed', body=None):
+        payload = body if body is not None else RSS.replace(b'example.com/post', b'second.example/post')
+        with patch.object(source, 'fetch_bytes', return_value=(payload, 'application/xml')):
+            response = self.client.post('/api/feed-sources', json={'name': name, 'url': url})
+        self.assertEqual(response.status_code, 201, response.text)
+        return response.json()
+
+    def test_multiple_sources_scope_guids_filter_and_keep_url_dedup(self):
+        self.collect()
+        second = self.add_feed()
+        inbox = self.client.get('/api/feed-posts').json()
+        self.assertEqual(inbox['total'], 2)  # both publishers use GUID "one"
+        self.assertEqual(len(inbox['feeds']), 2)
+        filtered = self.client.get('/api/feed-posts', params={'feed_id': second['id']}).json()
+        self.assertEqual(filtered['total'], 1)
+        self.assertEqual(filtered['items'][0]['feed_name'], 'Second blog')
+        self.assertEqual(filtered['items'][0]['url'], 'https://second.example/post?x=1')
+        self.add_feed('Syndicated copy', 'https://third.example/feed', RSS)
+        self.assertEqual(feeds.inbox(self.owner)['total'], 2)
+        with patch.object(source, 'fetch_bytes') as fetch:
+            duplicate = self.client.post('/api/feed-sources', json={'name': 'Again', 'url': 'https://second.example/feed#fragment'})
+            self.assertEqual(duplicate.status_code, 409)
+            fetch.assert_not_called()
+
+    def test_sources_are_admin_managed_and_invalid_feeds_not_saved(self):
+        for payload in ({'name': ' ', 'url': 'https://example.com/feed'}, {'name': 'A', 'url': 'javascript:alert(1)'}):
+            self.assertIn(self.client.post('/api/feed-sources', json=payload).status_code, (400, 422))
+        for response in (b'<html><body>Not a feed</body></html>', b'not xml'):
+            with patch.object(source, 'fetch_bytes', return_value=(response, 'application/xml')):
+                self.assertEqual(self.client.post('/api/feed-sources', json={'name': 'Wrong', 'url': 'https://example.com/feed'}).status_code, 400)
+        with patch.object(source, 'public_address', side_effect=source.SourceError('private')), patch.object(source.socket, 'create_connection') as connect:
+            self.assertEqual(self.client.post('/api/feed-sources', json={'name': 'Private', 'url': 'http://127.0.0.1/feed'}).status_code, 400)
+            connect.assert_not_called()
+        self.assertEqual(len(feeds.sources()), 1)
+        db.execute('UPDATE users SET admin=0 WHERE id=?', (self.owner,))
+        with patch.object(source, 'fetch_bytes') as fetch:
+            self.assertEqual(self.client.post('/api/feed-sources', json={'name': 'No', 'url': 'https://example.com/feed'}).status_code, 403)
+            self.assertEqual(self.client.patch('/api/feed-sources/' + feeds.DEFAULT_FEED, json={'enabled': False}).status_code, 403)
+            fetch.assert_not_called()
+        self.assertEqual(self.client.get('/api/feed-posts').status_code, 200)
+
+    def test_pause_resume_preserves_posts_and_each_source_has_own_timer(self):
+        self.collect()
+        second = self.add_feed()
+        path = '/api/feed-sources/' + second['id']
+        self.assertEqual(self.client.patch(path, json={'enabled': False}).status_code, 200)
+        db.execute('UPDATE feed_sources SET attempted=0')
+        with patch.object(source, 'fetch_bytes') as fetch:
+            self.assertFalse(feeds.refresh(manual=True, feed_id=second['id']))
+            fetch.assert_not_called()
+        self.assertEqual(feeds.inbox(self.owner)['total'], 2)
+        db.initialize()
+        self.assertEqual(db.one('SELECT enabled FROM feed_sources WHERE id=?', (second['id'],))['enabled'], 0)
+        self.assertEqual(self.client.patch(path, json={'enabled': True}).status_code, 200)
+        with patch.object(source, 'fetch_bytes', side_effect=source.SourceError('bad feed')):
+            self.assertFalse(feeds.refresh(feed_id=feeds.DEFAULT_FEED))
+        with patch.object(source, 'fetch_bytes', return_value=(RSS, 'application/xml')):
+            self.assertTrue(feeds.refresh(feed_id=second['id']))
+        self.assertTrue(db.one('SELECT error FROM feed_sources WHERE id=?', (feeds.DEFAULT_FEED,))['error'])
+        self.assertEqual(db.one('SELECT error FROM feed_sources WHERE id=?', (second['id'],))['error'], '')
+        self.assertEqual(self.client.post('/api/feed-sources/missing/refresh', json={}).status_code, 404)
+        self.assertEqual(self.client.patch('/api/feed-sources/missing', json={'enabled': False}).status_code, 404)
+
+    def test_previous_database_migration_keeps_posts_choices_and_sync(self):
+        post = self.collect()
+        with db.connect(write=True) as c:
+            c.execute('INSERT INTO feed_choices(owner,post_id,registered) VALUES (?,?,1)', (self.owner, post['id']))
+            c.execute('UPDATE feed_posts SET guid=?', ('one',))
+            c.execute('DROP INDEX posts_feed')
+            c.execute('ALTER TABLE feed_posts DROP COLUMN feed_id')
+            c.execute('DROP TABLE feed_sources')
+            c.execute("UPDATE feed_sync SET attempted=123,succeeded='2026-10-07T00:00:00+00:00'")
+        db.initialize()
+        self.assertEqual(feeds.inbox(self.owner)['total'], 0)
+        self.assertEqual(feeds.inbox('someone-else')['items'][0]['id'], post['id'])
+        self.assertEqual(feeds.sources()[0]['attempted'], 123)
+        self.assertEqual(feeds.sources()[0]['succeeded'], '2026-10-07T00:00:00+00:00')
+        guid = db.one('SELECT guid FROM feed_posts')['guid']
+        db.initialize()
+        self.assertEqual(db.one('SELECT guid FROM feed_posts')['guid'], guid)
+        with patch.object(source, 'fetch_bytes', return_value=(RSS, 'application/xml')):
+            self.assertTrue(feeds.refresh())
+        self.assertEqual(db.one('SELECT COUNT(*) AS n FROM feed_posts')['n'], 1)
+
+    def test_poll_continues_after_one_feed_failure_and_source_limit(self):
+        second = self.add_feed()
+        async def check():
+            with patch.object(feeds.asyncio, 'sleep', side_effect=[None, asyncio.CancelledError]), patch.object(feeds, 'refresh', side_effect=[RuntimeError('test'), True]) as refresh, patch.object(feeds.logging.getLogger(feeds.__name__), 'exception'):
+                with self.assertRaises(asyncio.CancelledError):
+                    await feeds.poll()
+                self.assertEqual({call.kwargs['feed_id'] for call in refresh.call_args_list}, {feeds.DEFAULT_FEED, second['id']})
+        asyncio.run(check())
+        with db.connect(write=True) as c:
+            for i in range(18):
+                c.execute('INSERT INTO feed_sources(id,name,url) VALUES (?,?,?)', (f'source-{i}', 'Extra', f'https://extra.example/{i}'))
+        with patch.object(source, 'fetch_bytes') as fetch:
+            self.assertEqual(self.client.post('/api/feed-sources', json={'name': 'Over limit', 'url': 'https://another.example/feed'}).status_code, 409)
+            fetch.assert_not_called()

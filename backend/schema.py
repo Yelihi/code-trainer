@@ -32,6 +32,15 @@ class Credentials(Model):
     admin_password: str = Field(default='', max_length=128)
 
 
+class FeedInput(Model):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    url: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+
+class FeedUpdate(Model):
+    enabled: bool
+
+
 class GenerationInput(Model):
     request_id: str = Field(min_length=8, max_length=80)
     source_kind: Literal['text', 'url', 'context', 'sample']

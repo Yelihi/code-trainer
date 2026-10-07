@@ -1703,3 +1703,13 @@ button.text-button,
 .feed-actions { margin-top: 20px; }
 .feed-pagination { justify-content: center; margin-top: 28px; }
 @media (max-width: 600px) { .feed-card { padding: 18px; } .feed-actions .button { width: 100%; text-align: center; } }
+.feed-settings { margin: 24px 0; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.feed-settings summary { cursor: pointer; font-weight: 600; }
+.feed-source-list { display: grid; gap: 18px; }
+.feed-source { padding: 16px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.feed-source a { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.feed-source .feed-actions { justify-content: flex-start; margin-top: 10px; }
+.feed-add-form { display: grid; gap: 10px; margin-top: 24px; }
+.feed-add-form h2 { margin: 0; font-size: 1.1rem; }
+.feed-add-form input, .feed-filter select { width: 100%; min-width: 0; }
+.feed-filter { display: grid; gap: 6px; margin: 24px 0; }

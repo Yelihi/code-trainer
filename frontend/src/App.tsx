@@ -64,6 +64,7 @@ export function App() {
       <nav aria-label="주요 탐색" onClick={() => setMenu(false)}>
         <NavLink to="/" end><span aria-hidden="true">▦</span> 학습 공간</NavLink>
         <NavLink to="/create"><span aria-hidden="true">＋</span> 연습 만들기</NavLink>
+        <NavLink to="/inbox"><span aria-hidden="true">▤</span> 등록 대기 포스팅</NavLink>
         <NavLink to="/reviews"><span aria-hidden="true">↻</span> 오늘의 복습</NavLink>
         <NavLink to="/me"><span aria-hidden="true">◷</span> 나의 기록</NavLink>
         {!!session?.user?.admin && <NavLink to="/admin/sources"><span aria-hidden="true">▤</span> 원본 자료 · 관리자</NavLink>}
@@ -164,9 +165,11 @@ export function GenerationStatus({ generation }: { generation: Generation }) {
 export function Create() {
   const { health } = useApp();
   const navigate = useNavigate();
-  const [kind, setKind] = useState<'text' | 'url'>('text');
-  const [source, setSource] = useState('');
-  const [sourceName, setSourceName] = useState('');
+  const [params] = useSearchParams();
+  const feedPost = params.get('post');
+  const [kind, setKind] = useState<'text' | 'url'>(feedPost ? 'url' : 'text');
+  const [source, setSource] = useState(feedPost ? params.get('url') || '' : '');
+  const [sourceName, setSourceName] = useState(feedPost ? (params.get('title') || '').slice(0, 255) : '');
   const [framework, setFramework] = useState('');
   const [language, setLanguage] = useState<Language>('javascript');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
@@ -193,7 +196,7 @@ export function Create() {
   }, [generation, reload]); // Each poll remains tied to its generation.
   async function generate(sample = false) {
     setError(''); setBusy(true);
-    const payload = { source_kind: sample ? 'sample' : kind, source: sample ? '' : source, language: sample ? 'javascript' : language, difficulty: sample ? 'beginner' : difficulty, source_name: sample ? '' : sourceName, framework: sample ? '' : framework };
+    const payload = { ...(feedPost && !sample ? { feed_post_id: feedPost } : {}), source_kind: sample ? 'sample' : kind, source: sample ? '' : source, language: sample ? 'javascript' : language, difficulty: sample ? 'beginner' : difficulty, source_name: sample ? '' : sourceName, framework: sample ? '' : framework };
     const key = JSON.stringify(payload);
     if (request.current.key !== key) request.current = { key, id: crypto.randomUUID() };
     try {
@@ -208,7 +211,8 @@ export function Create() {
   }
   const pending = busy || !!(generation && isPending(generation));
   return <main className="page narrow-page"><div className="breadcrumb"><Link to="/">Workspace</Link><span>/</span> 연습 만들기</div><span className="eyebrow">ONE SOURCE. A CONNECTED COURSE.</span><h1>무엇을 배워볼까요?</h1><p className="page-intro">먼저 자료를 단원으로 나누고 개념 학습 페이지를 준비합니다.<br className="desktop-only" /> 개념을 읽은 뒤 원하는 단원에서 문제 생성을 요청하세요.</p>
-    <form className="source-form" onSubmit={event => { event.preventDefault(); void generate(); }}><div className="input-tabs"><button type="button" className={kind === 'text' ? 'selected' : ''} onClick={() => { setKind('text'); setSource(''); setSourceName(''); }} disabled={pending}>텍스트 · Markdown</button><button type="button" className={kind === 'url' ? 'selected' : ''} onClick={() => { setKind('url'); setSource(''); setSourceName(''); }} disabled={pending}>URL</button><label className="upload-button">파일 불러오기<input type="file" accept=".md,.txt,text/plain,text/markdown" disabled={pending} onChange={event => void upload(event.target.files?.[0])} /></label></div>
+    {feedPost && <p className="notice">대기 포스팅: <strong>{params.get('title')}</strong><br />공개된 원문 URL로 바꿔 등록할 수 있습니다. 생성에 실패하면 대기 목록에 남습니다. <Link to="/inbox">목록으로</Link></p>}
+    <form className="source-form" onSubmit={event => { event.preventDefault(); void generate(); }}><div className="input-tabs"><button type="button" className={kind === 'text' ? 'selected' : ''} onClick={() => { setKind('text'); setSource(''); setSourceName(''); }} disabled={pending || !!feedPost}>텍스트 · Markdown</button><button type="button" className={kind === 'url' ? 'selected' : ''} onClick={() => { setKind('url'); setSource(''); setSourceName(''); }} disabled={pending}>URL</button><label className="upload-button">파일 불러오기<input type="file" accept=".md,.txt,text/plain,text/markdown" disabled={pending || !!feedPost} onChange={event => void upload(event.target.files?.[0])} /></label></div>
       <label className="source-label" htmlFor="source">{kind === 'text' ? '학습할 자료' : '자료 주소'}</label>{kind === 'text' ? <textarea id="source" className="source-input" value={source} onChange={event => setSource(event.target.value)} placeholder={'여기에 학습하고 싶은 글을 붙여넣으세요.\n\n예: 클로저는 함수와 그 함수가 선언된 렉시컬 환경의 조합입니다…'} minLength={20} maxLength={60000} required disabled={pending} /> : <input id="source" type="url" value={source} onChange={event => setSource(event.target.value)} placeholder="https://developer.mozilla.org/…" required maxLength={2000} disabled={pending} />}
       <div className="source-footer"><span>{source.length.toLocaleString()} / {kind === 'text' ? '60,000' : '2,000'}자</span><span>원본 자료는 관리자 전용으로 보관합니다</span></div><label htmlFor="practice-language">연습 언어</label><select id="practice-language" value={language} onChange={event => setLanguage(event.target.value as Language)} disabled={pending}>{Object.entries(languages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><label htmlFor="learning-framework">학습 분류 (선택)</label><input id="learning-framework" value={framework} onChange={event => setFramework(event.target.value)} maxLength={80} placeholder="예: React, Vue — 비워두면 언어별로 정리합니다" disabled={pending} /><label htmlFor="practice-difficulty">난이도</label><select id="practice-difficulty" value={difficulty} onChange={event => setDifficulty(event.target.value as Difficulty)} disabled={pending}>{Object.entries(difficulties).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><p className="muted">{difficultyDescriptions[difficulty]}</p><ErrorNotice error={error} />
       {health && !health.ai && <p className="notice">AI 연결이 필요합니다. 먼저 아래 준비된 예제로 흐름을 확인할 수 있습니다.</p>}<button className="primary" disabled={pending || health?.ai === false}>{busy ? '요청 중…' : '학습 과정 생성 →'}</button>

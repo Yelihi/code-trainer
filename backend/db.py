@@ -85,6 +85,18 @@ def initialize():
           data TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(owner, fingerprint));
         ''')
         c.executescript("""
+        CREATE TABLE IF NOT EXISTS feed_sync (
+          id INTEGER PRIMARY KEY CHECK(id=1), attempted REAL NOT NULL DEFAULT 0,
+          succeeded TEXT, error TEXT NOT NULL DEFAULT '');
+        INSERT OR IGNORE INTO feed_sync(id) VALUES (1);
+        CREATE TABLE IF NOT EXISTS feed_posts (
+          id TEXT PRIMARY KEY, guid TEXT UNIQUE NOT NULL, url TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL, summary TEXT NOT NULL, published TEXT NOT NULL,
+          collected TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS feed_choices (
+          owner TEXT NOT NULL REFERENCES users(id), post_id TEXT NOT NULL REFERENCES feed_posts(id),
+          generation_id TEXT REFERENCES generations(id) ON DELETE SET NULL,
+          registered INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(owner,post_id));
         CREATE TABLE IF NOT EXISTS assistance (
           owner TEXT NOT NULL REFERENCES users(id), exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
           level TEXT NOT NULL DEFAULT 'none', PRIMARY KEY(owner,exercise_id));

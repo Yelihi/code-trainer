@@ -38,6 +38,7 @@ class GenerationInput(Model):
     source: str = Field(default='', max_length=60000)
     context_id: str | None = None
     unit_id: str | None = Field(default=None, min_length=1, max_length=80)
+    feed_post_id: str | None = Field(default=None, min_length=1, max_length=80)
     language: Language = 'javascript'
     difficulty: Difficulty = 'beginner'
     source_name: str = Field(default='', max_length=255)
@@ -45,6 +46,8 @@ class GenerationInput(Model):
 
     @model_validator(mode='after')
     def source_valid(self):
+        if self.feed_post_id and self.source_kind != 'url':
+            raise ValueError('대기 포스팅은 URL 자료로 등록해주세요.')
         if self.unit_id and self.source_kind != 'context':
             raise ValueError('단원 문제는 저장된 학습 과정에서 생성해주세요.')
         if self.source_kind == 'context':

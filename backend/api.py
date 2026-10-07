@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -5,7 +6,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access, practice, usage, operations
+from . import service, learning, access, practice, usage, operations, feeds
 from .schema import Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -13,7 +14,11 @@ from .schema import Credentials, DraftInput, ExecutionInput, GenerationInput, Re
 async def lifespan(app):
     access.validate_config()
     service.initialize()
-    yield
+    collector = asyncio.create_task(feeds.poll())
+    try:
+        yield
+    finally:
+        await feeds.stop(collector)
 
 
 app = FastAPI(title='Code Trainer', lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
@@ -115,6 +120,17 @@ def logout(request: Request, current=Depends(user)):
 @app.get('/api/health')
 def health():
     return service.health()
+
+
+@app.get('/api/feed-posts')
+def feed_posts(current=Depends(user), page: int = Query(default=1, ge=1)):
+    return feeds.inbox(current['id'], page)
+
+
+@app.post('/api/feed-posts/refresh')
+def refresh_feed(current=Depends(user)):
+    feeds.refresh(manual=True)
+    return feeds.inbox(current['id'])
 
 
 @app.get('/api/contexts')

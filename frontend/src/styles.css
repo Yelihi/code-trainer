@@ -1693,3 +1693,13 @@ button.text-button,
 .operation-facts dd { margin: .5rem 0 0; overflow-wrap: anywhere; }
 .review-row { flex-wrap: wrap; gap: 1rem; }
 .review-row > div { min-width: 0; overflow-wrap: anywhere; }
+
+/* Public newsletter inbox: text only, never render publisher HTML. */
+.feed-toolbar, .feed-actions, .feed-pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.feed-list { display: grid; gap: 20px; margin-top: 28px; }
+.feed-card { border: 1px solid var(--line); border-radius: 16px; padding: 24px; background: var(--panel); min-width: 0; }
+.feed-card h2 { font-size: 1.2rem; line-height: 1.5; overflow-wrap: anywhere; }
+.feed-summary { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.8; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.feed-actions { margin-top: 20px; }
+.feed-pagination { justify-content: center; margin-top: 28px; }
+@media (max-width: 600px) { .feed-card { padding: 18px; } .feed-actions .button { width: 100%; text-align: center; } }

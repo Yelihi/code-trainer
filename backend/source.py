@@ -146,7 +146,7 @@ def public_address(host, port):
     return addresses[0][4][0]
 
 
-def fetch(url):
+def fetch_bytes(url, content_types=('text/html', 'text/plain', 'text/markdown'), max_bytes=400000):
     deadline = time.monotonic() + 20
     try:
         for _ in range(4):
@@ -166,7 +166,7 @@ def fetch(url):
                 if parts.scheme == 'https':
                     connection.sock = ssl.create_default_context().wrap_socket(connection.sock, server_hostname=parts.hostname)
                 connection.request('GET', (parts.path or '/') + ('?' + parts.query if parts.query else ''),
-                    headers={'User-Agent': 'CodeTrainer/0.1', 'Accept': 'text/html,text/plain,text/markdown', 'Accept-Encoding': 'identity'})
+                    headers={'User-Agent': 'CodeTrainer/0.1', 'Accept': ','.join(content_types), 'Accept-Encoding': 'identity'})
                 response = connection.getresponse()
                 if response.status in (301, 302, 303, 307, 308):
                     location = response.getheader('Location')
@@ -177,23 +177,28 @@ def fetch(url):
                 if response.status != 200 or response.getheader('Content-Encoding', 'identity') != 'identity':
                     raise SourceError('문서를 가져오지 못했습니다. 본문을 붙여넣어주세요.')
                 content_type = response.getheader('Content-Type', '').split(';')[0]
-                if content_type not in ('text/html', 'text/plain', 'text/markdown'):
+                if content_type not in content_types:
                     raise SourceError('텍스트 또는 HTML 문서를 사용해주세요.')
                 body = bytearray()
                 while chunk := response.read1(8192):
                     body.extend(chunk)
-                    if len(body) > 400000 or time.monotonic() > deadline:
+                    if len(body) > max_bytes or time.monotonic() > deadline:
                         raise SourceError('문서가 너무 크거나 응답이 늦습니다. 필요한 본문을 붙여넣어주세요.')
-                text = body.decode('utf-8', errors='replace')
-                if content_type == 'text/html':
-                    parser = TextParser()
-                    parser.feed(text)
-                    text = parser.text()
-                if len(text) > 60000 or len(text.strip()) < 20:
-                    raise SourceError('분석할 본문 범위를 20~60,000자로 붙여넣어주세요.')
-                return text
+                return bytes(body), content_type
             finally:
                 connection.close()
         raise SourceError('문서의 이동 횟수가 너무 많습니다. 본문을 붙여넣어주세요.')
     except (OSError, ValueError, http.client.HTTPException):
         raise SourceError('주소에 접근하지 못했습니다. 본문을 붙여넣어주세요.') from None
+
+
+def fetch(url):
+    body, content_type = fetch_bytes(url)
+    text = body.decode('utf-8', errors='replace')
+    if content_type == 'text/html':
+        parser = TextParser()
+        parser.feed(text)
+        text = parser.text()
+    if len(text) > 60000 or len(text.strip()) < 20:
+        raise SourceError('분석할 본문 범위를 20~60,000자로 붙여넣어주세요.')
+    return text

@@ -6,10 +6,12 @@ import { Context, Lesson } from './Learning';
 import { Practice } from './Practice';
 import { Sources } from './Sources';
 import { Reviews, Operations } from './Reviews';
+import { FeedInbox } from './FeedInbox';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/', element: <Home /> },
+  { path: '/inbox', element: <FeedInbox /> },
   { path: '/create', element: <Create /> },
   { path: '/learn/:id', element: <Context /> },
   { path: '/learn/:id/units/:unitId', element: <Lesson /> },

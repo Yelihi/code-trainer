@@ -255,9 +255,19 @@ def begin_generation(owner, request):
                 raise Error('다른 문제를 생성 중입니다. 완료 후 다시 시도해주세요.', 429)
             if request.unit_id and c.execute('SELECT id FROM sets WHERE context_id=? AND unit_id=?', (request.context_id, request.unit_id)).fetchone():
                 raise Error('이 단원의 문제 세트는 이미 준비되어 있습니다.', 409)
+            if request.feed_post_id:
+                if not c.execute('SELECT id FROM feed_posts WHERE id=?', (request.feed_post_id,)).fetchone():
+                    raise Error('대기 포스팅을 찾을 수 없습니다.', 404)
+                choice = c.execute('SELECT registered FROM feed_choices WHERE owner=? AND post_id=?', (owner, request.feed_post_id)).fetchone()
+                if choice and choice['registered']:
+                    raise Error('이미 등록한 포스팅입니다.', 409)
             generation_id, fresh = uid(), True
             c.execute('INSERT INTO generations (id,owner,request_id,state,stage,context_id,unit_id,created_at) VALUES (?,?,?,?,?,?,?,?)',
                 (generation_id, owner, request.request_id, 'generating', '단원 문제 생성' if request.unit_id else '자료 분석', request.context_id, request.unit_id, now()))
+            if request.feed_post_id:
+                c.execute('''INSERT INTO feed_choices(owner,post_id,generation_id) VALUES (?,?,?)
+                    ON CONFLICT(owner,post_id) DO UPDATE SET generation_id=excluded.generation_id''',
+                    (owner, request.feed_post_id, generation_id))
             if request.source_kind in ('text', 'url'):
                 c.execute('INSERT INTO source_documents VALUES (?,NULL,?,?,?,?)',
                           (generation_id, request.source_kind, request.source_name,
@@ -382,7 +392,9 @@ def generate(owner, generation_id, request):
             c.execute('UPDATE source_documents SET context_id=? WHERE id=?', (context_id, generation_id))
         diagnostics.event('학습 과정 저장 완료', units=len(context.units))
         if request.source_kind != 'sample' and not request.unit_id:
-            db.execute("UPDATE generations SET state='ready',stage='개념 학습 준비 완료' WHERE id=?", (generation_id,))
+            with db.connect(write=True) as c:
+                c.execute("UPDATE generations SET state='ready',stage='개념 학습 준비 완료' WHERE id=?", (generation_id,))
+                c.execute('UPDATE feed_choices SET registered=1 WHERE owner=? AND generation_id=?', (owner, generation_id))
             diagnostics.event('개념 학습 준비 완료 · 단원별로 문제를 생성할 수 있습니다.')
             return
         image_id = runner.pin_runtime()

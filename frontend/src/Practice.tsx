@@ -107,6 +107,7 @@ function PracticeEditor({
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [solutionLoading, setSolutionLoading] = useState(false);
   const [solutionError, setSolutionError] = useState("");
+  const comparison = useRef<HTMLDivElement>(null);
   const [hints, setHints] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [reported, setReported] = useState(false);
@@ -128,6 +129,10 @@ function PracticeEditor({
   dirtyRef.current = dirty;
   const blocker = useBlocker(dirty || !!busy || saving);
   const completedCount = problemSet.exercises.filter((item, i) => i === index ? passed : item.passed).length;
+
+  useEffect(() => {
+    if (solutionOpen && exercise.kind !== "READ") comparison.current?.scrollIntoView({ block: "nearest" });
+  }, [solutionOpen, exercise.kind]);
 
   useEffect(() => {
     // Navigate only after the saved state has rendered and released useBlocker.
@@ -232,6 +237,7 @@ function PracticeEditor({
   async function showSolution() {
     if (solutionOpen) { setSolutionOpen(false); return; }
     setSolutionOpen(true);
+    if (exercise.kind !== "READ") setPanel("code");
     if (solution) return;
     setSolutionLoading(true);
     setSolutionError("");
@@ -386,63 +392,86 @@ function PracticeEditor({
       </div>
       <div className="practice-grid">
         <section className="coding-column" aria-label="코드 작성">
-          <div className="editor-panel">
-            <div className="editor-header">
-              <span>
-                <b className="file-icon">
-                  {problemSet.language === "javascript" ? "JS" : "‹/›"}
-                </b>
-                {filenames[problemSet.language]}
-              </span>
-              <span className="save-status" role="status">
-                {saving ? "저장 중…" : dirty ? "저장하지 않은 변경" : "저장됨"}
-              </span>
-              <button
-                className="text-button"
-                onClick={() => void save()}
-                disabled={saving || !dirty || conflict}
-              >
-                저장
-              </button>
+          <div ref={comparison} className={`editor-comparison${solutionOpen && exercise.kind !== "READ" ? " is-open" : ""}`}>
+            <div className="editor-panel">
+              <div className="editor-header">
+                <span>
+                  <b className="file-icon">
+                    {problemSet.language === "javascript" ? "JS" : "‹/›"}
+                  </b>
+                  {filenames[problemSet.language]}
+                </span>
+                <span className="save-status" role="status">
+                  {saving ? "저장 중…" : dirty ? "저장하지 않은 변경" : "저장됨"}
+                </span>
+                <button
+                  className="text-button"
+                  onClick={() => void save()}
+                  disabled={saving || !dirty || conflict}
+                >
+                  저장
+                </button>
+              </div>
+              <CodeMirror
+                onCreateEditor={(view) => view.contentDOM.setAttribute("aria-label", "코드 편집기")}
+                value={code}
+                theme="dark"
+                height="420px"
+                extensions={extensions}
+                editable={exercise.kind !== "READ" && !finishing}
+                onChange={setCode}
+                aria-label="코드 편집기"
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: false,
+                  highlightActiveLine: true,
+                }}
+              />
+              {exercise.kind === "READ" && (
+                <label className="prediction">
+                  예상 출력
+                  <textarea
+                    value={answer}
+                    disabled={finishing}
+                    onChange={(event) => setAnswer(event.target.value)}
+                    maxLength={4000}
+                    placeholder="실행 전에 출력 결과를 먼저 예측해보세요."
+                  />
+                </label>
+              )}
+              <div className="editor-footer">
+                <span>
+                  UTF-8 <span className="footer-separator">/</span>{" "}
+                  {code.split("\n").length} lines
+                </span>
+                <span>
+                  {exercise.kind === "READ"
+                    ? "읽기 전용 코드"
+                    : codeTests ? "풀이 코드 · 아래 테스트 코드와 함께 실행" : "단일 파일 · 표준 라이브러리"}
+                </span>
+              </div>
             </div>
-            <CodeMirror
-              onCreateEditor={(view) => view.contentDOM.setAttribute("aria-label", "코드 편집기")}
-              value={code}
-              theme="dark"
-              height="420px"
-              extensions={extensions}
-              editable={exercise.kind !== "READ" && !finishing}
-              onChange={setCode}
-              aria-label="코드 편집기"
-              basicSetup={{
-                lineNumbers: true,
-                foldGutter: false,
-                highlightActiveLine: true,
-              }}
-            />
-            {exercise.kind === "READ" && (
-              <label className="prediction">
-                예상 출력
-                <textarea
-                  value={answer}
-                  disabled={finishing}
-                  onChange={(event) => setAnswer(event.target.value)}
-                  maxLength={4000}
-                  placeholder="실행 전에 출력 결과를 먼저 예측해보세요."
-                />
-              </label>
+            {solutionOpen && exercise.kind !== "READ" && (
+              <section id="exercise-solution" className="solution-panel" aria-label="예시 정답 코드">
+                <div className="editor-header">
+                  <span>예시 정답 · 읽기 전용</span>
+                  <button className="text-button" onClick={() => setSolutionOpen(false)}>정답 닫기</button>
+                </div>
+                {solutionLoading && <p role="status">정답 불러오는 중…</p>}
+                <ErrorNotice error={solutionError} />
+                {solution && <CodeMirror
+                  onCreateEditor={(view) => view.contentDOM.setAttribute("aria-label", "예시 정답 편집기")}
+                  value={solution.code}
+                  theme="dark"
+                  height="420px"
+                  extensions={extensions}
+                  editable={false}
+                  readOnly
+                  basicSetup={{ lineNumbers: true, foldGutter: false, highlightActiveLine: false }}
+                />}
+                <p className="editor-footer">내 코드와 비교해보세요. 정답 확인만으로 완료 처리되지는 않습니다.</p>
+              </section>
             )}
-            <div className="editor-footer">
-              <span>
-                UTF-8 <span className="footer-separator">/</span>{" "}
-                {code.split("\n").length} lines
-              </span>
-              <span>
-                {exercise.kind === "READ"
-                  ? "읽기 전용 코드"
-                  : codeTests ? "풀이 코드 · 아래 테스트 코드와 함께 실행" : "단일 파일 · 표준 라이브러리"}
-              </span>
-            </div>
           </div>
           <div className="run-toolbar">
             <button
@@ -667,11 +696,11 @@ function PracticeEditor({
               aria-expanded={solutionOpen} aria-controls="exercise-solution">
               {solutionLoading ? "정답 불러오는 중…" : solutionOpen ? "정답 닫기" : "정답 보기"}
             </button>
-            {solutionOpen && <div id="exercise-solution">
+            {solutionOpen && exercise.kind === "READ" && <div id="exercise-solution">
               <ErrorNotice error={solutionError} />
               {solution && <>
-                <h3>{exercise.kind === 'READ' ? '정답 출력' : '예시 정답'}</h3>
-                <pre><code>{exercise.kind === 'READ' ? solution.answer : solution.code}</code></pre>
+                <h3>정답 출력</h3>
+                <pre><code>{solution.answer}</code></pre>
                 <p className="muted">내 풀이와 비교해보세요. 정답을 보는 것만으로 완료 처리되지는 않습니다.</p>
               </>}
             </div>}

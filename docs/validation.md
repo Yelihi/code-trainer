@@ -257,3 +257,9 @@ Docker cgroup의 실제 OOM 기록으로 메모리 초과를 구분한다. 채�
 - `backend.test_app.AppTest.test_modify_and_build_starters_reject_test_collisions_and_demo_output`은 두 단계의 중복 선언/예시 출력을 거부하는 회귀 검사다. `scripts/check-sandbox.py`에는 함수 구현+별도 호출의 정상 출력, 같은 `plain` 선언 충돌, 다음 실행에서 변수 잔존 없음의 실제 Docker 검사를 추가했다. 브라우저에서는 중복 선언 오류 안내를 별도 stub으로 확인했다.
 - 로컬 Python 79개, 프런트 API 3개·타입·lint·빌드 통과. Frontend System MCP 기록 도구는 연결되지 않아 해당 워크플로 완료 기록은 생성하지 않았다.
 - 첫 CI의 실제 샌드박스 검사가 내장 BUILD의 빈 함수(반환 함수 누락)를 거부했다. 임시 `amount => 0` 반환으로 시작 코드를 보완했다. 정답 로직은 포함하지 않으며 기본 테스트는 미통과한다. Mac의 기존 mTLS 실행기를 통해 현재 소스의 기본 문제 검증 19개 통과, 관련 Python 51개 재검사 통과를 확인했다.
+
+### 정답 코드 분할 비교 (2026-10-08)
+
+- FIX·MODIFY·BUILD의 정답은 작성 편집기 옆 읽기 전용 CodeMirror로 표시한다. 기존 정답 API와 도움 사용 기록을 유지하며 READ는 정답 출력을 표시한다.
+- 임시 DB의 로컬 브라우저에서 정답 열기·닫기 후 미저장 코드 보존, 정답 편집 불가, 좌우 동일 높이 배치, 상단 메뉴 아래로 이동을 assertion으로 확인했다. 390×844 화면에서는 코드 탭으로 전환해 위아래 배치하고 가로 넘침이 없으며, READ의 정답 출력 유지도 확인했다.
+- 프런트엔드 빌드·lint 통과. 새 의존성이나 백엔드 변경은 없다.

@@ -918,6 +918,30 @@ button.text-button,
 .editor-panel {
   background: #0b0919;
 }
+.editor-comparison {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  scroll-margin-top: 85px;
+}
+.editor-comparison.is-open {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.editor-comparison > * {
+  min-width: 0;
+}
+.solution-panel {
+  border-left: 1px solid var(--line);
+}
+.solution-panel .text-button {
+  margin-left: auto;
+}
+.solution-panel .editor-footer {
+  margin: 0;
+}
+@media (max-width: 1100px) {
+  .editor-comparison.is-open { grid-template-columns: minmax(0, 1fr); }
+  .solution-panel { border-left: 0; border-top: 1px solid var(--line); }
+}
 .editor-header {
   display: flex;
   align-items: center;
@@ -1495,6 +1519,7 @@ button.text-button,
   .mobile-code .result-panel,
   .mobile-problem .coding-column,
   .mobile-result .problem-panel,
+  .mobile-result .editor-comparison,
   .mobile-result .editor-panel {
     display: none;
   }

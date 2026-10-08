@@ -102,7 +102,7 @@ def sample():
          ['function makeCounter(start, step) { return () => start += 1; }', 'let n; function makeCounter(start, step) { n = start; return () => n += step; }']),
         ('BUILD', '독립적인 두 개의 저금통',
          'makeAccount(start)를 구현하세요. 시작 잔액을 기억하는 함수를 반환합니다. 반환된 함수에 amount를 전달하면 잔액에 더한 뒤 새 잔액을 반환해야 합니다. 저금통마다 잔액은 독립적이며, 음수 잔액과 음수 증감액도 허용합니다. 함수 내부의 구현 방식은 자유입니다.',
-         'function makeAccount(start) {\n  // 증감액을 받아 새 잔액을 반환하는 함수를 만들어주세요.\n}\n',
+         'function makeAccount(start) {\n  // TODO: 증감액을 받아 새 잔액을 반환하도록 구현하세요.\n  return (amount) => 0; // 실행 가능한 임시 반환값입니다.\n}\n',
          'function makeAccount(start) { return amount => start += amount; }',
          'function makeAccount(start) { const balance = [start]; return amount => { balance[0] += amount; return balance[0]; }; }',
          [('basic', 'const travel = makeAccount(0);\nconst books = makeAccount(10);\n\nconsole.log(travel(3)); // 3 — 3만큼 저축\nconsole.log(books(-4)); // 6 — 4만큼 사용\nconsole.log(travel(2)); // 5 — 앞서 저축한 값에 누적', '3\n6\n5'),

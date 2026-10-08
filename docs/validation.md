@@ -256,3 +256,4 @@ Docker cgroup의 실제 OOM 기록으로 메모리 초과를 구분한다. 채�
 - 신규 code-mode 문제는 MODIFY·BUILD도 시작 코드와 모든 테스트를 함께 실행한다. 미완성 출력은 허용하지만 문법/실행 오류는 거부한다. JS/TS/Python의 시작 코드 단독 실행에서 예시 출력이 있으면 거부하고 기존 생성 수정 흐름으로 보낸다. READ의 예측용 프로그램은 이 제한에서 제외한다. 기존 저장된 문제와 풀이를 자동 변환하지 않는다.
 - `backend.test_app.AppTest.test_modify_and_build_starters_reject_test_collisions_and_demo_output`은 두 단계의 중복 선언/예시 출력을 거부하는 회귀 검사다. `scripts/check-sandbox.py`에는 함수 구현+별도 호출의 정상 출력, 같은 `plain` 선언 충돌, 다음 실행에서 변수 잔존 없음의 실제 Docker 검사를 추가했다. 브라우저에서는 중복 선언 오류 안내를 별도 stub으로 확인했다.
 - 로컬 Python 79개, 프런트 API 3개·타입·lint·빌드 통과. Frontend System MCP 기록 도구는 연결되지 않아 해당 워크플로 완료 기록은 생성하지 않았다.
+- 첫 CI의 실제 샌드박스 검사가 내장 BUILD의 빈 함수(반환 함수 누락)를 거부했다. 임시 `amount => 0` 반환으로 시작 코드를 보완했다. 정답 로직은 포함하지 않으며 기본 테스트는 미통과한다. Mac의 기존 mTLS 실행기를 통해 현재 소스의 기본 문제 검증 19개 통과, 관련 Python 51개 재검사 통과를 확인했다.

@@ -156,7 +156,7 @@ class LearningFeaturesTest(unittest.TestCase):
             wrong = any(code == w.code for e in draft.exercises for w in e.evaluation.wrong_solutions)
             starter = code == draft.exercises[1].starter
             return {'status': 'runtime_error' if wrong else 'failed' if starter else 'passed', 'stdout':'', 'stderr':'', 'tests': []}
-        with patch.object(service, 'evaluate', side_effect=evaluate), patch.object(service.runner, 'run', return_value=[{'status':'ok','stdout':draft.exercises[0].evaluation.read_answer}]):
+        with patch.object(service, 'evaluate', side_effect=evaluate), patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs: [{'status':'ok','stdout':draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else ''}]):
             with self.assertRaises(service.Error) as caught:
                 service.validate_set('javascript', draft)
         self.assertTrue(any(f['check'].startswith('wrong:') for f in caught.exception.feedback))

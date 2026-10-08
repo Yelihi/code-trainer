@@ -301,6 +301,10 @@ Each implementation includes all required declarations, imports and initial obje
 without example calls. Reference is NOT appended to starter: repeat required declarations in
 BOTH. For example, a function using a global object must include that object's declaration.
 Return primitive values when possible.
+Starter is checked with EVERY public and hidden test, including MODIFY and BUILD.
+Keep demo inputs (such as plain/nullProto), example invocations and top-level printing in
+test snippets ONLY, never in starter. Incomplete skeletons must still execute normally:
+use safe placeholder return values rather than throwing, missing methods or syntax errors.
 
 Write self-contained public and hidden test snippets. Each runs in a fresh process with
 ONLY the submitted solution followed by that snippet. Every test creates its own inputs and
@@ -350,7 +354,7 @@ revealing the full output. Do not use the lesson's exact example or introduce la
                 exercises.append(ExerciseDraft.model_validate(value))
                 diagnostics.event('READ 코드는 유지하고 실제 실행 결과로 정답을 보정합니다. 다시 실행해 확인합니다.', kind=kind, code='read_answer_repair')
                 continue
-        if old and kind == 'FIX' and failures and all(f['check'] == 'starter' for f in failures):
+        if old and kind == 'FIX' and failures and all(f['check'] in ('starter', 'starter_setup') for f in failures):
             diagnostics.event('정답과 테스트는 유지하고 FIX 시작 코드와 힌트만 수정합니다.', kind=kind, code='fix_starter_repair')
             repair = generate(FixStarterRepair, '''Create the intentionally BUGGY starter for this FIX exercise.
 The reference solution and all tests already passed validation and are immutable.
@@ -377,8 +381,12 @@ Both must include all required declarations, imports and initial object values; 
 For ReferenceError/NameError, find each missing name in the starter and include its required
 declaration in the reference too. A function-only patch is invalid when it uses global objects.
 Tests contain ONLY setup, calls and printing, NEVER the implementation/class definition.
-If a name is declared twice, remove the repeated definition from the test; do not rename the
-interface. If an instance is missing, construct it inside that test. Keep output and return
+If a name is declared twice, remove demonstration fixtures/calls from the implementation;
+keep test setup inside the tests. Preserve globals required by the interface and use distinct
+test-local fixture names if needed. Do not rename the interface or delete test coverage.
+All starters must run with every test without execution errors, even unfinished BUILD skeletons.
+Use safe placeholder returns and keep all top-level demo printing in tests only.
+If an instance is missing, construct it inside that test. Keep output and return
 behavior consistent with the description. Preserve both public and hidden coverage.
 Reference must pass every test. For FIX, starter must run but return a wrong result in a test.
 Return the corrected code fields, not a new problem or an explanation.''',

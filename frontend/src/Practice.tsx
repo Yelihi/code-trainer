@@ -101,7 +101,8 @@ function PracticeEditor({
     test_code: string;
   } | null>(null);
   const [passed, setPassed] = useState(exercise.passed);
-  const [finishing, setFinishing] = useState(false);
+  const [destination, setDestination] = useState<number | "finish" | null>(null);
+  const finishing = destination !== null;
   const [solution, setSolution] = useState<{ code: string; answer: string } | null>(null);
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [solutionLoading, setSolutionLoading] = useState(false);
@@ -129,8 +130,12 @@ function PracticeEditor({
   const completedCount = problemSet.exercises.filter((item, i) => i === index ? passed : item.passed).length;
 
   useEffect(() => {
-    if (finishing && !saving && !dirty && !busy) navigate(reviewId ? "/reviews" : `/learn/${problemSet.context_id}`);
-  }, [finishing, saving, dirty, busy, navigate, problemSet.context_id, reviewId]);
+    // Navigate only after the saved state has rendered and released useBlocker.
+    if (destination === null || saving || dirty || busy) return;
+    setDestination(null);
+    if (destination === "finish") navigate(reviewId ? "/reviews" : `/learn/${problemSet.context_id}`);
+    else onMove(destination);
+  }, [destination, saving, dirty, busy, navigate, onMove, problemSet.context_id, reviewId]);
   const extensions = useMemo(
     () => [
       problemSet.language === "python"
@@ -215,12 +220,13 @@ function PracticeEditor({
   }
 
   async function move(next: number) {
-    if (await save()) onMove(next);
+    setDestination(next);
+    if (!await save()) setDestination(null);
   }
 
   async function finish() {
-    setFinishing(true);
-    if (!await save()) setFinishing(false);
+    setDestination("finish");
+    if (!await save()) setDestination(null);
   }
 
   async function showSolution() {
@@ -442,7 +448,7 @@ function PracticeEditor({
             <button
               onClick={() => void execute("run")}
               disabled={
-                !!busy ||
+                !!busy || finishing ||
                 problemSet.withdrawn ||
                 (exercise.kind === "READ" && !answer.trim())
               }
@@ -452,7 +458,7 @@ function PracticeEditor({
             {exercise.kind !== "READ" && (
               <button
                 onClick={() => void execute("test")}
-                disabled={!!busy || problemSet.withdrawn}
+                disabled={!!busy || finishing || problemSet.withdrawn}
               >
                 {busy === "test" ? "검사 중…" : `✓ ${actionLabels.test}`}
               </button>
@@ -461,7 +467,7 @@ function PracticeEditor({
               className="primary"
               onClick={() => void execute("submit")}
               disabled={
-                !!busy || (!!reviewId && passed) ||
+                !!busy || finishing || (!!reviewId && passed) ||
                 problemSet.withdrawn ||
                 (exercise.kind === "READ" && !answer.trim())
               }
@@ -498,7 +504,7 @@ function PracticeEditor({
               <div className="stdin-label">
                 <div className="test-code-heading">
                   <strong>풀이 코드 + 아래 테스트 코드 → 실행 결과</strong>
-                  <button onClick={() => void execute("run")} disabled={!!busy || problemSet.withdrawn}>
+                  <button onClick={() => void execute("run")} disabled={!!busy || finishing || problemSet.withdrawn}>
                     {busy === "run" ? "실행 중…" : "▷ 이 테스트 코드 실행"}
                   </button>
                 </div>
@@ -552,6 +558,9 @@ function PracticeEditor({
                     {result.data.stdout && <pre>{result.data.stdout}</pre>}
                     {result.data.stderr && (
                       <pre className="error-text">{result.data.stderr}</pre>
+                    )}
+                    {codeTests && result.data.stderr.includes("SyntaxError: Identifier") && result.data.stderr.includes("has already been declared") && (
+                      <p className="notice">풀이 코드와 테스트 코드에 같은 변수가 선언되어 있습니다. 문제에 필요한 구현은 유지하고, 예시 변수와 함수 호출은 테스트 코드 칸에만 두세요. 이전 단계의 변수가 남아 있는 것은 아닙니다.</p>
                     )}
                     {result.data.tests.map((test) => (
                       <details className="test-result" key={test.id}>
@@ -711,13 +720,13 @@ function PracticeEditor({
           </details>
           <div className="exercise-navigation">
             <button
-              disabled={index === 0 || !!busy || saving}
+              disabled={index === 0 || !!busy || saving || finishing}
               onClick={() => void move(index - 1)}
             >
               ← 이전
             </button>
             <button
-              disabled={index === problemSet.exercises.length - 1 || !!busy || saving}
+              disabled={index === problemSet.exercises.length - 1 || !!busy || saving || finishing}
               onClick={() => void move(index + 1)}
             >
               다음 →

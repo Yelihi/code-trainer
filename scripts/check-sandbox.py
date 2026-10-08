@@ -35,6 +35,15 @@ for language, (solution, calls) in functions.items():
     assert result['status'] == 'passed', (language, result)
     print('PASS function call tests:', language, flush=True)
 
+solution = 'function countOwnEnumerable(obj) { return Object.keys(obj).length; }'
+calls = 'const plain = {a: 1, b: 2}; const nullProto = Object.create(null); nullProto.x = 1; nullProto.y = 2; console.log(countOwnEnumerable(plain)); console.log(countOwnEnumerable(nullProto));'
+tests = [Case(id='own-keys', stdin='', code=calls, expected='2\n2', requirements=['r1'])]
+assert service.evaluate('javascript', solution, tests)['status'] == 'passed'
+duplicate = service.evaluate('javascript', solution + '\nconst plain = {};', tests)
+assert duplicate['status'] == 'runtime_error' and 'has already been declared' in duplicate['stderr']
+assert runner.run('javascript', 'console.log(typeof plain)', [''])[0]['stdout'].strip() == 'undefined'
+print('PASS separate implementation/test setup and fresh execution state', flush=True)
+
 for language in ('typescript', 'cpp', 'rust'):
     result = runner.run(language, 'this is not valid code @@@', [''])[0]
     assert result['status'] == 'compile_error', (language, result)

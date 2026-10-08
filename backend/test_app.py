@@ -693,7 +693,8 @@ class AppTest(unittest.TestCase):
                 patch.object(ai, 'generate', side_effect=generate) as generation_call, \
                 patch.object(service.runner, 'available', return_value=True), \
                 patch.object(service.runner, 'command', return_value=SimpleNamespace(stdout='sha256:test', returncode=0)), \
-                patch.object(service.runner, 'run', return_value=[{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer}]), \
+                patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs:
+                             [{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else ''}]), \
                 patch.object(service, 'evaluate', side_effect=lambda language, code, tests, image_id=None:
                              {'status': 'failed' if code == buggy_starter else 'passed', 'tests': []}):
             response = self.client.post('/api/generations', json={
@@ -999,12 +1000,13 @@ class AppTest(unittest.TestCase):
         self.assertEqual(draft.model_dump(), original)
         starter = repaired.exercises[1].starter
         wrong = {w.code for e in repaired.exercises for w in e.evaluation.wrong_solutions}
-        with patch.object(service.runner, 'run', return_value=[{'status': 'ok', 'stdout': output}]) as run, \
+        with patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs:
+                             [{'status': 'ok', 'stdout': output if code == repaired.exercises[0].starter else ''}]) as run, \
                 patch.object(service, 'evaluate', side_effect=lambda language, code, tests, image_id=None:
                              {'status': 'failed' if code == starter or code in wrong else 'passed'}):
             self.assertTrue(all(c['passed'] for c in service.validate_set(context.language, repaired)))
-            run.assert_called_once()
-            run.return_value = [{'status': 'ok', 'stdout': 'different output'}]
+            self.assertEqual(sum(call.args[1] == repaired.exercises[0].starter for call in run.call_args_list), 1)
+            run.side_effect = lambda language, code, inputs, **kwargs: [{'status': 'ok', 'stdout': 'different output' if code == repaired.exercises[0].starter else ''}]
             with self.assertRaises(service.Error) as error:
                 service.validate_set(context.language, repaired)
             self.assertEqual(error.exception.feedback[0]['kind'], 'READ')
@@ -1017,7 +1019,8 @@ class AppTest(unittest.TestCase):
 
     def test_execution_diagnostics_explain_failure_without_answer_output(self):
         context, draft = sample()
-        with patch.object(service.runner, 'run', return_value=[{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer}]), \
+        with patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs:
+                             [{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else ''}]), \
                 patch.object(service, 'evaluate', return_value={'status': 'runtime_error', 'stderr': 'ReferenceError: private-answer-output'}):
             with self.assertRaises(service.Error) as error:
                 service.validate_set(context.language, draft)
@@ -1039,12 +1042,13 @@ class AppTest(unittest.TestCase):
         starter = draft.exercises[1].starter
         def evaluate(language, code, tests, image_id=None):
             return {'status': 'failed' if code == starter else 'passed', 'tests': []}
-        with patch.object(service.runner, 'run', return_value=[{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer}]), \
+        with patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs:
+                             [{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else ''}]), \
                 patch.object(service, 'evaluate', side_effect=evaluate) as execution:
             checks = service.validate_set(context.language, draft)
-            self.assertEqual(len(checks), 5)
+            self.assertEqual(len(checks), 10)
             self.assertTrue(all(check['passed'] for check in checks))
-            self.assertEqual(execution.call_count, 4)
+            self.assertEqual(execution.call_count, 6)
             execution.side_effect = None
             execution.return_value = {'status': 'runtime_error', 'stderr': 'private execution detail'}
             with self.assertRaises(service.Error) as error:
@@ -1055,6 +1059,25 @@ class AppTest(unittest.TestCase):
             with self.assertRaises(service.Error) as error:
                 service.validate_set(context.language, draft)
             self.assertEqual([f['check'] for f in error.exception.feedback], ['starter'])
+
+    def test_modify_and_build_starters_reject_test_collisions_and_demo_output(self):
+        context, draft = sample()
+        wrong = {w.code for e in draft.exercises for w in e.evaluation.wrong_solutions}
+        for exercise in draft.exercises[2:]:
+            for fault in ('collision', 'demo'):
+                with self.subTest(kind=exercise.kind, fault=fault):
+                    def evaluate(language, code, tests, image_id=None):
+                        if code == exercise.starter and fault == 'collision':
+                            return {'status': 'runtime_error', 'stderr': "SyntaxError: Identifier 'plain' has already been declared"}
+                        return {'status': 'failed' if code in wrong or code == draft.exercises[1].starter else 'passed'}
+                    def run(language, code, inputs, **kwargs):
+                        output = draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else 'demo output' if code == exercise.starter and fault == 'demo' else ''
+                        return [{'status': 'ok', 'stdout': output}]
+                    with patch.object(service, 'evaluate', side_effect=evaluate), patch.object(service.runner, 'run', side_effect=run):
+                        with self.assertRaises(service.Error) as caught:
+                            service.validate_set(context.language, draft)
+                    self.assertEqual([(f['kind'], f['check']) for f in caught.exception.feedback],
+                                     [(exercise.kind, 'starter' if fault == 'collision' else 'starter_setup')])
 
 
 if __name__ == '__main__':

@@ -303,11 +303,15 @@ def validate_set(language, draft, image_id=None):
         if not passed:
             # Private generation feedback, never serialized in learner-facing errors.
             failures.append({'kind': kind, 'check': name,
-                             'required': 'wrong output without execution errors' if name == 'starter' or name.startswith('wrong:') else 'pass all tests',
+                             'required': ('definitions only; no demonstration calls or output' if name == 'starter_setup' else
+                                          'run without execution errors; unfinished outputs are allowed' if name == 'starter' and kind != 'FIX' else
+                                          'wrong output without execution errors' if name == 'starter' or name.startswith('wrong:') else 'pass all tests'),
                              'result': result})
             reason = ('예측한 출력이 실제 실행 결과와 다릅니다.' if name == 'prediction' else
                       '검증용 풀이가 테스트를 통과하지 못했습니다.' if name in ('reference', 'alternative') else
-                      'FIX 시작 코드가 모든 테스트를 통과하여 고칠 오류가 없습니다.' if name == 'starter' else
+                      '시작 코드에 테스트와 별도로 실행되는 예시 호출·출력이 포함되어 있습니다.' if name == 'starter_setup' else
+                      'FIX 시작 코드가 모든 테스트를 통과하여 고칠 오류가 없습니다.' if name == 'starter' and kind == 'FIX' else
+                      '시작 코드가 테스트와 함께 정상 실행되지 않습니다.' if name == 'starter' else
                       '대표 오답이 테스트를 통과하여 잘못된 풀이를 구별하지 못했습니다.')
             if result.get('status') not in ('ok', 'passed', 'failed'):
                 reason = '검증용 코드 실행이 실패했습니다: ' + {
@@ -350,9 +354,14 @@ def validate_set(language, draft, image_id=None):
             target = next(t for t in tests if t.id == wrong.failing_test)
             result = evaluate(language, wrong.code, [target], image_id)
             record(exercise.kind, 'wrong:' + wrong.requirement, result['status'] == 'failed', result)
-        if exercise.kind == 'FIX':
+        if exercise.kind == 'FIX' or exercise.test_mode == 'code':
             result = evaluate(language, exercise.starter, tests, image_id)
-            record('FIX', 'starter', result['status'] == 'failed', result)
+            valid = result['status'] == 'failed' if exercise.kind == 'FIX' else result['status'] in ('passed', 'failed')
+            record(exercise.kind, 'starter', valid, result)
+        if exercise.test_mode == 'code' and language in ('javascript', 'typescript', 'python'):
+            # Definitions alone must not print demo output that pollutes every test.
+            result = runner.run(language, exercise.starter, [''], image_id=image_id)[0]
+            record(exercise.kind, 'starter_setup', result['status'] == 'ok' and not result['stdout'].strip(), result)
     if failures:
         raise Error('문제 실행 검증에 실패했습니다.', feedback=failures)
     return checks

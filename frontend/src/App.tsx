@@ -143,7 +143,7 @@ export function GenerationStatus({ generation }: { generation: Generation }) {
     {generation.error && <ErrorNotice error={generation.error} />}
     {failed && <div className="generation-help">
       {!!issueEvent?.issues?.length && <ul>{issueEvent.issues.map((issue, index) => <li key={index}>{issue.label || '학습 항목'}: {issue.reason}</li>)}</ul>}
-      {!!validationFailures.length && <ul>{validationFailures.map((event, index) => <li key={index}>{event.kind} · {event.check === 'reference' ? '기준 풀이' : event.check === 'alternative' ? '대안 풀이' : event.check === 'starter' ? '시작 코드' : event.check?.startsWith('wrong:') ? '대표 오답' : '예측 출력'}: {event.message}</li>)}</ul>}
+      {!!validationFailures.length && <ul>{validationFailures.map((event, index) => <li key={index}>{event.kind} · {event.check === 'reference' ? '기준 풀이' : event.check === 'alternative' ? '대안 풀이' : event.check === 'starter' ? '시작 코드' : event.check === 'starter_setup' ? '시작 코드의 예시 출력' : event.check?.startsWith('wrong:') ? '대표 오답' : '예측 출력'}: {event.message}</li>)}</ul>}
       {!events.length && <p>이전 버전에서 생성된 기록이라 상세 원인이 남아 있지 않습니다. 다시 생성하면 단계별 진단 로그가 저장됩니다.</p>}
       <p>{generation.context_id ? '개념 학습과 준비된 문제는 그대로 이용할 수 있습니다. 해당 단원에서 문제 생성을 다시 시도해주세요.' : '학습 과정이 아직 저장되지 않았습니다. 위 안내를 확인한 뒤 자료를 다시 입력하여 생성해주세요.'}</p>
     </div>}

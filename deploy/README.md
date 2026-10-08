@@ -176,6 +176,30 @@ cat ~/.config/code-trainer/deployment/release-state.json
 
 관리자 메뉴의 운영 상태는 `com.code-trainer.monitor`가 5분마다 수집한 스냅샷을 읽는다. `python3 deploy/install-cd.py`가 검토한 monitor.py·host.py·실행 앱과 LaunchAgent를 함께 설치한다. 이 호스트 변경은 일반 release 배포만으로 자동 적용되지 않는다. 기존 보호 파일 해시 검사를 유지한다.
 
-수집기는 실제 앱/브로커 컨테이너에 마운트된 **공개 인증서**의 만료일, 내장/외장 디스크 여유, last-backup.json의 성공 시각만 전달한다. 앱 컨테이너의 `/data/operations.json`을 원자적으로 교체하며 API에 Docker 소켓·호스트 키·추가 마운트를 주지 않는다. 관리자 API는 공개할 필드만 반환한다. 수집 실패 시 이전 파일이 남으며 15분 이후 오래된 정보로 표시된다. 새로고침은 저장된 정보를 다시 읽으며 즉시 호스트 작업을 실행하지 않는다.
+수집기는 실제 앱/브로커 컨테이너에 마운트된 **공개 인증서**의 만료일, 내장/외장 디스크 여유, last-backup.json의 성공 시각, API·실행기 연결 상태를 전달한다. 앱 컨테이너의 `/data/operations.json`을 원자적으로 교체하며 API에 Docker 소켓·호스트 키·추가 마운트를 주지 않는다. 관리자 API는 공개할 필드만 반환한다. 수집 실패 시 이전 파일이 남으며 15분 이후 오래된 정보로 표시된다. 새로고침은 저장된 정보를 다시 읽으며 즉시 호스트 작업을 실행하지 않는다.
 
 화면 안내 기준은 내장 여유 10GiB 미만, 백업 성공 후 36시간 초과, leaf 인증서 만료 14일 이내다. 배포 전 백업의 기존 최소 5GiB 검사는 유지한다. 인증서 자동 갱신·외부 알림 발송·Mac 전체 재부팅 검증·장치 밖 복구 사본은 이번 변경에 포함하지 않는다.
+
+### 실행 실패와 연결 상태 확인
+
+`Load failed`와 함께 `cloudflareaccess.com/.../login`에 대한 CSP 오류가 발생하면 인증이 유효하지 않아 API 요청이 로그인 화면으로 리다이렉트된 것이다. CSP의 `connect-src`를 넓히지 않는다. 공통 API 클라이언트는 `X-Requested-With: XMLHttpRequest`로 401 응답을 요청하고, 예외적인 리다이렉트도 따라가지 않는다. 재인증 안내에서 새 탭으로 로그인한 뒤 **인증 완료 · 다시 연결**을 누른다. 현재 탭의 편집기는 유지하며 실행/제출을 자동 재전송하지 않는다. 인증 완료 후 필요한 동작을 사용자가 다시 실행한다. [Cloudflare 공식 설명](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/session-management/#ajax).
+
+기존 5분 주기 수집기에 API `/healthz` 응답과 앱→실행기 mTLS 연결 검사를 추가했다. 관리자 **운영 상태**에서 연결 실패와 오래된 스냅샷을 구분한다. 실제 코드 정답 여부나 사용자 브라우저의 Access 세션은 이 상태 검사의 대상이 아니다.
+
+앱에 접속하지 못할 때 Mac에서 확인한다:
+
+```sh
+cat ~/.config/code-trainer/monitor-status.json
+tail -n 20 ~/.config/code-trainer/monitor.log
+launchctl print gui/$(id -u)/com.code-trainer.monitor
+```
+
+상태 JSON은 앱 볼륨에 전송하기 전에 Mac에 `0600`으로 저장하므로 앱 중단 때에도 확인할 수 있다. 수집기 자체가 멈췄다면 `collected_at`이 갱신되지 않는다. 외부 장애 알림 전송은 설정하지 않았다.
+
+서버에 도착한 실행 요청, HTTP 오류, 2초 이상 걸린 API 요청은 기존 순환 `generation.log`와 컨테이너 로그에 메서드·경로 템플릿·HTTP 상태·처리 시간·요청 ID로 기록한다. 코드·답안·query·인증 헤더는 기록하지 않는다. 오류 화면에 요청 ID가 있으면 같은 ID로 로그를 찾는다. Access가 서버 앞에서 거부한 요청은 이 로그에 남지 않으므로 브라우저 오류도 함께 확인한다.
+
+```sh
+docker --context colima-code-trainer-app logs --since 30m code-trainer-app 2>&1 | rg 'API request'
+```
+
+2026-10-08 검증: 실제 앱→실행기에서 JavaScript `console.log(7)` 정상 실행. Python 검사 78개, 프런트 API 3개·타입·lint·빌드, Worker 검사 통과. 로컬 브라우저에서 실행 중 인증 만료를 재현하고 재인증 후 미저장 답안 유지 확인. 실제 LaunchAgent 수집 결과 API·실행기 모두 정상. 모니터링 호스트 파일만 갱신할 때는 설치된 배포 감시의 `poll.lock`을 잡고 검토한 `monitor.py`와 해당 보호 해시만 함께 갱신했다. Swift 실행 앱·Tunnel·VM 권한은 변경하지 않았다.

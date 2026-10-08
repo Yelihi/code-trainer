@@ -25,15 +25,28 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, method = 'GET', data?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`/api${path}`, {
-    method, credentials: 'same-origin', signal,
-    headers: data === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: data === undefined ? undefined : JSON.stringify(data),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, {
+      method, credentials: 'same-origin', signal, redirect: 'manual',
+      // Access returns 401 instead of redirecting AJAX to a cross-origin login page.
+      headers: { 'X-Requested-With': 'XMLHttpRequest', ...(data === undefined ? {} : { 'Content-Type': 'application/json' }) },
+      body: data === undefined ? undefined : JSON.stringify(data),
+    });
+  } catch (error) {
+    if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
+    throw new ApiError(0, '서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요. 작성 중인 코드는 그대로 남아 있습니다.');
+  }
+  if (response.type === 'opaqueredirect') {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('session-expired', { detail: 'access' }));
+    throw new ApiError(401, '로그인이 만료되었습니다. 이메일 인증 후 다시 시도해주세요.');
+  }
   const body = await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('session-expired', { detail: response.headers.get('X-Trainer-Auth') }));
-    throw new ApiError(response.status, typeof body?.detail === 'string' ? body.detail : `요청을 처리하지 못했습니다 (${response.status}).`);
+    const detail = typeof body?.detail === 'string' ? body.detail : response.status === 401 ? '로그인이 만료되었습니다. 이메일 인증 후 다시 시도해주세요.' : `요청을 처리하지 못했습니다 (${response.status}).`;
+    const requestId = response.headers.get('X-Request-ID');
+    throw new ApiError(response.status, detail + (requestId ? ` (요청 ID: ${requestId})` : ''));
   }
   if (body === null) throw new ApiError(502, '서버 응답을 확인하지 못했습니다. 화면을 새로고침해주세요.');
   return body as T;

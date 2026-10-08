@@ -44,7 +44,7 @@ export default {
         return failure(502, '서버 연결 인증을 확인해주세요.');
       }
       const outgoing = new Headers({ 'Cache-Control': 'private, no-store', 'X-Trainer-Auth': 'access', 'X-Content-Type-Options': 'nosniff' });
-      for (const name of ['content-type', 'retry-after']) {
+      for (const name of ['content-type', 'retry-after', 'x-request-id']) {
         if (upstream.headers.has(name)) outgoing.set(name, upstream.headers.get(name));
       }
       return new Response(upstream.body, { status: upstream.status, headers: outgoing });

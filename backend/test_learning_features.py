@@ -166,12 +166,35 @@ class LearningFeaturesTest(unittest.TestCase):
         file = Path(self.directory.name) / 'operations.json'
         file.write_text(json.dumps({'collected_at':'2020-01-01T00:00:00+00:00', 'backup_at':None,
             'internal_free_gib':4, 'external_free_gib':100, 'certificates':[{'name':'실행기 연결','days_left':2}],
-            'checks':{}, 'secret':'never-return'}))
+            'checks':{}, 'services':{'api':True,'runner':True}, 'secret':'never-return'}))
         result = self.client.get('/api/admin/operations').json()
         self.assertTrue(result['stale'])
         self.assertEqual(len(result['warnings']), 4)
         self.assertNotIn('secret', result)
+        value = json.loads(file.read_text())
+        value['services']['runner'] = False
+        file.write_text(json.dumps(value))
+        self.assertIn('코드 실행기 연결 상태를 확인해주세요.', self.client.get('/api/admin/operations').json()['warnings'])
         file.write_text('{"collected_at": 42}')
         self.assertFalse(self.client.get('/api/admin/operations').json()['available'])
         db.execute('UPDATE users SET admin=0 WHERE id=?', (self.owner,))
         self.assertEqual(self.client.get('/api/admin/operations').status_code, 403)
+
+    def test_request_diagnostics_omit_private_input(self):
+        from . import diagnostics
+        with patch.object(diagnostics, 'event') as event:
+            response = self.client.post('/api/exercises/not-found/execute?private=never-log',
+                json={'action': 'run', 'code': 'private-code', 'version': 1, 'request_id': 'private-request'})
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(len(response.headers['X-Request-ID']), 12)
+        record = event.call_args.kwargs
+        self.assertEqual(record['request_id'], response.headers['X-Request-ID'])
+        self.assertEqual(record['route'], '/api/exercises/{exercise_id}/execute')
+        self.assertEqual(record['status'], 404)
+        self.assertNotIn('private', json.dumps(record))
+
+    def test_monitor_connection_failure_is_recorded(self):
+        from deploy import monitor
+        import subprocess
+        with patch.object(monitor.urllib.request, 'urlopen', side_effect=OSError), patch.object(monitor, 'command', side_effect=subprocess.TimeoutExpired('probe', 20)):
+            self.assertEqual(monitor.services(), {'api': False, 'runner': False})

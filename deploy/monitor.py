@@ -7,6 +7,7 @@ import shutil
 import ssl
 import subprocess
 import tempfile
+import urllib.request
 
 CONFIG = Path.home() / '.config/code-trainer'
 ROOT = Path('/Volumes/Storage2TB/server/code-trainer')
@@ -30,13 +31,28 @@ def certificate(context, container, path, name):
         return {'name': name, 'expires_at': None, 'days_left': None}
 
 
+def services():
+    try:
+        with urllib.request.urlopen('http://127.0.0.1:8010/healthz', timeout=3) as response:
+            api = json.load(response) == {'ok': True}
+    except (OSError, ValueError):
+        api = False
+    try:
+        probe = "from backend import runner; print('ok' if runner.available() else 'failed')"
+        runner = command(['docker', '--context', 'colima-code-trainer-app', 'exec', 'code-trainer-app',
+                          'python', '-c', probe]).stdout.strip() == b'ok'
+    except (OSError, subprocess.SubprocessError):
+        runner = False
+    return {'api': api, 'runner': runner}
+
+
 def collect():
     try:
         backup = json.loads((CONFIG / 'last-backup.json').read_text())
         backup_at = backup['completed_at'] if backup.get('status') == 'ok' else None
     except (OSError, ValueError, KeyError):
         backup_at = None
-    return {'collected_at': datetime.now(timezone.utc).isoformat(), 'backup_at': backup_at,
+    return {'collected_at': datetime.now(timezone.utc).isoformat(), 'backup_at': backup_at, 'services': services(),
             'internal_free_gib': round(shutil.disk_usage(Path.home()).free / 1024**3, 2),
             'external_free_gib': round(shutil.disk_usage(ROOT).free / 1024**3, 2),
             'certificates': [certificate('colima-code-trainer-app', 'code-trainer-app', '/tls/app.crt', '앱 연결'),
@@ -47,7 +63,15 @@ def collect():
 def main():
     from host import storage
     storage()
-    payload = json.dumps(collect(), ensure_ascii=False).encode()
+    snapshot = collect()
+    payload = json.dumps(snapshot, ensure_ascii=False).encode()
+    # Keep the result on the Mac even when the app cannot accept the snapshot.
+    local = CONFIG / 'monitor-status.json'
+    temporary = local.with_suffix('.next')
+    temporary.write_bytes(payload)
+    temporary.chmod(0o600)
+    os.replace(temporary, local)
+    print(json.dumps({'collected_at': snapshot['collected_at'], 'services': snapshot['services']}, ensure_ascii=False), flush=True)
     # Host pushes a bounded status document; no Docker socket or new credentials in FastAPI.
     writer = "import os,sys; from pathlib import Path; p=Path('/data/operations.json'); t=p.with_suffix('.next'); t.write_bytes(sys.stdin.buffer.read(16384)); t.chmod(0o600); os.replace(t,p)"
     command(['docker', '--context', 'colima-code-trainer-app', 'exec', '-i', 'code-trainer-app', 'python', '-c', writer], input=payload)

@@ -1,4 +1,6 @@
 import asyncio
+import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -6,7 +8,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access, practice, usage, operations, feeds
+from . import service, learning, access, practice, usage, operations, feeds, diagnostics
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -82,6 +84,27 @@ async def local_boundary(request: Request, call_next):
     if deployed:
         response.headers['X-Trainer-Auth'] = 'access'
     return response
+
+
+@app.middleware('http')
+async def request_status(request: Request, call_next):
+    if not request.url.path.startswith('/api/'):
+        return await call_next(request)
+    request_id = uuid.uuid4().hex[:12]
+    started = time.monotonic()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        response.headers['X-Request-ID'] = request_id
+        return response
+    finally:
+        elapsed = round((time.monotonic() - started) * 1000)
+        route = getattr(request.scope.get('route'), 'path', '/api/unmatched')
+        if status >= 400 or elapsed >= 2000 or route.endswith('/execute'):
+            # Never log URL queries, tokens, submitted code, answers or raw exceptions.
+            diagnostics.event('API request', request_id=request_id, method=request.method,
+                              route=route, status=status, elapsed_ms=elapsed)
 
 
 def user(request: Request):

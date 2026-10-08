@@ -15,6 +15,7 @@ class Certificate(BaseModel):
 class Snapshot(BaseModel):
     model_config = ConfigDict(strict=True)
     collected_at: str
+    services: dict[Literal['api', 'runner'], bool] = Field(default_factory=dict)
     backup_at: str | None = None
     internal_free_gib: float = Field(ge=0, allow_inf_nan=False)
     external_free_gib: float = Field(ge=0, allow_inf_nan=False)
@@ -28,11 +29,14 @@ def status():
         collected = datetime.fromisoformat(raw['collected_at'])
         age = (datetime.now(timezone.utc) - collected).total_seconds()
         # Explicit allowlist; never relay arbitrary host files to the browser.
-        result = {k: raw.get(k) for k in ('collected_at', 'backup_at', 'internal_free_gib', 'external_free_gib', 'certificates', 'checks')}
+        result = {k: raw.get(k) for k in ('collected_at', 'backup_at', 'internal_free_gib', 'external_free_gib', 'certificates', 'checks', 'services')}
         result['stale'] = age > 900 or age < -60
     except (OSError, ValueError, KeyError, TypeError, ValidationError):
         return {'available': False, 'stale': True, 'warnings': ['운영 상태를 아직 수집하지 못했습니다.']}
     warnings = []
+    for key, label in (('api', 'API 응답'), ('runner', '코드 실행기 연결')):
+        if result['services'].get(key) is not True:
+            warnings.append(label + ' 상태를 확인해주세요.')
     if result['stale']:
         warnings.append('운영 정보가 오래되었습니다. 수집 작업을 확인해주세요.')
     free = result.get('internal_free_gib')

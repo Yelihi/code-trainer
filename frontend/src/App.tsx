@@ -36,7 +36,7 @@ export function App() {
   useEffect(() => {
     refreshSession(); refreshHealth();
     const expired = (event: Event) => {
-      setOpened(false);
+      // Keep the editor mounted under the login dialog so unsaved work survives expiry.
       setSession(previous => ({ user: null, setup_required: false, auth_mode: (event as CustomEvent).detail === 'access' ? 'access' : previous?.auth_mode }));
     };
     window.addEventListener('session-expired', expired);
@@ -97,8 +97,9 @@ function Login({ setup, access, onSuccess }: { setup: boolean; access: boolean; 
   }
   if (access) return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" onCancel={event => event.preventDefault()}><section className="auth-card">
     <span className="eyebrow">YOUR PRIVATE WORKSPACE</span><h1 id="auth-title">다시 로그인해주세요.</h1>
-    <p>허용된 이메일로 인증하면 기존 학습 기록을 이어갈 수 있습니다.</p>
-    <a className="button primary" href="/">이메일 인증으로 연결 →</a>
+    <p>새 탭에서 허용된 이메일로 인증한 뒤 이 화면으로 돌아오세요. 작성 중인 코드는 이 화면에 남아 있습니다.</p>
+    <a className="button primary" href="/" target="_blank" rel="noreferrer">새 탭에서 이메일 인증 →</a>
+    <button onClick={onSuccess}>인증 완료 · 다시 연결</button>
   </section></dialog>;
   return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" onCancel={event => event.preventDefault()}><section className="auth-card">
     <span className="eyebrow">YOUR LOCAL WORKSPACE</span><h1 id="auth-title">이해는 코드에서<br />시작됩니다.</h1>

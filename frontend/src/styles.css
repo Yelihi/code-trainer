@@ -169,6 +169,37 @@ button.text-button,
   white-space: pre-wrap;
   line-height: 1.9;
 }
+.markdown { white-space: normal; overflow-wrap: anywhere; }
+.markdown p { color: inherit; margin: 0 0 1em; white-space: pre-line; }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+  color: #dfd2ee; line-height: 1.6; margin: 1.6em 0 .65em; font-size: 1.05em;
+}
+.markdown > :first-child { margin-top: 0; }
+.markdown strong { color: #dfd2ee; font-weight: 600; }
+.markdown em { color: #bca9d0; }
+.markdown :not(pre) > code {
+  color: #c9b4ef; background: #241a33; border: 1px solid #3b2c4d;
+  padding: .12em .35em; border-radius: 4px; font-size: .88em;
+}
+.markdown ul, .markdown ol { padding-left: 1.5em; margin: .8em 0 1.2em; }
+.markdown li { margin: .4em 0; padding-left: .25em; }
+.markdown li::marker { color: #a88bc4; }
+.markdown li > p { margin: .35em 0; }
+.markdown blockquote {
+  border-left: 3px solid #8b6bad; background: #191326; color: #bba9cc;
+  margin: 1.2em 0; padding: 14px 18px; border-radius: 0 6px 6px 0;
+}
+.markdown blockquote > :last-child { margin-bottom: 0; }
+.markdown a { color: #bca3f5; text-decoration: underline; text-underline-offset: 3px; }
+.markdown hr { border: 0; border-top: 1px solid var(--line); margin: 1.6em 0; }
+.code-snippet { min-width: 0; overflow: hidden; }
+.code-snippet .cm-editor { color: #c6c9d5; }
+.code-snippet .cm-content { padding: 18px 0 !important; }
+.code-snippet .cm-line { padding: 0 20px !important; }
+.code-snippet .cm-scroller { line-height: 1.8 !important; }
+.markdown .code-snippet { margin: 1.2em 0; border: 1px solid var(--line); border-radius: 8px; }
+.example .code-snippet, .test-result .code-snippet { margin: 10px 0 18px; border-radius: 5px; }
 .skip-link {
   position: fixed;
   left: 15px;
@@ -1622,7 +1653,7 @@ button.text-button,
 .lesson-example pre { font-size: 13px; line-height: 1.8; padding: 20px; margin: 0; overflow-x: auto; white-space: pre; overflow-wrap: normal; }
 .lesson-output { border-top: 1px solid var(--line); background: #10161a; }
 .lesson-output small { display: block; padding: 14px 20px 0; color: #84c5bb; font-size: 11px; }
-.lesson-output pre { padding-top: 8px; }
+.lesson-output pre { padding-top: 8px; color: #acbdbf; }
 .lesson-walkthrough { border-left: 2px solid #79609d; padding-left: 22px; }
 .lesson-walkthrough h3 { font-size: 14px; color: #c8b0e3; }
 .lesson-walkthrough .prose { font-size: 14px; }

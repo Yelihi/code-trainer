@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
-import { python } from "@codemirror/lang-python";
-import { cpp } from "@codemirror/lang-cpp";
-import { rust } from "@codemirror/lang-rust";
+import { CodeBlock, codeExtensions } from "./CodeBlock";
+import { Markdown } from "./Markdown";
 import {
   api,
   assistanceLabels,
@@ -142,15 +140,7 @@ function PracticeEditor({
     else onMove(destination);
   }, [destination, saving, dirty, busy, navigate, onMove, problemSet.context_id, reviewId]);
   const extensions = useMemo(
-    () => [
-      problemSet.language === "python"
-        ? python()
-        : problemSet.language === "rust"
-          ? rust()
-          : problemSet.language === "cpp"
-            ? cpp()
-            : javascript({ typescript: problemSet.language === "typescript" }),
-    ],
+    () => codeExtensions(problemSet.language),
     [problemSet.language],
   );
 
@@ -607,7 +597,7 @@ function PracticeEditor({
                         {test.stdin !== undefined ? (
                           <div>
                             <b>{test.code ? "테스트 코드" : "입력"}</b>
-                            <pre>{test.code || test.stdin || "(없음)"}</pre>
+                            {test.code ? <CodeBlock code={test.code} language={problemSet.language} /> : <pre>{test.stdin || "(없음)"}</pre>}
                             <b>기대 출력</b>
                             <pre>{test.expected}</pre>
                             <b>실제 출력</b>
@@ -638,7 +628,7 @@ function PracticeEditor({
             </span>
           </div>
           <h2>{exercise.title}</h2>
-          <p className="prose">{exercise.description}</p>
+          <Markdown language={problemSet.language}>{exercise.description}</Markdown>
           <h3>요구사항</h3>
           <ul className="requirements">
             {exercise.requirements.map((requirement) => (
@@ -655,7 +645,7 @@ function PracticeEditor({
               {exercise.public_tests.map((test) => (
                 <div className="example" key={test.id}>
                   <small>{codeTests ? "테스트 코드" : "INPUT"}</small>
-                  <pre>{test.code || test.stdin}</pre>
+                  {test.code ? <CodeBlock code={test.code} language={problemSet.language} /> : <pre>{test.stdin}</pre>}
                   <small>{codeTests ? "예상 출력" : "OUTPUT"}</small>
                   <pre>{test.expected}</pre>
                   {codeTests && <button className="text-button" onClick={() => {

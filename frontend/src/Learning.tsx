@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorMessage, isPending, languages, difficulties, safeSourceUrl, type Generation, type LearningContext } from './api';
 import { ErrorNotice, GenerationStatus, useApp, useResource } from './App';
+import { CodeBlock } from './CodeBlock';
+import { Markdown } from './Markdown';
 
 function useCourse(id?: string) {
   const resource = useResource<LearningContext>(`/contexts/${id}`);
@@ -99,7 +101,7 @@ export function Context() {
     </div>
     <ErrorNotice error={actionError} />
     <h1>{data.title}</h1><p className="page-intro">{data.description}</p>
-    <section className="course-intro"><span className="eyebrow">LEARN, THEN PRACTICE</span><p className="prose">{data.summary}</p>
+    <section className="course-intro"><span className="eyebrow">LEARN, THEN PRACTICE</span><Markdown language={data.language}>{data.summary}</Markdown>
       {safeSourceUrl(data.source_url) && <a className="text-link" href={safeSourceUrl(data.source_url)} target="_blank" rel="noreferrer">학습 자료 출처 ↗</a>}
     </section>
     <div className="section-heading"><div><span className="eyebrow">YOUR LEARNING PATH</span><h2>{units.length ? `${units.length}개 단원으로 이어지는 학습` : '개념별 학습 과정'}</h2></div><span className="muted">{units.length - missing.length} / {units.length} 세트 준비</span></div>
@@ -146,12 +148,12 @@ export function Lesson() {
       <header><span className="eyebrow">LESSON {String(index + 1).padStart(2, '0')} / {String(units.length).padStart(2, '0')}</span><h1>{unit.title}</h1><p className="lesson-objective">{unit.objective}</p>
         {!!unit.prerequisites.length && <div className="lesson-prerequisites">먼저 읽기: {unit.prerequisites.map(p => <Link key={p} to={`/learn/${id}/units/${p}`}>{units.find(u => u.id === p)?.title}</Link>)}</div>}
       </header>
-      {unit.lesson.map((section, i) => <section id={`section-${i}`} className="lesson-section" key={i}><span className="eyebrow">{String(i + 1).padStart(2, '0')}</span><h2>{section.title}</h2><p className="prose">{section.body}</p>
-        {section.code && <figure className="lesson-example"><figcaption>{languages[data.language]} · {difficulties[data.difficulty ?? 'beginner']} · 예제</figcaption><pre><code>{section.code}</code></pre>{section.output && <div className="lesson-output"><small>실행 결과</small><pre>{section.output}</pre></div>}</figure>}
-        {section.walkthrough && <div className="lesson-walkthrough"><h3>차근차근 따라가기</h3><p className="prose">{section.walkthrough}</p></div>}
+      {unit.lesson.map((section, i) => <section id={`section-${i}`} className="lesson-section" key={i}><span className="eyebrow">{String(i + 1).padStart(2, '0')}</span><h2>{section.title}</h2><Markdown language={data.language}>{section.body}</Markdown>
+        {section.code && <figure className="lesson-example"><figcaption>{languages[data.language]} · {difficulties[data.difficulty ?? 'beginner']} · 예제</figcaption><CodeBlock code={section.code} language={data.language} />{section.output && <div className="lesson-output"><small>실행 결과</small><pre>{section.output}</pre></div>}</figure>}
+        {section.walkthrough && <div className="lesson-walkthrough"><h3>차근차근 따라가기</h3><Markdown language={data.language}>{section.walkthrough}</Markdown></div>}
       </section>)}
-      <section className="lesson-section"><h2>자주 헷갈리는 지점</h2><ul className="lesson-pitfalls">{unit.pitfalls.map(item => <li key={item}>{item}</li>)}</ul></section>
-      <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <details className="lesson-checkpoint" key={i}><summary>{item.question}</summary><p className="prose">{item.answer}</p></details>)}</section>
+      <section className="lesson-section"><h2>자주 헷갈리는 지점</h2><ul className="lesson-pitfalls">{unit.pitfalls.map(item => <li key={item}><Markdown language={data.language}>{item}</Markdown></li>)}</ul></section>
+      <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <details className="lesson-checkpoint" key={i}><summary>{item.question}</summary><Markdown language={data.language}>{item.answer}</Markdown></details>)}</section>
       <section className="lesson-practice"><span className="eyebrow">PUT IT INTO CODE</span><h2>이제 직접 풀어볼 차례</h2><p>이 단원의 개념을 READ → FIX → MODIFY → BUILD로 연습합니다. 막히면 언제든 이 페이지로 돌아오세요.</p>
         <ErrorNotice error={actionError} /><UnitPractice key={unit.id} course={course} unitId={unit.id} />
       </section>

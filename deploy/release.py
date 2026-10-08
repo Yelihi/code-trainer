@@ -122,6 +122,15 @@ def deploy(revision, still_authorized, requested):
         run([*wrangler, '--dry-run'])
     ids = {}
     if selected['backend']:
+        # Public, pinned images need no Desktop/keychain credential helper in launchd.
+        docker_config = PRIVATE / 'docker-cli'
+        docker_config.mkdir(exist_ok=True, mode=0o700)
+        write_private(docker_config / 'config.json', json.dumps({
+            'auths': {'https://index.docker.io/v1/': {}},
+            'cliPluginsExtraDirs': [str(Path.home() / '.docker/cli-plugins')]}))
+        if not (docker_config / 'contexts').is_symlink():
+            (docker_config / 'contexts').symlink_to(Path.home() / '.docker/contexts', target_is_directory=True)
+        ENV['DOCKER_CONFIG'] = str(docker_config)
         # Rebuilding an existing SHA tag can evict an untagged containerd image index.
         # Preserve the running images and their exact archives BEFORE replacing tags.
         for docker, name in [(APP, 'app'), (RUNNER, 'broker')]:

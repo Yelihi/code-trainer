@@ -136,6 +136,10 @@ class DeploymentChecks(unittest.TestCase):
                 self.assertEqual(any(cmd[0] == 'npm' for cmd in commands), frontend)
                 self.assertEqual(any(cmd[0] == 'node' and '--dry-run' not in cmd for cmd in commands), frontend)
                 if backend:
+                    docker_config = json.loads((private / 'docker-cli/config.json').read_text())
+                    self.assertEqual(docker_config['auths'], {'https://index.docker.io/v1/': {}})
+                    self.assertNotIn('credsStore', docker_config)
+                    self.assertTrue((private / 'docker-cli/contexts').is_symlink())
                     first_build = next(i for i, cmd in enumerate(commands) if cmd[0] == 'docker' and 'build' in cmd)
                     retained = [i for i, cmd in enumerate(commands) if 'tag' in cmd]
                     self.assertEqual(len(retained), 2)

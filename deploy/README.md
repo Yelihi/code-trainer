@@ -203,3 +203,5 @@ docker --context colima-code-trainer-app logs --since 30m code-trainer-app 2>&1 
 ```
 
 2026-10-08 검증: 실제 앱→실행기에서 JavaScript `console.log(7)` 정상 실행. Python 검사 78개, 프런트 API 3개·타입·lint·빌드, Worker 검사 통과. 로컬 브라우저에서 실행 중 인증 만료를 재현하고 재인증 후 미저장 답안 유지 확인. 실제 LaunchAgent 수집 결과 API·실행기 모두 정상. 모니터링 호스트 파일만 갱신할 때는 설치된 배포 감시의 `poll.lock`을 잡고 검토한 `monitor.py`와 해당 보호 해시만 함께 갱신했다. Swift 실행 앱·Tunnel·VM 권한은 변경하지 않았다.
+
+같은 날 첫 자동배포가 기본 이미지 조회 중 `docker-credential-desktop get`에서 대기했다. Mac과 앱 VM의 Docker Hub 연결은 정상이었고 기존 서비스는 교체 전이었다. 대기 중인 빌드를 중단한 뒤 배포 전용 `deployment/docker-cli/config.json`에 공개 Docker Hub 이미지용 익명 설정을 적용했다. `release.py`는 백엔드 배포에서만 이 `DOCKER_CONFIG`를 사용하며 기존 Colima contexts와 설치된 CLI 플러그인을 참조한다. 개인 Docker 로그인 설정을 복사하거나 수정하지 않는다. 공개 이미지 메타데이터 조회와 배포 범위 검사를 통과한 `release.py`도 보호 해시와 함께 수동 갱신했다. 비공개 registry가 필요해지면 해당 배포 전용 인증을 별도로 구성해야 한다. [Docker CLI 설정 문서](https://docs.docker.com/reference/cli/docker/).

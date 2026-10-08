@@ -114,7 +114,12 @@ function PracticeEditor({
   const codeTests = exercise.test_mode === "code";
   const [testCode, setTestCode] = useState(exercise.public_tests[0]?.code ?? "");
   const [panel, setPanel] = useState("code");
-  const [resultTab, setResultTab] = useState("result");
+  const [resultTab, setResultTab] = useState(codeTests ? "stdin" : "result");
+  const actionLabels: Record<string, string> = {
+    run: exercise.kind === "READ" ? "출력 확인" : codeTests ? "내 테스트 실행" : "직접 실행",
+    test: "공개 테스트 검사",
+    submit: "제출 · 채점",
+  };
   const submission = useRef({ key: "", id: "" });
   const mounted = useRef(true);
   const dirty = code !== saved.code || answer !== saved.answer;
@@ -335,7 +340,7 @@ function PracticeEditor({
         {[
           ["problem", "문제"],
           ["code", "코드"],
-          ["result", "결과"],
+          ["result", exercise.kind === "READ" ? "결과" : "테스트 · 결과"],
         ].map(([key, text]) => (
           <button
             key={key}
@@ -429,7 +434,7 @@ function PracticeEditor({
               <span>
                 {exercise.kind === "READ"
                   ? "읽기 전용 코드"
-                  : codeTests ? "코드 구현 · 테스트 코드는 별도 실행" : "단일 파일 · 표준 라이브러리"}
+                  : codeTests ? "풀이 코드 · 아래 테스트 코드와 함께 실행" : "단일 파일 · 표준 라이브러리"}
               </span>
             </div>
           </div>
@@ -442,14 +447,14 @@ function PracticeEditor({
                 (exercise.kind === "READ" && !answer.trim())
               }
             >
-              {busy === "run" ? "실행 중…" : "▷ Run"}
+              {busy === "run" ? "실행 중…" : `▷ ${actionLabels.run}`}
             </button>
             {exercise.kind !== "READ" && (
               <button
                 onClick={() => void execute("test")}
                 disabled={!!busy || problemSet.withdrawn}
               >
-                {busy === "test" ? "검사 중…" : "✓ Test"}
+                {busy === "test" ? "검사 중…" : `✓ ${actionLabels.test}`}
               </button>
             )}
             <button
@@ -461,30 +466,43 @@ function PracticeEditor({
                 (exercise.kind === "READ" && !answer.trim())
               }
             >
-              {busy === "submit" ? "채점 중…" : "Submit →"}
+              {busy === "submit" ? "채점 중…" : `${actionLabels.submit} →`}
             </button>
           </div>
+          <p className="execution-help">
+            {exercise.kind === "READ"
+              ? "출력 확인은 정답 확인으로 기록됩니다. 제출·채점은 작성한 예상 출력을 채점하고 기록을 저장합니다."
+              : "공개 테스트 검사는 문제의 예제를 확인합니다. 제출·채점은 비공개 테스트까지 검사하고 학습 기록을 저장합니다."}
+          </p>
           <section className="result-panel" aria-label="실행 결과">
             <div className="result-tabs">
               <button
                 className={resultTab === "result" ? "active" : ""}
+                aria-pressed={resultTab === "result"}
                 onClick={() => setResultTab("result")}
               >
-                Console · 결과
+                실행 결과
               </button>
-              <button
+              {exercise.kind !== "READ" && <button
                 className={resultTab === "stdin" ? "active" : ""}
+                aria-pressed={resultTab === "stdin"}
                 onClick={() => setResultTab("stdin")}
               >
-                {codeTests ? "Run 테스트 코드" : "Run 입력"}
-              </button>
-              <span className="muted">
-                {result ? result.action.toUpperCase() : "READY"}
-              </span>
+                {codeTests ? "내 테스트 코드" : "직접 실행 입력"}
+              </button>}
+              {(resultTab === "result" || !!busy) && <span className="muted">
+                {busy && actionLabels[busy] ? `${actionLabels[busy]} 중…` : result ? actionLabels[result.action] : "실행 대기"}
+              </span>}
             </div>
             {resultTab === "stdin" && codeTests ? (
               <div className="stdin-label">
-                <p>호출을 바꾸고 Run으로 실행해보세요. 이 코드는 저장되지 않으며, Test·Submit은 문제에 정해진 테스트를 사용합니다.</p>
+                <div className="test-code-heading">
+                  <strong>풀이 코드 + 아래 테스트 코드 → 실행 결과</strong>
+                  <button onClick={() => void execute("run")} disabled={!!busy || problemSet.withdrawn}>
+                    {busy === "run" ? "실행 중…" : "▷ 이 테스트 코드 실행"}
+                  </button>
+                </div>
+                <p>위에서 작성한 함수를 아래에서 호출해보세요. 실행하면 출력이 ‘실행 결과’에 표시됩니다.</p>
                 <CodeMirror
                   value={testCode}
                   onChange={setTestCode}
@@ -494,6 +512,7 @@ function PracticeEditor({
                   extensions={extensions}
                   basicSetup={{ lineNumbers: true, foldGutter: false }}
                 />
+                <p>직접 실행용 임시 코드입니다. 저장되지 않으며, 공개 테스트 검사와 제출·채점에는 사용되지 않습니다.</p>
               </div>
             ) : resultTab === "stdin" ? (
               <label className="stdin-label">
@@ -511,7 +530,7 @@ function PracticeEditor({
                     아직 실행한 코드가 없습니다.
                     <br />
                     <span>
-                      Run으로 실행하고, Test로 공개 테스트를 확인하세요.
+                      {exercise.kind === "READ" ? "예상 출력을 작성한 뒤 제출·채점으로 확인하세요." : codeTests ? "내 테스트 코드에서 함수 호출을 작성하고 ‘이 테스트 코드 실행’을 누르세요." : "직접 실행 입력을 작성해 실행하거나, 공개 테스트 검사로 예제를 확인하세요."}
                     </span>
                   </p>
                 ) : (
@@ -594,6 +613,7 @@ function PracticeEditor({
           {exercise.kind !== "READ" && (
             <>
               <h3>공개 테스트</h3>
+              <p className="muted">‘공개 테스트 검사’는 아래 {exercise.public_tests.length}개 예제의 실제 출력과 예상 출력을 비교합니다.</p>
               {exercise.public_tests.map((test) => (
                 <div className="example" key={test.id}>
                   <small>{codeTests ? "테스트 코드" : "INPUT"}</small>
@@ -604,7 +624,7 @@ function PracticeEditor({
                     setTestCode(test.code ?? "");
                     setResultTab("stdin");
                     setPanel("result");
-                  }}>Run 테스트로 가져오기</button>}
+                  }}>내 테스트 코드로 복사</button>}
                 </div>
               ))}
             </>

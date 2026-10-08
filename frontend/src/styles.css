@@ -989,6 +989,7 @@ button.text-button,
 }
 .run-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 9px;
   padding: 12px 16px;
   border-block: 1px solid var(--line);
@@ -1000,6 +1001,19 @@ button.text-button,
 }
 .run-toolbar .primary {
   margin-left: auto;
+}
+.execution-help {
+  margin: 0;
+  padding: 10px 16px;
+  color: #b7a1c9;
+  font-size: 12px;
+}
+.test-code-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .result-tabs {
   display: flex;

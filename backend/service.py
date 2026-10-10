@@ -8,7 +8,7 @@ import traceback
 import uuid
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-from . import ai, db, diagnostics, runner, source, practice, usage
+from . import ai, db, diagnostics, runner, source, practice, usage, prediction
 from .sample import sample
 from .schema import ContextDraft, ExerciseDraft, SetDraft
 
@@ -303,11 +303,13 @@ def validate_set(language, draft, image_id=None):
         if not passed:
             # Private generation feedback, never serialized in learner-facing errors.
             failures.append({'kind': kind, 'check': name,
-                             'required': ('definitions only; no demonstration calls or output' if name == 'starter_setup' else
+                             'required': ('Print only primitive values, one per line. Put scenario headings and explanations in comments. Use booleans for comparisons, numbers for counts, JSON-quoted strings only when strings are the learning objective. No prose labels or object/array dumps.' if name == 'prediction_format' else
+                                          'definitions only; no demonstration calls or output' if name == 'starter_setup' else
                                           'run without execution errors; unfinished outputs are allowed' if name == 'starter' and kind != 'FIX' else
                                           'wrong output without execution errors' if name == 'starter' or name.startswith('wrong:') else 'pass all tests'),
                              'result': result})
-            reason = ('예측한 출력이 실제 실행 결과와 다릅니다.' if name == 'prediction' else
+            reason = ('예상 출력에 제목·설명 대신 원시값만 출력하도록 문제를 수정합니다.' if name == 'prediction_format' else
+                      '예측한 출력이 실제 실행 결과와 다릅니다.' if name == 'prediction' else
                       '검증용 풀이가 테스트를 통과하지 못했습니다.' if name in ('reference', 'alternative') else
                       '시작 코드에 테스트와 별도로 실행되는 예시 호출·출력이 포함되어 있습니다.' if name == 'starter_setup' else
                       'FIX 시작 코드가 모든 테스트를 통과하여 고칠 오류가 없습니다.' if name == 'starter' and kind == 'FIX' else
@@ -341,6 +343,8 @@ def validate_set(language, draft, image_id=None):
             result = runner.run(language, exercise.starter, [''], image_id=image_id)[0]
             passed = result['status'] == 'ok' and normalized(result['stdout']) == normalized(exercise.evaluation.read_answer)
             record('READ', 'prediction', passed, result)
+            if result['status'] == 'ok':
+                record('READ', 'prediction_format', prediction.values(result['stdout']) is not None, result)
             if any(t.expected for t in exercise.public_tests):
                 raise Error('READ의 공개 테스트에 정답이 포함되어 있습니다.')
             continue
@@ -528,7 +532,7 @@ def execute(owner, exercise_id, request):
             if not request.answer.strip():
                 raise Error('실행 전에 예상 출력 답안을 작성해주세요.')
             if request.action == 'submit':
-                passed = normalized(request.answer) == normalized(exercise.evaluation.read_answer)
+                passed = prediction.matches(request.answer, exercise.evaluation.read_answer)
                 result = {'status': 'passed' if passed else 'failed', 'stdout': '', 'stderr': '', 'exit_code': None, 'tests': []}
             else:
                 result = {**runner.run(json.loads(problem_set['context_data'])['language'], exercise.starter, [''], image_id=image_id)[0], 'tests': []}

@@ -269,6 +269,17 @@ class AppTest(unittest.TestCase):
         with self.assertRaises(service.Error):
             service.get_attempt(other, first.json()['attempt_id'])
 
+    def test_read_submission_compares_values_without_changing_code_test_comparison(self):
+        problem_set = self.make_set()
+        exercise = problem_set['exercises'][0]
+        endpoint = '/api/exercises/' + exercise['id'] + '/execute'
+        for index, (answer, status) in enumerate(((' 1.0, 2\n11\t3 ', 'passed'), ('1 2 3 11', 'failed'))):
+            result = self.client.post(endpoint, json={'action': 'submit', 'request_id': f'values-{index:04}',
+                'version': 1, 'answer': answer})
+            self.assertEqual(result.status_code, 200, result.text)
+            self.assertEqual(result.json()['status'], status)
+        self.assertNotEqual(service.normalized('true false'), service.normalized('true\nfalse'))
+
     def test_reports_withdrawal_and_history_survive(self):
         problem_set = self.make_set()
         exercise = problem_set['exercises'][0]
@@ -989,7 +1000,7 @@ class AppTest(unittest.TestCase):
     def test_read_answer_uses_execution_feedback_and_is_revalidated_without_ai(self):
         context, draft = sample()
         original = draft.model_dump()
-        output = 'bark\nmeow\ngeneric sound\nbark\nmeow\n'
+        output = 'true\nfalse\n0\ntrue\nfalse\n'
         feedback = [{'kind': 'READ', 'check': 'prediction', 'result': {'status': 'ok', 'stdout': output}}]
         with patch.object(ai, 'generate') as generate:
             repaired = ai.create_set(context, context.units[0], previous=draft, feedback=feedback)
@@ -1032,6 +1043,29 @@ class AppTest(unittest.TestCase):
         self.assertIn('code_validation_failed', log)
         self.assertNotIn('private-answer-output', log)
 
+    def test_read_prose_output_is_regenerated_instead_of_becoming_the_answer(self):
+        context, draft = sample()
+        exercise = draft.exercises[0]
+        exercise.starter = 'console.log("--- 시나리오 1 ---"); console.log("참조 변경 (changed)");'
+        exercise.evaluation.reference = exercise.starter
+        exercise.evaluation.read_answer = '--- 시나리오 1 ---\n참조 변경 (changed)\n'
+        wrong = {w.code for e in draft.exercises for w in e.evaluation.wrong_solutions}
+        with patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs:
+                         [{'status': 'ok', 'stdout': exercise.evaluation.read_answer if code == exercise.starter else ''}]), \
+                patch.object(service, 'evaluate', side_effect=lambda language, code, tests, image_id=None:
+                             {'status': 'failed' if code == draft.exercises[1].starter or code in wrong else 'passed'}):
+            with self.assertRaises(service.Error) as error:
+                service.validate_set(context.language, draft)
+        feedback = error.exception.feedback
+        self.assertEqual([f['check'] for f in feedback], ['prediction_format'])
+        replacement = sample()[1].exercises[0]
+        with patch.object(ai, 'generate', return_value=replacement) as generate:
+            repaired = ai.create_set(context, context.units[0], previous=draft, feedback=feedback)
+        generate.assert_called_once()
+        self.assertIn('Scenario headings, separators and explanations belong ONLY in source comments', generate.call_args.args[1])
+        self.assertEqual(repaired.exercises[0], replacement)
+        self.assertEqual(repaired.exercises[1:], draft.exercises[1:])
+
     def test_minimal_generated_set_still_requires_correct_answers_and_a_real_fix(self):
         context, sample_draft = sample()
         value = sample_draft.model_dump()
@@ -1046,7 +1080,7 @@ class AppTest(unittest.TestCase):
                              [{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else ''}]), \
                 patch.object(service, 'evaluate', side_effect=evaluate) as execution:
             checks = service.validate_set(context.language, draft)
-            self.assertEqual(len(checks), 10)
+            self.assertEqual(len(checks), 11)
             self.assertTrue(all(check['passed'] for check in checks))
             self.assertEqual(execution.call_count, 6)
             execution.side_effect = None

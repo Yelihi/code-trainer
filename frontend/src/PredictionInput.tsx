@@ -35,8 +35,8 @@ export function PredictionInput({ answer, onChange, disabled }: {
     <div className="prediction" role="group" aria-labelledby={`${id}-title`}>
       <strong id={`${id}-title`}>예상 출력</strong>
       <p id={`${id}-help`} className="prediction-help">
-        출력 순서대로 한 줄씩 입력하세요. 같은 줄의 값은 공백으로 구분하세요.
-        Enter로 줄을 추가하거나 여러 줄을 붙여넣을 수 있어요.
+        true, false, 숫자 등 출력되는 값만 순서대로 입력하세요. 값 사이 공백·줄바꿈은 채점에 영향을 주지 않아요.
+        Enter로 다음 칸을 추가할 수 있어요. 문자열은 코드에 표시된 출력 형식을 따르세요.
       </p>
       <div className="prediction-lines">
         {lines.map((line, index) => (
@@ -52,7 +52,7 @@ export function PredictionInput({ answer, onChange, disabled }: {
               maxLength={line.length + remaining}
               autoComplete="off"
               spellCheck={false}
-              placeholder="출력될 값을 입력하세요"
+              placeholder="예: true, false, 42"
               onChange={(event) => onChange(replaceOutputLine(answer, index, event.target.value))}
               onKeyDown={(event) => {
                 if (event.key !== "Enter" || event.nativeEvent.isComposing) return;

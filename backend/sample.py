@@ -7,14 +7,17 @@ READ = '''function counter(start) {
 }
 const a = counter(0);
 const b = counter(10);
-console.log(a(), a(), b(), a());
+console.log(a());
+console.log(a());
+console.log(b());
+console.log(a());
 '''
 
 HINTS = {
     'READ': [
         'counter를 호출할 때마다 새로운 value가 만들어집니다. a와 b는 각각 자신이 만들어진 호출의 value를 기억합니다. 두 변수의 값을 따로 적어두고 추적해보세요.',
-        'console.log의 인수는 왼쪽부터 계산됩니다. 처음 a()를 부르면 a가 기억하는 0이 1로 바뀌고, 다음 a()는 그 값을 이어받습니다. 이때 아직 호출하지 않은 b의 값도 바뀌었을까요?',
-        '++value는 먼저 1을 더한 뒤 바뀐 값을 반환합니다. a용 칸과 b용 칸을 만들고, 호출할 때 해당 칸만 갱신해보세요. 네 번의 반환값을 호출 순서대로 공백으로 구분해 답하면 됩니다.',
+        'console.log는 위에서 아래로 실행됩니다. 처음 a()를 부르면 a가 기억하는 0이 1로 바뀌고, 다음 a()는 그 값을 이어받습니다. 이때 아직 호출하지 않은 b의 값도 바뀌었을까요?',
+        '++value는 먼저 1을 더한 뒤 바뀐 값을 반환합니다. a용 칸과 b용 칸을 만들고, 호출할 때 해당 칸만 갱신해보세요. 네 번의 반환값을 호출 순서대로 입력하면 됩니다.',
     ],
     'FIX': [
         '현재 value는 makeCounter 바깥에 한 번만 선언되어 있습니다. a와 b가 반환하는 함수 모두 같은 변수를 바라봅니다. 카운터를 새로 만들 때 어느 코드가 기존 값을 덮어쓰는지 찾아보세요.',
@@ -74,11 +77,11 @@ def sample():
     )
     exercises = [{
         'kind': 'READ', 'title': '두 함수가 기억하는 값',
-        'description': '실행하기 전에 console.log가 출력할 한 줄을 예측하세요. 값 사이에 공백을 넣으세요. 마지막 줄바꿈은 채점에 영향을 주지 않습니다.',
-        'requirements': [{'id': 'r1', 'text': '각 counter 호출의 독립적인 상태를 고려한 출력 한 줄을 답하세요.'}],
+        'description': '실행하기 전에 console.log가 출력할 숫자를 순서대로 예측하세요. 공백·줄바꿈은 채점에 영향을 주지 않습니다.',
+        'requirements': [{'id': 'r1', 'text': '각 counter 호출의 독립적인 상태를 고려한 출력값을 순서대로 답하세요.'}],
         'starter': READ, 'public_tests': [{'id': 'predict', 'stdin': '', 'expected': '', 'requirements': ['r1']}],
         'hints': HINTS['READ'],
-        'evaluation': {'reference': READ, 'alternative': '', 'hidden_tests': [], 'wrong_solutions': [], 'read_answer': '1 2 11 3'},
+        'evaluation': {'reference': READ, 'alternative': '', 'hidden_tests': [], 'wrong_solutions': [], 'read_answer': '1\n2\n11\n3'},
     }]
     specs = [
         ('FIX', '함수마다 자신의 카운터',

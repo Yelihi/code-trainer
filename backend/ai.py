@@ -328,13 +328,22 @@ Include 3 progressive hints without the full solution.
             'document_coverage': context.learning_notes,
             'prerequisite_concepts': [u.concepts for u in context.units if u.id in unit.prerequisites]}
     # Separate stages keep READ's no-answer rules from bleeding into executable test data.
-    read_instruction = '''Write ONLY a READ exercise about target_unit: predict the exact stdout of a
+    read_instruction = '''Write ONLY a READ exercise about target_unit: predict the primitive output values of a
 small deterministic no-input program in starter, with tracing complexity matching the supplied difficulty guidance. Write the COMPLETE runnable source code in
 starter, including its console.log/print calls. Never put a placeholder there. The learner
 does not write or fix code. Prioritize the supplied source examples and this unit's distinctive behaviors.
+Print ONE primitive value per line, preferably booleans or numbers. Print comparison results
+directly (e.g. console.log(prev === next)), never labels such as 'same reference (no change)'.
+Scenario headings, separators and explanations belong ONLY in source comments, never stdout.
+Do not print labels alongside values, object/array/function dumps, or explanatory sentences.
+If strings are essential to the learning objective, print short JSON-quoted strings (e.g.
+console.log(JSON.stringify(value))). Inspect primitive properties or compare references instead
+of dumping objects. Preserve the source's concepts and tracing complexity; simplify ONLY the output.
+Describe the answer as values in execution order; whitespace, line breaks, boolean capitalization
+and equivalent numeric notation do not affect grading. Do not demand verbatim stdout formatting.
 Use one requirement r1 asking for the output, not a requirement about code structure.
 The public test id=public has empty code, stdin and expected; its requirements is ["r1"].
-Evaluation has read_answer equal to the actual stdout and empty hidden_tests. The server supplies reference from starter automatically.
+Evaluation still has read_answer equal to the actual stdout and empty hidden_tests. The server supplies reference from starter automatically.
 Give 3 detailed progressive Korean hints (concept, trace one step, tracing strategy), without
 revealing the full output. Do not use the lesson's exact example or introduce later concepts.'''
     exercises = []

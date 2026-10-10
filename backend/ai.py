@@ -461,8 +461,6 @@ Return the corrected code fields, not a new problem or an explanation.''',
     cleaned = []
     failed_kinds = {f['kind'] for f in feedback or []}
     for exercise in exercises:
-        if not previous or not feedback or exercise.kind in failed_kinds:
-            exercise = inline_solution_tests(exercise, context.language)
         value = exercise.model_dump()
         if exercise.test_mode == 'code' and (not previous or not feedback or exercise.kind in failed_kinds):
             for target, field in ((value, 'starter'), (value['evaluation'], 'reference')):
@@ -472,5 +470,8 @@ Return the corrected code fields, not a new problem or an explanation.''',
                     if test.code.strip() and code.endswith(suffix) and code[:-len(suffix)].strip():
                         target[field] = code[:-len(suffix)]
                         diagnostics.event('구현 끝에 중복된 테스트 호출을 제거하고 다시 검증합니다.', kind=exercise.kind, code='duplicate_test_removed', check=field)
-        cleaned.append(ExerciseDraft.model_validate(value))
+        exercise = ExerciseDraft.model_validate(value)
+        if not previous or not feedback or exercise.kind in failed_kinds:
+            exercise = inline_solution_tests(exercise, context.language)
+        cleaned.append(exercise)
     return SetDraft(title=unit.title, concept=unit.objective, exercises=cleaned)

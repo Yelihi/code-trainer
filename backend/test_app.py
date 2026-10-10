@@ -1016,6 +1016,11 @@ class AppTest(unittest.TestCase):
         with patch.object(ai, 'generate', side_effect=draft.exercises):
             generated = ai.create_set(context, context.units[0])
         self.assertEqual(generated.exercises[1], repaired.exercises[1])
+        exercise.starter += '\n' + exercise.public_tests[0].code
+        exercise.evaluation.reference += '\n' + exercise.public_tests[0].code
+        with patch.object(ai, 'generate', side_effect=draft.exercises):
+            generated = ai.create_set(context, context.units[0])
+        self.assertEqual(generated.exercises[1], repaired.exercises[1])
 
     def test_solution_import_cleanup_preserves_aliases_other_modules_and_embedded_text(self):
         exercise = sample()[1].exercises[1]

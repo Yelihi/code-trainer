@@ -1303,9 +1303,43 @@ button.text-button,
   font-size: 12px;
   color: #c2add3;
 }
-.prediction textarea {
-  font-family: monospace;
-  min-height: 75px;
+.prediction-help {
+  margin: 6px 0 12px;
+  font-size: 11px;
+}
+.prediction-lines {
+  display: grid;
+  gap: 8px;
+}
+.prediction-line {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.prediction-line label {
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.prediction-line input {
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.prediction-line button {
+  padding: 8px;
+}
+.prediction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+.prediction-actions span {
+  color: var(--muted);
+  font-size: 11px;
 }
 .stdin-label {
   padding: 16px;

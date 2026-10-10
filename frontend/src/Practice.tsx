@@ -3,6 +3,7 @@ import { Link, useBlocker, useNavigate, useParams, useSearchParams } from "react
 import CodeMirror from "@uiw/react-codemirror";
 import { CodeBlock, codeExtensions } from "./CodeBlock";
 import { Markdown } from "./Markdown";
+import { PredictionInput } from "./PredictionInput";
 import {
   api,
   assistanceLabels,
@@ -418,16 +419,7 @@ function PracticeEditor({
                 }}
               />
               {exercise.kind === "READ" && (
-                <label className="prediction">
-                  예상 출력
-                  <textarea
-                    value={answer}
-                    disabled={finishing}
-                    onChange={(event) => setAnswer(event.target.value)}
-                    maxLength={4000}
-                    placeholder="실행 전에 출력 결과를 먼저 예측해보세요."
-                  />
-                </label>
+                <PredictionInput answer={answer} onChange={setAnswer} disabled={finishing} />
               )}
               <div className="editor-footer">
                 <span>

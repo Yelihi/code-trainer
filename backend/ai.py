@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import httpx
 from pydantic import ValidationError
@@ -285,6 +286,28 @@ Adapt explanations and learning objectives to the supplied difficulty guidance.'
     return plan.model_copy(update={'difficulty': difficulty, 'units': units})
 
 
+def inline_solution_tests(exercise, language):
+    if language not in ('javascript', 'typescript') or exercise.test_mode != 'code':
+        return exercise
+    # shortcut: only leading, unaliased named imports; other forms need an explicit code repair.
+    name = r'[A-Za-z_$][\w$]*'
+    pattern = rf'''\A\s*import\s+(?:type\s+)?\{{\s*{name}(?:\s*,\s*{name})*\s*,?\s*\}}\s+from\s+(['"])\./solution(?:\.[jt]s)?\1[ \t]*;?[ \t]*(?:\r?\n|$)'''
+    value = exercise.model_dump()
+    changed = False
+    for test in value['public_tests'] + value['evaluation']['hidden_tests']:
+        while True:
+            code, count = re.subn(pattern, '', test['code'], count=1)
+            if not count:
+                break
+            test['code'] = code
+            changed = True
+    if not changed:
+        return exercise
+    diagnostics.event('테스트는 풀이 뒤에 붙여 실행하므로 불필요한 solution import를 제거하고 다시 검증합니다.',
+                      kind=exercise.kind, code='solution_import_removed')
+    return ExerciseDraft.model_validate(value)
+
+
 def create_set(context, unit, retry=False, previous=None, feedback=None):
     instruction = """Write one focused Korean coding exercise for the supplied lesson and difficulty guidance.
 Use source_examples as the primary technical reference, then the full lesson and document coverage notes.
@@ -310,6 +333,8 @@ Write self-contained public and hidden test snippets. Each runs in a fresh proce
 ONLY the submitted solution followed by that snippet. Every test creates its own inputs and
 instances, calls the specified interface, and prints the result. Do not implement the solution
 inside a test. For C++/Rust tests supply main; for other languages use direct calls.
+There is ONE source file, not a project or module tree. Tests call declarations directly in
+the same scope: NEVER import/require from './solution', './main' or any other local file.
 expected must equal the exact printed output. For JS objects/arrays use JSON.stringify.
 Use normal public examples and different boundary cases for hidden. All must pass with
 reference. Use stdin="", read_answer="". Keep the task focused on the unit's objective.
@@ -353,6 +378,11 @@ revealing the full output. Do not use the lesson's exact example or introduce la
         if old and feedback and not failures:
             exercises.append(old)
             continue
+        if old and failures:
+            repaired = inline_solution_tests(old, context.language)
+            if repaired != old:
+                exercises.append(repaired)
+                continue
         if old and kind == 'READ' and failures and all(
                 f['check'] == 'prediction' and f['result'].get('status') == 'ok' for f in failures):
             output = failures[-1]['result'].get('stdout', '')
@@ -385,6 +415,8 @@ the full solution. Do not change the task or its required behavior.''',
             repair = generate(ExerciseCodeRepair, '''Repair only the code and tests of this exercise.
 Keep the description's interface and required behavior unchanged. Use actual execution feedback.
 Each run is exactly reference + one test (or starter + one test), in a fresh process.
+The runner creates ONE source file. Tests must call the implementation directly, without
+import/require from './solution', './main' or other nonexistent local files.
 Reference is a COMPLETE replacement for starter, NOT a patch appended to it.
 Both must include all required declarations, imports and initial object values; no demonstration calls.
 For ReferenceError/NameError, find each missing name in the starter and include its required
@@ -429,6 +461,8 @@ Return the corrected code fields, not a new problem or an explanation.''',
     cleaned = []
     failed_kinds = {f['kind'] for f in feedback or []}
     for exercise in exercises:
+        if not previous or not feedback or exercise.kind in failed_kinds:
+            exercise = inline_solution_tests(exercise, context.language)
         value = exercise.model_dump()
         if exercise.test_mode == 'code' and (not previous or not feedback or exercise.kind in failed_kinds):
             for target, field in ((value, 'starter'), (value['evaluation'], 'reference')):

@@ -997,6 +997,39 @@ class AppTest(unittest.TestCase):
             unchanged = ai.create_set(context, context.units[0])
         self.assertEqual(unchanged.exercises[2], exercise)
 
+    def test_solution_imports_are_removed_for_new_and_resumed_single_file_tests(self):
+        context, draft = sample()
+        context.language = 'typescript'
+        exercise = draft.exercises[1]
+        exercise.public_tests[0].code = "import { makeCounter } from './solution';\n" + exercise.public_tests[0].code
+        exercise.evaluation.hidden_tests[0].code = 'import {\n makeCounter,\n} from "./solution.ts";\n' + exercise.evaluation.hidden_tests[0].code
+        original = draft.model_dump()
+        feedback = [{'kind': 'FIX', 'check': name, 'result': {'status': 'compile_error'}}
+                    for name in ('reference', 'wrong:r1', 'starter')]
+        with patch.object(ai, 'generate') as generate:
+            repaired = ai.create_set(context, context.units[0], previous=draft, feedback=feedback)
+        generate.assert_not_called()
+        self.assertEqual(repaired.exercises[1], sample()[1].exercises[1])
+        self.assertEqual(repaired.exercises[0], draft.exercises[0])
+        self.assertEqual(repaired.exercises[2:], draft.exercises[2:])
+        self.assertEqual(draft.model_dump(), original)
+        with patch.object(ai, 'generate', side_effect=draft.exercises):
+            generated = ai.create_set(context, context.units[0])
+        self.assertEqual(generated.exercises[1], repaired.exercises[1])
+
+    def test_solution_import_cleanup_preserves_aliases_other_modules_and_embedded_text(self):
+        exercise = sample()[1].exercises[1]
+        for code in ("import { makeCounter as counter } from './solution';\ncounter();",
+                     "import other from './solution';\nother();",
+                     "import { makeCounter } from './other';\nmakeCounter();",
+                     "const text = `\nimport { makeCounter } from './solution';\n`;",
+                     "/*\nimport { makeCounter } from './solution';\n*/"):
+            exercise.public_tests[0].code = code
+            self.assertEqual(ai.inline_solution_tests(exercise, 'typescript'), exercise)
+        exercise.public_tests[0].code = "import type { Stable } from './solution';\nimport { makeCounter } from './solution';\nmakeCounter();"
+        self.assertEqual(ai.inline_solution_tests(exercise, 'typescript').public_tests[0].code, 'makeCounter();')
+        self.assertEqual(ai.inline_solution_tests(exercise, 'python'), exercise)
+
     def test_read_answer_uses_execution_feedback_and_is_revalidated_without_ai(self):
         context, draft = sample()
         original = draft.model_dump()
@@ -1042,6 +1075,15 @@ class AppTest(unittest.TestCase):
         self.assertIn('정의되지 않은 변수·함수·클래스를 참조했습니다.', log)
         self.assertIn('code_validation_failed', log)
         self.assertNotIn('private-answer-output', log)
+        with patch.object(service.runner, 'run', side_effect=lambda language, code, inputs, **kwargs:
+                             [{'status': 'ok', 'stdout': draft.exercises[0].evaluation.read_answer if code == draft.exercises[0].starter else ''}]), \
+                patch.object(service, 'evaluate', return_value={'status': 'compile_error', 'stderr': '',
+                    'tests': [{'actual': "main.ts(1,1): error TS2307: Cannot find module './private-answer-module'."}]}):
+            with self.assertRaises(service.Error):
+                service.validate_set(context.language, draft)
+        log = (Path(self.directory.name) / 'generation.log').read_text()
+        self.assertIn('TS2307: 가져오려는 모듈을 찾을 수 없습니다.', log)
+        self.assertNotIn('private-answer-module', log)
 
     def test_read_prose_output_is_regenerated_instead_of_becoming_the_answer(self):
         context, draft = sample()

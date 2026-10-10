@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import re
 import secrets
 import threading
 import time
@@ -333,6 +334,11 @@ def validate_set(language, draft, image_id=None):
                     if error_type + ':' in result.get('stderr', ''):
                         reason += f' · {error_type}: {explanation}'
                         break
+                if result.get('status') == 'compile_error':
+                    output = result.get('stdout', '') + result.get('stderr', '')
+                    output += '\n'.join(t.get('actual', '') for t in result.get('tests', []))
+                    if re.search(r'\berror TS2307:', output):
+                        reason += ' · TS2307: 가져오려는 모듈을 찾을 수 없습니다. 풀이와 테스트는 한 파일에서 실행됩니다.'
             diagnostics.event(reason, level='warning', phase='코드 검증', kind=kind,
                               code='code_validation_failed', check=name, status=result.get('status'))
 

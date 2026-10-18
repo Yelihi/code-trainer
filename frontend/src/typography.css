@@ -1,0 +1,25 @@
+/* Shared type roles. rem preserves the reader's browser font-size preference. */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --text-caption: .875rem;
+  --text-body: 1rem;
+  --text-reading: 1.125rem;
+  --text-subheading: 1.25rem;
+  --text-section: 1.5rem;
+  --text-page: 2rem;
+  --text-display: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+  --text-code: 1rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --leading-tight: 1;
+  --leading-heading: 1.4;
+  --leading-body: 1.7;
+  --leading-reading: 1.85;
+  --leading-code: 1.75;
+  --tracking-normal: 0;
+  --tracking-heading: -.025em;
+  --tracking-label: .04em;
+}

@@ -262,7 +262,7 @@ for traversal in ('bfs', 'dfs'):
   const visited = new Set<string>([start]), queue = [start], order: string[] = [];
   for (let head=0; head<queue.length; head++) {
     const node = queue[head]; order.push(node);
-    for (const next of graph[node] ?? []) if (!visited.has(next)) { visited.add(next); queue.push(next); }
+    for (const next of Object.hasOwn(graph, node) ? graph[node] : []) if (!visited.has(next)) { visited.add(next); queue.push(next); }
   }
   return order;
 }''' if bfs else '''function dfs(graph: Record<string, string[]>, start: string): string[] {
@@ -270,7 +270,7 @@ for traversal in ('bfs', 'dfs'):
   function visit(node: string): void {
     if (visited.has(node)) return;
     visited.add(node); order.push(node);
-    for (const next of graph[node] ?? []) visit(next);
+    for (const next of Object.hasOwn(graph, node) ? graph[node] : []) visit(next);
   }
   visit(start); return order;
 }''')
@@ -286,7 +286,7 @@ for traversal in ('bfs', 'dfs'):
          '방향 그래프이며 순환·중복 간선을 허용합니다. 키가 없는 정점은 이웃이 없습니다. 시작점은 항상 결과에 포함합니다. 입력은 바꾸지 마세요.'],
         f'function {traversal}(graph: Record<string, string[]>, start: string): string[] {{ return []; }}', reference,
         f"const graph = {{A:['B','C'],B:['D'],C:[],D:[]}}; assertEqual({traversal}(graph,'A'), {repr(['A','B','C','D'] if bfs else ['A','B','D','C'])});\nassertEqual({traversal}({{}},'X'),['X']);",
-        f"assertEqual({traversal}({{A:['B','B'],B:['A'],Z:[]}},'A'),['A','B']);\nassertEqual({traversal}({{A:['A']}},'A'),['A']);\nconst g={{A:['B'],B:[]}}; {traversal}(g,'A'); assertEqual(g,{{A:['B'],B:[]}});",
+        f"assertEqual({traversal}({{A:['B','B'],B:['A'],Z:[]}},'A'),['A','B']);\nassertEqual({traversal}({{A:['A']}},'A'),['A']);\nassertEqual({traversal}({{}},'toString'),['toString']);\nassertEqual({traversal}({{A:['constructor']}},'A'),['A','constructor']);\nconst g={{A:['B'],B:[]}}; {traversal}(g,'A'); assertEqual(g,{{A:['B'],B:[]}});",
         [('탐색 순서', 'return order;', 'return order.reverse();'),
          ('시작 정점 기록', 'order.push(node);', 'if (node !== start) order.push(node);')], traversal, ['queue' if bfs else 'stack'])
 

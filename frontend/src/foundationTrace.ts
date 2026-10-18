@@ -9,58 +9,58 @@ export function buildTrace(kind: string, values = [5, 2, 7, 1], target = 7): Fra
   const input = values.map((value, i) => ({ id: `v${i}`, value }));
   if (['stack', 'queue', 'linked-list'].includes(kind)) {
     const state: typeof input = [];
-    const draw = (note: string, active = '') => {
+    const drawStructure = (note: string, active = '') => {
       const nodes = row(state, 140, active);
       if (kind === 'stack') nodes.forEach((n, i) => { n.x = 280; n.y = 285 - i * 34; });
       add(nodes, note, kind === 'stack' ? '위쪽 = top · LIFO' : kind === 'queue' ? '왼쪽 = front · 오른쪽 = back · FIFO' : '왼쪽 = head · 화살표 = next',
         kind === 'linked-list' ? nodes.slice(1).map((n, i) => [nodes[i].id, n.id]) : []);
     };
-    draw('빈 구조에서 시작합니다.');
+    drawStructure('빈 구조에서 시작합니다.');
     for (const v of input) {
       if (kind === 'linked-list') state.unshift(v); else state.push(v);
-      draw(`${kind === 'queue' ? 'enqueue' : kind === 'stack' ? 'push' : 'prepend'}(${v.value})`, v.id);
+      drawStructure(`${kind === 'queue' ? 'enqueue' : kind === 'stack' ? 'push' : 'prepend'}(${v.value})`, v.id);
     }
     while (state.length) {
       const v = kind === 'stack' ? state.pop()! : state.shift()!;
-      draw(`${kind === 'queue' ? 'dequeue' : kind === 'stack' ? 'pop' : 'removeFirst'}() → ${v.value}`);
+      drawStructure(`${kind === 'queue' ? 'dequeue' : kind === 'stack' ? 'pop' : 'removeFirst'}() → ${v.value}`);
     }
-    draw('비어 있습니다. 다시 꺼내면 undefined를 반환합니다.');
+    drawStructure('비어 있습니다. 다시 꺼내면 undefined를 반환합니다.');
   } else if (kind === 'priority-queue') {
     const heap: typeof input = [];
-    const draw = (note: string, active = '') => {
+    const drawHeap = (note: string, active = '') => {
       const nodes = heap.map((v, i) => {
         const depth = Math.floor(Math.log2(i + 1)), first = 2 ** depth - 1;
         return { id: v.id, label: String(v.value), x: (i - first + .5) * (640 / 2 ** depth) - 25, y: 25 + depth * 78, active: v.id === active };
       });
       add(nodes, note, '부모 ≤ 자식 · 배열 인덱스의 자식: 2i+1, 2i+2', nodes.slice(1).map((n, i) => [nodes[Math.floor(i / 2)].id, n.id]));
     };
-    draw('빈 최소 힙에서 시작합니다.');
+    drawHeap('빈 최소 힙에서 시작합니다.');
     for (const v of input) {
-      heap.push(v); let i = heap.length - 1; draw(`${v.value}를 마지막 위치에 추가합니다.`, v.id);
+      heap.push(v); let i = heap.length - 1; drawHeap(`${v.value}를 마지막 위치에 추가합니다.`, v.id);
       while (i > 0) {
         const p = Math.floor((i - 1) / 2);
         if (heap[p].value <= heap[i].value) break;
-        [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; draw('부모보다 작으므로 위로 교환합니다.', v.id);
+        [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; drawHeap('부모보다 작으므로 위로 교환합니다.', v.id);
       }
     }
     const removed: number[] = [];
     while (heap.length) {
       const min = heap[0]; removed.push(min.value); const last = heap.pop()!;
       if (heap.length) heap[0] = last;
-      draw(`pop() → ${min.value}. 마지막 원소로 루트를 채웁니다.`, last.id);
+      drawHeap(`pop() → ${min.value}. 마지막 원소로 루트를 채웁니다.`, last.id);
       let i = 0;
       while (true) {
         let s = i; const l = i * 2 + 1, r = l + 1;
         if (l < heap.length && heap[l].value < heap[s].value) s = l;
         if (r < heap.length && heap[r].value < heap[s].value) s = r;
         if (s === i) break;
-        [heap[i], heap[s]] = [heap[s], heap[i]]; i = s; draw('더 작은 자식과 교환해 힙 규칙을 복구합니다.', last.id);
+        [heap[i], heap[s]] = [heap[s], heap[i]]; i = s; drawHeap('더 작은 자식과 교환해 힙 규칙을 복구합니다.', last.id);
       }
     }
-    draw(`꺼낸 순서: ${removed.join(' → ')}`);
+    drawHeap(`꺼낸 순서: ${removed.join(' → ')}`);
   } else if (kind === 'dictionary') {
     const buckets: { id: string; label: string }[][] = Array.from({ length: 8 }, () => []);
-    const draw = (note: string, active = '') => {
+    const drawBuckets = (note: string, active = '') => {
       const nodes: VisualNode[] = buckets.map((_, i) => ({ id: `bucket${i}`, label: `#${i}`, x: 20 + i * 77, y: 40, muted: true }));
       const edges: [string, string][] = [];
       buckets.forEach((bucket, i) => bucket.forEach((entry, j) => {
@@ -69,14 +69,14 @@ export function buildTrace(kind: string, values = [5, 2, 7, 1], target = 7): Fra
       }));
       add(nodes, note, 'hash = 문자 코드 합 % 8 · 같은 버킷에서도 원래 키를 비교합니다.', edges);
     };
-    draw('8개 버킷을 준비합니다.');
+    drawBuckets('8개 버킷을 준비합니다.');
     for (const [key, value] of [['a', 1], ['i', 2], ['a', 3]] as const) {
       const bucket = buckets[key.charCodeAt(0) % 8]; const old = bucket.find(n => n.id === key);
       if (old) old.label = `${key}: ${value}`; else bucket.push({ id: key, label: `${key}: ${value}` });
-      draw(`set('${key}', ${value}) · ${old ? '같은 키의 값만 갱신합니다.' : bucket.length > 1 ? '충돌: 같은 버킷에 별도 키로 보관합니다.' : '키와 값을 저장합니다.'}`, key);
+      drawBuckets(`set('${key}', ${value}) · ${old ? '같은 키의 값만 갱신합니다.' : bucket.length > 1 ? '충돌: 같은 버킷에 별도 키로 보관합니다.' : '키와 값을 저장합니다.'}`, key);
     }
-    draw("get('i') → 2 · a와 다른 키임을 확인합니다.", 'i');
-    buckets[1].shift(); draw("delete('a') → true · 같은 버킷의 i는 남습니다.", 'i');
+    drawBuckets("get('i') → 2 · a와 다른 키임을 확인합니다.", 'i');
+    buckets[1].shift(); drawBuckets("delete('a') → true · 같은 버킷의 i는 남습니다.", 'i');
   } else if (kind === 'binary-search') {
     const sorted = [...input].sort((a, b) => a.value - b.value);
     let l = 0, r = sorted.length - 1, found = -1;
@@ -108,38 +108,38 @@ export function buildTrace(kind: string, values = [5, 2, 7, 1], target = 7): Fra
     const nodes = [{ id: 'A', label: 'A', x: 100, y: 40 }, { id: 'B', label: 'B', x: 310, y: 40 }, { id: 'C', label: 'C', x: 100, y: 220 }, { id: 'D', label: 'D', x: 310, y: 220 }];
     const edges = Object.entries(graph).flatMap(([a, next]) => next.map(b => [a, b] as [string, string]));
     const visited = new Set<string>(), order: string[] = [];
-    const draw = (note: string, active: string, pending: string[]) => add(nodes.map(n => ({ ...n, active: n.id === active, muted: visited.has(n.id) && n.id !== active })), note,
+    const drawGraph = (note: string, active: string, pending: string[]) => add(nodes.map(n => ({ ...n, active: n.id === active, muted: visited.has(n.id) && n.id !== active })), note,
       `방문: ${order.join(' → ') || '없음'} · ${kind === 'bfs' ? '큐' : '호출 스택'}: ${pending.join(', ') || '비어 있음'}`, edges);
-    draw('A에서 시작합니다. D → A 순환도 있습니다.', '', []);
+    drawGraph('A에서 시작합니다. D → A 순환도 있습니다.', '', []);
     if (kind === 'bfs') {
       const queue = ['A']; visited.add('A');
       while (queue.length) {
         const node = queue.shift()!; order.push(node);
         for (const next of graph[node]) if (!visited.has(next)) { visited.add(next); queue.push(next); }
-        draw(`${node}를 처리하고 방문하지 않은 이웃을 큐에 넣었습니다.`, node, queue);
+        drawGraph(`${node}를 처리하고 방문하지 않은 이웃을 큐에 넣었습니다.`, node, queue);
       }
     } else {
       const visit = (node: string, stack: string[]) => {
-        if (visited.has(node)) { draw(`${node}는 이미 방문했으므로 건너뜁니다.`, node, stack); return; }
-        visited.add(node); order.push(node); const path = [...stack, node]; draw(`${node}에 들어왔습니다.`, node, path);
+        if (visited.has(node)) { drawGraph(`${node}는 이미 방문했으므로 건너뜁니다.`, node, stack); return; }
+        visited.add(node); order.push(node); const path = [...stack, node]; drawGraph(`${node}에 들어왔습니다.`, node, path);
         for (const next of graph[node]) visit(next, path);
-        draw(`${node}의 탐색을 마치고 돌아갑니다.`, node, stack);
+        drawGraph(`${node}의 탐색을 마치고 돌아갑니다.`, node, stack);
       };
       visit('A', []);
     }
-    draw('도달 가능한 모든 정점을 방문했습니다.', '', []);
+    drawGraph('도달 가능한 모든 정점을 방문했습니다.', '', []);
   } else if (['map', 'filter', 'reduce'].includes(kind)) {
     const output: typeof input = []; let acc = 10;
     const operation = kind === 'map' ? 'value × 2' : kind === 'filter' ? 'value % 2 === 0' : 'acc + value · 초기값 10';
-    const draw = (note: string, active = '') => add([...row(input, 70, active), ...row(output, 220), ...(kind === 'reduce' ? [{ id: 'acc', label: String(acc), x: 280, y: 220, active: true }] : [])], note, `위: 입력 · 아래: ${kind === 'reduce' ? '누적값' : '결과'} · ${operation}`);
-    draw('입력을 왼쪽부터 순회합니다.');
+    const drawMethod = (note: string, active = '') => add([...row(input, 70, active), ...row(output, 220), ...(kind === 'reduce' ? [{ id: 'acc', label: String(acc), x: 280, y: 220, active: true }] : [])], note, `위: 입력 · 아래: ${kind === 'reduce' ? '누적값' : '결과'} · ${operation}`);
+    drawMethod('입력을 왼쪽부터 순회합니다.');
     for (const v of input) {
       if (kind === 'map') output.push({ id: `out-${v.id}`, value: v.value * 2 });
       if (kind === 'filter' && v.value % 2 === 0) output.push({ id: `out-${v.id}`, value: v.value });
       if (kind === 'reduce') acc += v.value;
-      draw(`${v.value} 처리 · ${kind === 'filter' ? v.value % 2 === 0 ? '조건에 맞아 남깁니다.' : '조건에 맞지 않아 건너뜁니다.' : operation}`, v.id);
+      drawMethod(`${v.value} 처리 · ${kind === 'filter' ? v.value % 2 === 0 ? '조건에 맞아 남깁니다.' : '조건에 맞지 않아 건너뜁니다.' : operation}`, v.id);
     }
-    draw('완료. 원본 배열은 바뀌지 않았습니다.');
+    drawMethod('완료. 원본 배열은 바뀌지 않았습니다.');
   }
   return frames;
 }

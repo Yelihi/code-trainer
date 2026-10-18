@@ -151,6 +151,68 @@ class FoundationsTest(unittest.TestCase):
         self.assertEqual(f.job(self.owner,job['id'],True)['state'],'error')
         self.assertEqual(f.job(self.owner,job['id'],True)['payload']['answers'],['a','b'])
 
+    def test_restart_resets_current_round_but_preserves_history_and_assistance(self):
+        url = '/api/foundations/queue'
+        catalog = lambda: next(item for item in self.client.get('/api/foundations').json()['items'] if item['id'] == 'queue')
+        self.assertFalse(catalog()['can_resume'])
+        draft = {'version': 1, 'revision': 0, 'answers': ['saved', 'answer'], 'code': 'old code', 'test_code': 'old tests'}
+        self.client.put(url+'/progress', json=draft)
+        self.assertTrue(catalog()['can_resume'])
+        self.explain()
+        self.client.get(url+'/solution')
+        response, _ = self.submit()
+        old_job = response.json()['id']
+        before = f.evidence(self.owner)
+        restart = self.client.post(url+'/restart', json={'version': 1, 'revision': 1})
+        self.assertEqual(restart.status_code, 200, restart.text)
+        self.assertEqual(restart.json()['revision'], 2)
+        fresh = self.client.get(url).json()
+        self.assertEqual(fresh['progress']['answers'], ['', ''])
+        self.assertEqual(fresh['progress']['code'], CATALOG['queue']['starter'])
+        self.assertEqual(fresh['progress']['test_code'], CATALOG['queue']['test_starter'])
+        self.assertIsNone(fresh['review']); self.assertIsNone(fresh['attempt'])
+        self.assertFalse(fresh['unlocked']); self.assertFalse(fresh['completed'])
+        self.assertEqual(catalog()['state'], 'passed')
+        self.assertTrue(catalog()['can_resume'])
+        self.assertEqual(f.evidence(self.owner), before)
+        self.assertEqual(self.client.get('/api/foundation-attempts/'+old_job).status_code, 200)
+        self.assertEqual(self.client.put(url+'/progress', json={**draft, 'revision': 1}).status_code, 409)
+        self.assertEqual(self.client.post(url+'/restart', json={'version': 1, 'revision': 1}).status_code, 409)
+        self.assertEqual(self.client.post(url+'/restart', json={'version': 2, 'revision': 2}).status_code, 409)
+        self.assertEqual(self.client.get(url+'/solution').status_code, 409)
+        replay = self.client.post(url+'/explain', json={'version': 1, 'request_id': 'explanation-one', 'answers': ['먼저 들어온 값을 먼저 꺼냅니다.', 'head를 이동합니다.']})
+        self.assertEqual(replay.status_code, 409)
+        self.assertEqual(self.submit('new-before-feedback')[0].status_code, 409)
+        self.assertIsNone(f.view('someone-else', 'queue')['progress'])
+        self.explain('explanation-new-round')
+        self.assertTrue(self.client.get(url).json()['unlocked'])
+        new_job = self.submit('new-after-feedback')[0].json()['id']
+        snapshot = json.loads(db.one('SELECT snapshot FROM foundation_attempts WHERE id=?', (new_job,))['snapshot'])
+        self.assertEqual(snapshot['assistance'], 'solution')
+        self.assertEqual(len(self.client.get(url+'/history').json()['attempts']), 2)
+
+    def test_restart_is_blocked_during_review_and_works_for_a_new_unit(self):
+        with patch.object(ai, 'available', return_value=True):
+            job, _ = f.begin(self.owner, 'queue', f.ExplanationInput(version=1, request_id='busy-restart', answers=['a','b']), True)
+        state = next(item for item in f.catalog(self.owner)['items'] if item['id'] == 'queue')
+        self.assertTrue(state['can_resume']); self.assertTrue(state['running'])
+        response = self.client.post('/api/foundations/queue/restart', json={'version': 1, 'revision': 0})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(f.job(self.owner, job['id'], True)['state'], 'running')
+        self.assertEqual(self.client.post('/api/foundations/stack/restart', json={'version': 1, 'revision': 0}).status_code, 200)
+        self.assertFalse(f.view(self.owner, 'stack')['unlocked'])
+        self.client.post('/api/logout', json={})
+        self.assertEqual(self.client.post('/api/foundations/stack/restart', json={'version': 1, 'revision': 1}).status_code, 401)
+
+    def test_existing_progress_survives_restart_column_migration(self):
+        self.client.put('/api/foundations/queue/progress', json={'version':1, 'revision':0, 'answers':['a','b'], 'code':'keep', 'test_code':'tests'})
+        db.execute('ALTER TABLE foundation_progress DROP COLUMN restarted_at')
+        db.initialize()
+        row = db.one('SELECT * FROM foundation_progress WHERE owner=?', (self.owner,))
+        self.assertEqual(row['restarted_at'], '')
+        self.assertEqual(json.loads(row['data'])['code'], 'keep')
+        self.assertEqual(row['revision'], 1)
+
     def test_no_auth_cannot_access_lessons_or_records(self):
         self.client.post('/api/logout',json={})
         for path in ('/api/foundations','/api/foundations/queue','/api/me/foundations','/api/foundations/queue/history','/api/foundation-reviews/x'):

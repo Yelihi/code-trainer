@@ -1854,7 +1854,6 @@ button.text-button,
 .visual-node text { fill: #f4f2fa; font: 14px ui-monospace, monospace; }
 .visual-node.active rect { fill: #214c46; stroke: var(--green); stroke-width: 2; }
 .visual-node.muted-node { opacity: .45; }
-.visual-empty { fill: var(--muted); font-size: 18px; }
 .visual-caption { min-height: 96px; border-top: 1px solid var(--line); padding-top: 15px; }
 .visual-caption strong { font-size: 14px; }
 .visual-caption p { color: var(--muted); font-size: 12px; margin: 6px 0 15px; }
@@ -2031,3 +2030,10 @@ button.text-button,
 .visual-stage { overflow-x: auto; }
 .visual-stage svg { min-width: 500px; }
 .visual-stack svg { min-width: 0; height: 340px; }
+
+.foundation-start-note { margin: 24px 0; }
+.foundation-card { display: flex; flex-direction: column; }
+.foundation-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.foundation-card-actions > * { flex: 1; text-align: center; white-space: nowrap; }
+.foundation-concept-link { margin-top: 14px; font-size: 12px; align-self: start; }
+.foundation-card > small { margin-top: auto; }

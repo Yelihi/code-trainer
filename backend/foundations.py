@@ -9,6 +9,11 @@ from .foundation_catalog import CATALOG, public
 from .foundation_guides import HINTS
 
 
+class FoundationRestart(Model):
+    version: int = Field(ge=1)
+    revision: int = Field(ge=0)
+
+
 class FoundationDraft(Model):
     version: int = Field(ge=1)
     revision: int = Field(ge=0)
@@ -74,20 +79,28 @@ def catalog(owner):
     rows = db.all('SELECT lesson_id, version, MAX(state=\'passed\') AS passed FROM foundation_attempts WHERE owner=? GROUP BY lesson_id,version', (owner,))
     passed = {(r['lesson_id'], r['version']) for r in rows if r['passed']}
     reviewed = {(r['lesson_id'], r['version']) for r in db.all("SELECT DISTINCT lesson_id,version FROM foundation_reviews WHERE owner=? AND state='ready'", (owner,))}
+    progress = {(r['lesson_id'], r['version']): r['revision'] for r in db.all('SELECT lesson_id,version,revision FROM foundation_progress WHERE owner=?', (owner,))}
+    jobs = db.all("SELECT lesson_id,version,state FROM foundation_reviews WHERE owner=? UNION SELECT lesson_id,version,state FROM foundation_attempts WHERE owner=?", (owner, owner))
+    started = set(progress) | {(r['lesson_id'], r['version']) for r in jobs}
+    running = {(r['lesson_id'], r['version']) for r in jobs if r['state'] == 'running'}
     return {'items': [{**{k: item[k] for k in ('id', 'version', 'title', 'group', 'summary', 'prerequisites')},
+                       'can_resume': (item['id'], item['version']) in started,
+                       'running': (item['id'], item['version']) in running,
+                       'revision': progress.get((item['id'], item['version']), 0),
                        'state': 'passed' if (item['id'], item['version']) in passed else 'reviewed' if (item['id'], item['version']) in reviewed else 'new'} for item in CATALOG.values()]}
 
 
 def view(owner, lesson_id):
     item = lesson(lesson_id)
     progress = db.one('SELECT * FROM foundation_progress WHERE owner=? AND lesson_id=? AND version=?', (owner, lesson_id, item['version']))
-    review = db.one('SELECT * FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version']))
-    ready = db.one("SELECT id FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND state='ready' LIMIT 1", (owner, lesson_id, item['version']))
-    attempt = db.one('SELECT * FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version']))
+    since = progress['restarted_at'] if progress else ''
+    review = db.one('SELECT * FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version'], since))
+    ready = db.one("SELECT id FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='ready' LIMIT 1", (owner, lesson_id, item['version'], since))
+    attempt = db.one('SELECT * FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version'], since))
     return {**public(item), 'ai_available': ai.available(), 'unlocked': bool(ready),
             'progress': {'revision': progress['revision'], **json.loads(progress['data'])} if progress else None,
             'review': record(review), 'attempt': record(attempt),
-            'completed': bool(db.one("SELECT id FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND state='passed' LIMIT 1", (owner, lesson_id, item['version'])))}
+            'completed': bool(db.one("SELECT id FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='passed' LIMIT 1", (owner, lesson_id, item['version'], since)))}
 
 
 def save(owner, lesson_id, request):
@@ -103,13 +116,35 @@ def save(owner, lesson_id, request):
     return {'revision': request.revision+1}
 
 
+def restart(owner, lesson_id, request):
+    item = lesson(lesson_id, request.version)
+    with db.connect(write=True) as c:
+        row = c.execute('SELECT revision FROM foundation_progress WHERE owner=? AND lesson_id=? AND version=?', (owner, lesson_id, request.version)).fetchone()
+        if request.revision != (row['revision'] if row else 0):
+            raise service.Error('다른 화면에서 작성 내용이 변경되었습니다. 목록을 새로고침해주세요.', 409)
+        for table in ('foundation_reviews', 'foundation_attempts'):
+            if c.execute(f"SELECT id FROM {table} WHERE owner=? AND lesson_id=? AND state='running'", (owner, lesson_id)).fetchone():
+                raise service.Error('검토가 진행 중입니다. 완료 후 새로 시작해주세요.', 409)
+        stamp = service.now()
+        draft = service.dump({'answers': ['', ''], 'code': item['starter'], 'test_code': item['test_starter']})
+        c.execute('''INSERT INTO foundation_progress(owner,lesson_id,version,data,revision,updated_at,restarted_at)
+            VALUES (?,?,?,?,?,?,?) ON CONFLICT(owner,lesson_id,version) DO UPDATE SET
+            data=excluded.data,revision=excluded.revision,updated_at=excluded.updated_at,restarted_at=excluded.restarted_at''',
+            (owner, lesson_id, request.version, draft, request.revision+1, stamp, stamp))
+    return {'revision': request.revision+1}
+
+
 def begin(owner, lesson_id, request, explain=False):
     item = lesson(lesson_id, request.version)
     table = 'foundation_reviews' if explain else 'foundation_attempts'
     payload = service.dump(request.model_dump())
     with db.connect(write=True) as c:
+        progress = c.execute('SELECT solution_viewed,restarted_at FROM foundation_progress WHERE owner=? AND lesson_id=? AND version=?', (owner, lesson_id, request.version)).fetchone()
+        since = progress['restarted_at'] if progress else ''
         old = c.execute(f'SELECT * FROM {table} WHERE owner=? AND request_id=?', (owner, request.request_id)).fetchone()
         if old:
+            if old['created_at'] < since:
+                raise service.Error('새로 시작하기 전의 제출입니다. 새로고침 후 다시 제출해주세요.', 409)
             if old['payload'] != payload or old['lesson_id'] != lesson_id:
                 raise service.Error('제출 식별자가 다른 내용에 사용되었습니다.', 409)
             return record(dict(old)), False
@@ -120,10 +155,9 @@ def begin(owner, lesson_id, request, explain=False):
                 raise service.Error('설명 검토에 필요한 AI가 연결되지 않았습니다. 작성 내용은 저장해둘 수 있습니다.', 503)
             snapshot = {'questions': item['questions']}
         else:
-            review = c.execute("SELECT id,result FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND state='ready' ORDER BY created_at DESC,id DESC LIMIT 1", (owner, lesson_id, request.version)).fetchone()
+            review = c.execute("SELECT id,result FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='ready' ORDER BY created_at DESC,id DESC LIMIT 1", (owner, lesson_id, request.version, since)).fetchone()
             if not review:
                 raise service.Error('먼저 설명을 제출하고 AI 피드백을 받아주세요.', 409)
-            progress = c.execute('SELECT solution_viewed FROM foundation_progress WHERE owner=? AND lesson_id=? AND version=?', (owner, lesson_id, request.version)).fetchone()
             snapshot = {'title': item['title'], 'concept': item['concept'], 'requirements': item['requirements'],
                         'starter': item['starter'], 'review_id': review['id'], 'feedback': json.loads(review['result']),
                         'assistance': 'solution' if progress and progress['solution_viewed'] else 'hint'}
@@ -259,7 +293,8 @@ def execute(owner, job_id):
 
 def solution(owner, lesson_id):
     item = lesson(lesson_id)
-    if not db.one("SELECT id FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND state='ready'", (owner, lesson_id, item['version'])):
+    progress = db.one('SELECT restarted_at FROM foundation_progress WHERE owner=? AND lesson_id=? AND version=?', (owner, lesson_id, item['version']))
+    if not db.one("SELECT id FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='ready'", (owner, lesson_id, item['version'], progress['restarted_at'] if progress else '')):
         raise service.Error('설명 피드백을 받은 뒤 참고 풀이를 볼 수 있습니다.', 409)
     with db.connect(write=True) as c:
         c.execute('''INSERT OR IGNORE INTO foundation_progress(owner,lesson_id,version,data,revision,updated_at)

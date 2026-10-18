@@ -142,6 +142,8 @@ def initialize():
         CREATE INDEX IF NOT EXISTS foundation_review_owner ON foundation_reviews(owner,lesson_id,version,state);
         CREATE INDEX IF NOT EXISTS foundation_attempt_owner ON foundation_attempts(owner,lesson_id,version,state);
         """)
+        if 'restarted_at' not in {row['name'] for row in c.execute('PRAGMA table_info(foundation_progress)')}:
+            c.execute("ALTER TABLE foundation_progress ADD COLUMN restarted_at TEXT NOT NULL DEFAULT ''")
         c.execute("""INSERT OR IGNORE INTO feed_sources(id,name,url,attempted,succeeded,error)
             SELECT 'korean-fe-article','Korean FE Article','https://kofearticle.substack.com/feed',
                 attempted,succeeded,error FROM feed_sync WHERE id=1""")

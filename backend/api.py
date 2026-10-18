@@ -330,6 +330,11 @@ def foundation_progress(lesson_id: str, body: foundations.FoundationDraft, curre
     return foundations.save(current['id'], lesson_id, body)
 
 
+@app.post('/api/foundations/{lesson_id}/restart')
+def foundation_restart(lesson_id: str, body: foundations.FoundationRestart, current=Depends(user)):
+    return foundations.restart(current['id'], lesson_id, body)
+
+
 @app.post('/api/foundations/{lesson_id}/explain', status_code=202)
 def foundation_explain(lesson_id: str, body: foundations.ExplanationInput, tasks: BackgroundTasks, current=Depends(user)):
     value, fresh = foundations.begin(current['id'], lesson_id, body, explain=True)

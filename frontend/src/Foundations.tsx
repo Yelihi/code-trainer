@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useBlocker, useParams } from 'react-router-dom';
+import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useResource } from './App';
@@ -11,17 +11,35 @@ type Feedback = { question_id: string; understood: string; missing: string; corr
 type Check = { label: string; passed: boolean; status: string; detail: string; hint?: string };
 type Job = { id: string; lesson_id: string; version: number; state: string; created_at: string; error: string; payload: { answers?: string[]; code?: string; test_code?: string }; result: { items?: Feedback[]; model_answers?: { id: string; prompt: string; answer: string }[]; checks?: Check[] } };
 type Draft = { answers: string[]; code: string; test_code: string };
-type Unit = { id: string; version: number; title: string; group: string; summary: string; prerequisites: string[]; state: string };
+type Unit = { id: string; version: number; title: string; group: string; summary: string; prerequisites: string[]; state: string; can_resume: boolean; running: boolean; revision: number };
 type Lesson = Unit & { reading: { invariant: string; steps: [string, string][]; pitfall: string; tradeoff: string; case_study: string; experiment: string }; concept: string; complexity: string; application: string; requirements: string[]; questions: { id: string; prompt: string }[]; starter: string; public_tests: string; test_starter: string; visualization: string; sources: { title: string; url: string }[]; progress: (Draft & { revision: number }) | null; review: Job | null; attempt: Job | null; unlocked: boolean; completed: boolean; ai_available: boolean };
 const statusLabels: Record<string, string> = { passed: '통과', ready: '검토 완료', failed: '보완 필요', error: '처리 중단', running: '진행 중', assertion_failed: '예상 값과 다름', insufficient_assertions: 'assertEqual 검증을 2개 이상 실행해주세요', invalid_tests: '검증 결과를 확인할 수 없습니다', compile_error: '컴파일 오류', runtime_error: '실행 오류', time_limit: '시간 초과', compile_time_limit: '컴파일 시간 초과' };
 
 export function Foundations() {
   const { data, error, reload } = useResource<{ items: Unit[] }>('/foundations');
+  const navigate = useNavigate();
+  const [starting, setStarting] = useState('');
+  const [startError, setStartError] = useState('');
+  async function startFresh(item: Unit) {
+    setStarting(item.id); setStartError('');
+    try {
+      await api(`/foundations/${item.id}/restart`, 'POST', { version: item.version, revision: item.revision });
+      navigate(`/foundations/${item.id}/practice`);
+    } catch (e) { setStartError(errorMessage(e)); reload(); }
+    finally { setStarting(''); }
+  }
   return <main className="page foundations-page"><div className="breadcrumb">실험 기능 <span>/</span> 기초 구현 학습</div>
     <header className="foundation-heading"><div><span className="eyebrow">FOUNDATIONS / TYPESCRIPT</span><h1>설명하고,<br /><em>직접 구현하세요.</em></h1><p>자료구조부터 익숙한 메서드까지.<br />움직임을 살펴보고, 내 말과 코드로 이해를 확인합니다.</p></div><div className="foundation-path"><span><b>01</b> 내 말로 설명 <small>AI 피드백</small></span><i aria-hidden="true">↓</i><span><b>02</b> 구현과 테스트 <small>직접 실행 · 검증</small></span><small>{data ? `${data.items.filter(i => i.state === 'passed').length} / ${data.items.length}개 단원 완료` : '준비된 단원을 불러옵니다.'}</small></div></header>
-    <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
+    <ErrorNotice error={error || startError} />{error && <button onClick={reload}>다시 불러오기</button>}
+    <p className="muted foundation-start-note">새로 진행하면 작성 중인 답변·코드가 초기화됩니다. 제출·완료 기록은 그대로 보관됩니다.</p>
     {!data && !error && <p role="status">단원을 불러오는 중…</p>}
-    {['자료구조', '알고리즘', '메서드'].map(group => <section key={group} className="foundation-category"><div className="section-heading"><h2>{group}</h2><span className="muted">설명 → 구현 · 2단계</span></div><div className="foundation-catalog">{data?.items.filter(i => i.group === group).map(item => <Link className="foundation-card" key={item.id} to={`/foundations/${item.id}`}><div className="card-top"><span className="language-tag">TypeScript</span><span className={item.state === 'passed' ? 'success-text' : 'muted'}>{item.state === 'passed' ? '✓ 완료' : item.state === 'reviewed' ? '구현 이어하기' : '시작하기 ↗'}</span></div><h3>{item.title}</h3><p>{item.summary}</p><small>{item.prerequisites.length ? `추천 선행: ${item.prerequisites.map(id => data.items.find(i => i.id === id)?.title.split(' · ')[0] ?? id).join(', ')}` : '바로 시작할 수 있어요'}</small></Link>)}</div></section>)}
+    {['자료구조', '알고리즘', '메서드'].map(group => <section key={group} className="foundation-category"><div className="section-heading"><h2>{group}</h2><span className="muted">설명 → 구현 · 2단계</span></div><div className="foundation-catalog">{data?.items.filter(i => i.group === group).map(item => <article className="foundation-card" key={item.id} aria-label={item.title}>
+        <div className="card-top"><span className="language-tag">TypeScript</span><span className={item.state === 'passed' ? 'success-text' : 'muted'}>{item.running ? '검토 중' : item.state === 'passed' ? '✓ 완료 기록 있음' : item.can_resume ? '진행 중' : '시작 전'}</span></div>
+        <h3><Link to={`/foundations/${item.id}`}>{item.title} ↗</Link></h3><p>{item.summary}</p>
+        <small>{item.prerequisites.length ? `추천 선행: ${item.prerequisites.map(id => data.items.find(i => i.id === id)?.title.split(' · ')[0] ?? id).join(', ')}` : '바로 시작할 수 있어요'}</small>
+        <div className="foundation-card-actions"><button disabled={!!starting || item.running} onClick={() => void startFresh(item)}>{starting === item.id ? '준비 중…' : '새로 진행'}</button>{item.can_resume && !starting ? <Link className="button primary" to={`/foundations/${item.id}/practice`}>이어 진행 →</Link> : <button disabled>이어 진행</button>}</div>
+        <Link className="text-link foundation-concept-link" to={`/foundations/${item.id}`}>개념 먼저 살펴보기 ↗</Link>
+      </article>)}</div></section>)}
   </main>;
 }
 

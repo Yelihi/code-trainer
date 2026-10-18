@@ -44,7 +44,6 @@ export function FoundationVisual({ kind }: { kind: string }) {
       {removed.map(node => <g key={`removed-${step}-${node.id}`} transform={`translate(${node.x},${node.y})`} aria-hidden="true"><g className="visual-exit"><rect width="52" height="30" rx="8" /><text x="26" y="20" textAnchor="middle">{node.label}</text></g></g>)}
       {frame.nodes.map((node, index) => <g key={node.id} className={`visual-node ${node.active ? 'active' : ''} ${node.muted ? 'muted-node' : ''}`} style={{ transform: `translate(${node.x}px, ${node.y}px)` }}><g className="visual-node-content">{round ? <circle cx="26" cy="15" r="24" /> : <rect width="52" height="30" rx="8" />}<text x="26" y="20" textAnchor="middle">{node.label}</text>{heap && <text className="diagram-index" x="26" y="51" textAnchor="middle">[{index}]</text>}</g></g>)}
       {kind === 'stack' && frame.nodes.length > 0 && <text className="diagram-label" x="364" y={frame.nodes.at(-1)!.y + 20}>← TOP</text>}
-      {!frame.nodes.length && <text x="320" y="170" textAnchor="middle" className="visual-empty">비어 있음</text>}
     </svg>
     {heap && <div className="heap-array"><span>같은 상태를 배열로 보면</span><div>{frame.nodes.length ? frame.nodes.map((node, index) => <span className={node.active ? 'active' : ''} key={node.id}><b>{node.label}</b><small>{index}</small></span>) : <code>[]</code>}</div></div>}
     </div><div className="visual-console">

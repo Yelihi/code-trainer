@@ -7,6 +7,7 @@ import { Practice } from './Practice';
 import { Sources } from './Sources';
 import { Reviews, Operations } from './Reviews';
 import { FeedInbox } from './FeedInbox';
+import { Foundations, FoundationLesson } from './Foundations';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
@@ -19,6 +20,8 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/reviews', element: <Reviews /> },
   { path: '/reviews/:id', element: <Practice review /> },
   { path: '/admin/operations', element: <Operations /> },
+  { path: '/foundations', element: <Foundations /> },
+  { path: '/foundations/:id', element: <FoundationLesson /> },
   { path: '/me', element: <Me /> },
   { path: '/admin/sources', element: <Sources /> },
   { path: '/admin/sources/:sourceId', element: <Sources /> },

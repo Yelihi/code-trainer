@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { FoundationRecords } from './Foundations';
 import { LearningMap } from './LearningMap';
 import { UsagePanel } from './Reviews';
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
@@ -70,6 +71,9 @@ export function App() {
         {!!session?.user?.admin && <NavLink to="/admin/sources"><span aria-hidden="true">▤</span> 원본 자료 · 관리자</NavLink>}
         {!!session?.user?.admin && <NavLink to="/admin/operations"><span aria-hidden="true">◉</span> 운영 상태</NavLink>}
       </nav>
+      <div className="sidebar-divider" />
+      <div className="sidebar-label">실험 기능</div>
+      <nav aria-label="실험 기능" onClick={() => setMenu(false)}><NavLink to="/foundations"><span aria-hidden="true">◇</span> 기초 구현 학습</NavLink></nav>
       <div className="sidebar-divider" />
       <div className="sidebar-label">THE PRACTICE LOOP</div>
       <ol className="practice-loop"><li><b>01</b> Read <span>읽고 이해하기</span></li><li><b>02</b> Fix <span>문제 해결하기</span></li><li><b>03</b> Modify <span>요구사항 바꾸기</span></li><li><b>04</b> Build <span>직접 구현하기</span></li></ol>
@@ -244,6 +248,7 @@ export function Me() {
   const { isAdmin } = useApp();
   return <main className="page knowledge-page"><div className="breadcrumb">Workspace<span>/</span> 나의 기록</div>
     <span className="eyebrow">MY LEARNING MAP</span><h1>내가 배운 개념</h1>
+    <FoundationRecords />
     <LearningMap />
     <UsagePanel />
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}

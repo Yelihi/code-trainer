@@ -58,6 +58,8 @@ def initialize():
     db.execute("UPDATE generations SET state='failed', stage='작업 중단', error='서버가 다시 시작되었습니다. 자료 또는 저장된 Context로 다시 생성해주세요.' WHERE state IN ('generating','validating')")
     db.execute("DELETE FROM attempts WHERE status='running'")
     db.execute("UPDATE learning_summaries SET state='failed', error='서버가 다시 시작되었습니다. 배운 내용 정리를 다시 시도해주세요.' WHERE state='running'")
+    for table in ('foundation_reviews', 'foundation_attempts'):
+        db.execute(f"UPDATE {table} SET state='error',error='서버가 다시 시작되었습니다. 제출 내용은 보관되었습니다. 다시 제출해주세요.' WHERE state='running'")
     try:
         runner.cleanup()
     except runner.Unavailable:

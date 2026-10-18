@@ -30,7 +30,8 @@ def evidence(owner):
             'requirements': problem['requirements'], 'starter': problem['starter'],
             'submitted_code': submission.get('code', ''), 'submitted_answer': submission.get('answer', ''),
         })
-    return items
+    from . import foundations
+    return items + foundations.evidence(owner)
 
 
 def fingerprint(items):
@@ -119,6 +120,7 @@ they are hints, not proof that every concept in that unit was practiced.
 For each topic write concrete Korean outcome sentences grounded in the actual problem requirements,
 starter, and passed submission. Explain what the learner practiced and why/how it works (e.g.
 생성자에서 전달받은 값을 인스턴스 속성에 저장해 객체마다 서로 다른 상태를 갖도록 구성하는 방법을 연습했습니다.).
+FOUNDATION supports explanation, implementation and learner-authored tests; its explanation_feedback is AI feedback, not proof of mastery.
 READ supports tracing/explaining behavior, not claiming implementation. FIX supports repairing the
 specific bug; MODIFY/BUILD support implementing the requested behavior. Never claim expert mastery,
 independent authorship, or untested abilities; assistance is app-observed help (unknown for legacy records), not proof of independence; a passed submission may follow a provided solution.

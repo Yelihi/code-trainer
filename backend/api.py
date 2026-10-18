@@ -8,7 +8,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access, practice, usage, operations, feeds, diagnostics
+from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -313,6 +313,62 @@ def operation_status(current=Depends(user)):
     if not current['admin']:
         raise service.Error('관리자만 확인할 수 있습니다.', 403)
     return operations.status()
+
+
+@app.get('/api/foundations')
+def foundation_catalog(current=Depends(user)):
+    return foundations.catalog(current['id'])
+
+
+@app.get('/api/foundations/{lesson_id}')
+def foundation_lesson(lesson_id: str, current=Depends(user)):
+    return foundations.view(current['id'], lesson_id)
+
+
+@app.put('/api/foundations/{lesson_id}/progress')
+def foundation_progress(lesson_id: str, body: foundations.FoundationDraft, current=Depends(user)):
+    return foundations.save(current['id'], lesson_id, body)
+
+
+@app.post('/api/foundations/{lesson_id}/explain', status_code=202)
+def foundation_explain(lesson_id: str, body: foundations.ExplanationInput, tasks: BackgroundTasks, current=Depends(user)):
+    value, fresh = foundations.begin(current['id'], lesson_id, body, explain=True)
+    if fresh:
+        tasks.add_task(foundations.review, current['id'], value['id'])
+    return value
+
+
+@app.post('/api/foundations/{lesson_id}/submit', status_code=202)
+def foundation_submit(lesson_id: str, body: foundations.FoundationSubmission, tasks: BackgroundTasks, current=Depends(user)):
+    value, fresh = foundations.begin(current['id'], lesson_id, body)
+    if fresh:
+        tasks.add_task(foundations.execute, current['id'], value['id'])
+    return value
+
+
+@app.get('/api/foundation-reviews/{job_id}')
+def foundation_review(job_id: str, current=Depends(user)):
+    return foundations.job(current['id'], job_id, explain=True)
+
+
+@app.get('/api/foundation-attempts/{job_id}')
+def foundation_attempt(job_id: str, current=Depends(user)):
+    return foundations.job(current['id'], job_id)
+
+
+@app.get('/api/foundations/{lesson_id}/history')
+def foundation_submissions(lesson_id: str, current=Depends(user)):
+    return foundations.submissions(current['id'], lesson_id)
+
+
+@app.get('/api/foundations/{lesson_id}/solution')
+def foundation_solution(lesson_id: str, current=Depends(user)):
+    return foundations.solution(current['id'], lesson_id)
+
+
+@app.get('/api/me/foundations')
+def foundation_history(current=Depends(user)):
+    return {'items': foundations.history(current['id'])}
 
 
 dist = Path(__file__).resolve().parent.parent / 'frontend' / 'dist'

@@ -1817,3 +1817,93 @@ button.text-button,
 .feed-add-form h2 { margin: 0; font-size: 1.1rem; }
 .feed-add-form input, .feed-filter select { width: 100%; min-width: 0; }
 .feed-filter { display: grid; gap: 6px; margin: 24px 0; }
+
+/* Foundations follows the workspace palette; motion represents state changes. */
+.foundation-heading { display: flex; justify-content: space-between; gap: 40px; padding: 20px 0 42px; border-bottom: 1px solid var(--line); }
+.foundation-heading h1 { font-size: clamp(32px, 4vw, 54px); line-height: 1.25; letter-spacing: -.04em; margin: 16px 0; }
+.foundation-heading em { color: var(--green); font-style: normal; }
+.foundation-heading p, .foundation-lesson-heading p { color: var(--muted); }
+.foundation-path { min-width: 240px; padding: 25px 32px; border-left: 1px solid var(--line); align-self: center; display: grid; gap: 10px; }
+.foundation-path > span { display: grid; grid-template-columns: 30px 1fr; column-gap: 14px; font-size: 17px; }
+.foundation-path b { color: var(--green); grid-row: span 2; }
+.foundation-path small { color: var(--muted); font-size: 12px; }
+.foundation-path i { font-style: normal; color: var(--muted); }
+.foundation-category { margin-top: 34px; }
+.foundation-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.foundation-card { padding: 22px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; transition: border-color .15s, transform .15s; }
+.foundation-card:hover { border-color: var(--green); transform: translateY(-2px); }
+.foundation-card h3 { font-size: 18px; margin: 20px 0 10px; }
+.foundation-card p { color: var(--muted); min-height: 44px; }
+.foundation-card > small { display: block; border-top: 1px solid var(--line); padding-top: 15px; color: var(--muted); }
+.foundation-lesson { max-width: 1720px; }
+.foundation-lesson-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 20px 0 30px; }
+.foundation-lesson-heading h1 { font-size: clamp(26px, 3vw, 36px); margin: 10px 0; }
+.foundation-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.2fr); gap: 28px; align-items: start; }
+.foundation-reference, .foundation-work { min-width: 0; }
+.foundation-reference { display: grid; gap: 22px; }
+.foundation-visual, .foundation-reading { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 22px; }
+.foundation-visual .section-heading { margin-bottom: 20px; }
+.foundation-visual h2, .foundation-reading h2 { font-size: 19px; margin: 4px 0; }
+.visual-inputs { display: flex; align-items: end; gap: 8px; }
+.visual-inputs label { min-width: 0; flex: 1; font-size: 12px; color: var(--muted); }
+.visual-inputs label:nth-child(2) { flex: 0 1 90px; }
+.visual-inputs input { width: 100%; margin-top: 5px; }
+.visual-inputs button { flex-shrink: 0; }
+.foundation-visual svg { display: block; width: 100%; overflow: visible; margin: 10px 0; color: var(--muted); background: radial-gradient(circle, #29243f 1px, transparent 1px); background-size: 18px 18px; border-radius: 6px; }
+.foundation-visual svg line { stroke: #766b96; stroke-width: 1.5; }
+.visual-node { transition: transform .55s ease, opacity .3s; }
+.visual-node rect { fill: #27213d; stroke: #8b7ba9; stroke-width: 1.5; }
+.visual-node text { fill: #f4f2fa; font: 14px ui-monospace, monospace; }
+.visual-node.active rect { fill: #214c46; stroke: var(--green); stroke-width: 2; }
+.visual-node.muted-node { opacity: .45; }
+.visual-empty { fill: var(--muted); font-size: 18px; }
+.visual-caption { min-height: 96px; border-top: 1px solid var(--line); padding-top: 15px; }
+.visual-caption strong { font-size: 14px; }
+.visual-caption p { color: var(--muted); font-size: 12px; margin: 6px 0 15px; }
+.visual-controls { display: flex; gap: 6px; justify-content: space-between; }
+.visual-controls button { padding: 7px 10px; }
+.foundation-reading p { line-height: 1.9; color: #d4cede; }
+.foundation-reading h3 { margin-top: 24px; font-size: 15px; color: var(--green); }
+.foundation-sources { display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 22px; font-size: 12px; color: var(--muted); }
+.foundation-sources a { text-decoration: underline; text-underline-offset: 3px; }
+.foundation-steps { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 28px; gap: 6px; }
+.foundation-steps button { flex: 1; background: transparent; border: none; border-radius: 0; border-bottom: 2px solid transparent; padding: 15px 6px; }
+.foundation-steps button[aria-pressed="true"] { color: var(--green); border-bottom-color: var(--green); }
+.foundation-work > h2 { font-size: 22px; }
+.explanation-question { display: block; margin: 24px 0; }
+.explanation-question > span { display: block; margin-bottom: 10px; font-weight: 600; }
+.explanation-question textarea { width: 100%; resize: vertical; min-height: 120px; }
+.explanation-question small { display: block; text-align: right; color: var(--muted); }
+.explanation-feedback > section { border-left: 2px solid var(--green); padding: 1px 18px 14px; margin: 22px 0; background: var(--panel); }
+.explanation-feedback h3 { font-size: 14px; padding-top: 14px; }
+.explanation-feedback p { white-space: pre-wrap; line-height: 1.8; }
+.explanation-feedback p strong { display: block; color: var(--green); font-size: 12px; margin-bottom: 3px; }
+.explanation-feedback details { color: var(--muted); }
+.foundation-next { margin: 12px 0; }
+.foundation-requirements { padding-left: 22px; line-height: 1.85; overflow-wrap: anywhere; }
+.foundation-requirements li { margin-bottom: 10px; }
+.foundation-examples { margin: 20px 0; }
+.foundation-editor { margin: 24px 0; min-width: 0; }
+.foundation-editor h3 { font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+.foundation-editor small { color: var(--muted); font-weight: 400; }
+.foundation-editor .cm-editor { border: 1px solid var(--line); border-radius: 5px; overflow: hidden; font-size: 13px; }
+.foundation-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.foundation-result { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-top: 18px; }
+.foundation-result h3 { margin-top: 0; font-size: 16px; }
+.foundation-check { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.foundation-check > div { min-width: 0; flex: 1; }
+.foundation-check small { display: block; color: var(--muted); margin-top: 3px; }
+.foundation-check pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; color: var(--error); }
+.foundation-history { margin-top: 34px; border-top: 1px solid var(--line); padding-top: 20px; }
+.foundation-history > details { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.foundation-history summary { cursor: pointer; }
+.foundation-records { margin: 30px 0 45px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.foundation-records h2 { font-size: 20px; }
+.foundation-record { padding: 16px 0; border-top: 1px solid var(--line); }
+.foundation-record a { font-weight: 600; }
+.foundation-record small { display: block; color: var(--muted); margin: 5px 0; }
+.foundation-record details { color: var(--muted); }
+.error-text { color: var(--error); }
+@media (max-width: 1200px) { .foundation-catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); } .foundation-layout { grid-template-columns: minmax(0, 1fr); } .foundation-reference { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 760px) { .foundation-heading { display: block; } .foundation-path { margin-top: 26px; padding: 20px; border: 1px solid var(--line); } .foundation-reference, .foundation-catalog { grid-template-columns: minmax(0, 1fr); } .foundation-lesson-heading { align-items: start; } .foundation-visual, .foundation-reading { padding: 16px; } .foundation-records { padding: 16px; } .foundation-steps button { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .visual-node, .foundation-card { transition: none; } }

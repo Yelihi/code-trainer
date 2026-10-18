@@ -71,7 +71,7 @@ jobs:
       - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
       - run: uv venv --python 3.12 .venv
       - run: uv pip sync --python .venv/bin/python deploy/requirements.txt
-      - run: .venv/bin/python -m unittest backend.test_app backend.test_prediction backend.test_learning_features backend.test_feeds backend.test_deployment deploy.test_certificates deploy.test_volume -q
+      - run: .venv/bin/python -m unittest backend.test_app backend.test_prediction backend.test_foundations backend.test_learning_features backend.test_feeds backend.test_deployment deploy.test_certificates deploy.test_volume -q
       - run: .venv/bin/python scripts/check-start.py
       # Mac deployment checkouts are private (umask 077). Exercise COPY permissions too.
       - run: chmod -R go-rwx backend scripts
@@ -80,6 +80,7 @@ jobs:
       - run: docker run --rm --entrypoint python trainer-app-check -c "import shutil, pathlib, backend.api; assert shutil.which('docker') is None; assert not pathlib.Path('/var/run/docker.sock').exists()"
       - run: docker build -t code-trainer-runner:v1 sandbox
       - run: .venv/bin/python scripts/check-sandbox.py
+      - run: .venv/bin/python scripts/check-foundations.py
   check:
     needs: [plan, frontend, backend]
     if: always()

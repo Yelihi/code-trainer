@@ -124,6 +124,24 @@ def initialize():
           input_tokens INTEGER, output_tokens INTEGER, state TEXT NOT NULL, created_at TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS usage_owner ON ai_usage(owner,created_at);
         """)
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS foundation_progress (
+          owner TEXT NOT NULL REFERENCES users(id), lesson_id TEXT NOT NULL, version INTEGER NOT NULL,
+          data TEXT NOT NULL, revision INTEGER NOT NULL, updated_at TEXT NOT NULL,
+          solution_viewed INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(owner,lesson_id,version));
+        CREATE TABLE IF NOT EXISTS foundation_reviews (
+          id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), lesson_id TEXT NOT NULL,
+          version INTEGER NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL,
+          state TEXT NOT NULL, result TEXT NOT NULL, error TEXT NOT NULL, snapshot TEXT NOT NULL,
+          created_at TEXT NOT NULL, UNIQUE(owner,request_id));
+        CREATE TABLE IF NOT EXISTS foundation_attempts (
+          id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), lesson_id TEXT NOT NULL,
+          version INTEGER NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL,
+          state TEXT NOT NULL, result TEXT NOT NULL, error TEXT NOT NULL, snapshot TEXT NOT NULL,
+          created_at TEXT NOT NULL, UNIQUE(owner,request_id));
+        CREATE INDEX IF NOT EXISTS foundation_review_owner ON foundation_reviews(owner,lesson_id,version,state);
+        CREATE INDEX IF NOT EXISTS foundation_attempt_owner ON foundation_attempts(owner,lesson_id,version,state);
+        """)
         c.execute("""INSERT OR IGNORE INTO feed_sources(id,name,url,attempted,succeeded,error)
             SELECT 'korean-fe-article','Korean FE Article','https://kofearticle.substack.com/feed',
                 attempted,succeeded,error FROM feed_sync WHERE id=1""")

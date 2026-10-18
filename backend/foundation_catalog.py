@@ -1,5 +1,6 @@
 """Authored, versioned TypeScript lessons. Private answers never enter catalog responses."""
 from copy import deepcopy
+from .foundation_guides import READINGS
 
 MIT = {'title': 'MIT 6.006 · 강의 자료', 'url': 'https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/pages/lecture-notes/'}
 MDN = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/'
@@ -340,5 +341,6 @@ def public(item):
     keys = ('id', 'version', 'title', 'group', 'summary', 'concept', 'complexity', 'application',
             'prerequisites', 'requirements', 'starter', 'public_tests', 'test_starter', 'visualization', 'sources')
     result = {key: deepcopy(item[key]) for key in keys}
+    result['reading'] = deepcopy(READINGS[item['id']])
     result['questions'] = [{k: q[k] for k in ('id', 'prompt')} for q in item['questions']]
     return result

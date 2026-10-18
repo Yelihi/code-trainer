@@ -45,6 +45,35 @@ class FoundationsTest(unittest.TestCase):
             self.assertNotEqual(item['questions'][0]['prompt'],'changed')
         self.assertEqual(self.client.get('/api/foundations/nope').status_code,404)
 
+    def test_readings_cover_every_unit_and_hints_enrich_only_failed_owned_attempts(self):
+        from .foundation_guides import HINTS, READINGS
+        self.assertEqual(set(CATALOG), set(READINGS))
+        self.assertEqual(set(CATALOG), set(HINTS))
+        for item in CATALOG.values():
+            reading = public(item)['reading']
+            self.assertEqual(len(reading['steps']), 3)
+            self.assertTrue(all(reading.values()))
+            self.assertEqual(len(HINTS[item['id']]), len(item['mutations']))
+            row = {'id': 'old-attempt', 'lesson_id': item['id'], 'version': 1, 'state': 'failed',
+                   'created_at': '', 'payload': '{}', 'error': '', 'result': service.dump({'checks': [
+                       {'label': '오답 감지 · '+wrong['label'], 'passed': index == 0, 'status': 'passed', 'detail': ''}
+                       for index, wrong in enumerate(item['mutations'])]})}
+            enriched = f.record(row)['result']['checks']
+            self.assertNotIn('hint', enriched[0])
+            self.assertEqual(enriched[1]['hint'], HINTS[item['id']][1])
+            self.assertNotIn('hint', json.loads(row['result'])['checks'][1])
+            self.assertNotIn('hint', f.record({**row, 'version': 99})['result']['checks'][1])
+        self.explain()
+        response, _ = self.submit(passed=False)
+        job_id = response.json()['id']
+        checks = [{'label': '오답 감지 · FIFO 순서', 'passed': False, 'status': 'passed', 'detail': ''}]
+        db.execute('UPDATE foundation_attempts SET result=? WHERE id=?', (service.dump({'checks': checks}), job_id))
+        result = self.client.get('/api/foundation-attempts/'+job_id).json()
+        self.assertEqual(result['result']['checks'][0]['hint'], HINTS['queue'][0])
+        self.assertEqual(self.client.get('/api/foundations/queue').json()['attempt'], result)
+        with self.assertRaises(service.Error): f.job('someone-else', job_id)
+        self.assertNotIn('hint', json.dumps(self.client.get('/api/foundations/stack').json()))
+
     def test_revision_validation_and_owner_isolation(self):
         body={'version':1,'revision':0,'answers':['first','second'],'code':'draft','test_code':'tests'}
         url='/api/foundations/queue/progress'

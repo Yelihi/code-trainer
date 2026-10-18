@@ -105,7 +105,7 @@ export function buildTrace(kind: string, values = [5, 2, 7, 1], target = 7): Fra
     sort(0, current.length); add(row(current), '모든 구간의 병합이 끝났습니다.');
   } else if (kind === 'bfs' || kind === 'dfs') {
     const graph: Record<string, string[]> = { A: ['B', 'C'], B: ['D'], C: ['D'], D: ['A'] };
-    const nodes = [{ id: 'A', label: 'A', x: 100, y: 40 }, { id: 'B', label: 'B', x: 310, y: 40 }, { id: 'C', label: 'C', x: 100, y: 220 }, { id: 'D', label: 'D', x: 310, y: 220 }];
+    const nodes = [{ id: 'A', label: 'A', x: 294, y: 30 }, { id: 'B', label: 'B', x: 148, y: 135 }, { id: 'C', label: 'C', x: 440, y: 135 }, { id: 'D', label: 'D', x: 294, y: 250 }];
     const edges = Object.entries(graph).flatMap(([a, next]) => next.map(b => [a, b] as [string, string]));
     const visited = new Set<string>(), order: string[] = [];
     const drawGraph = (note: string, active: string, pending: string[]) => add(nodes.map(n => ({ ...n, active: n.id === active, muted: visited.has(n.id) && n.id !== active })), note,

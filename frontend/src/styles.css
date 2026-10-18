@@ -337,38 +337,11 @@ button.text-button,
   border-bottom: 1px solid var(--line);
   margin: 28px 7px;
 }
-.practice-loop {
-  list-style: none;
-  padding: 0 12px;
-  margin: 0;
-  display: grid;
-  gap: 21px;
-  color: #bfb7cf;
-  font-size: 12px;
-}
-.practice-loop b {
-  color: #716384;
-  font-size: 10px;
-  margin-right: 9px;
-  font-weight: 500;
-}
-.practice-loop li span {
-  display: block;
-  font-size: 10px;
-  color: #81778f;
-  margin-left: 25px;
-  margin-top: 3px;
-}
 .sidebar-bottom {
   margin-top: auto;
   font-size: 10px;
   color: #aaa0bb;
   padding: 12px 6px;
-}
-.sidebar-bottom p {
-  font-size: 10px;
-  margin: 10px 0 0;
-  color: #6f637e;
 }
 .sidebar-bottom .icon-button {
   font-size: 13px;
@@ -2097,3 +2070,11 @@ button.text-button,
 @keyframes trace-arrive { from { opacity: 0; } to { opacity: 1; } }
 
 .visual-bfs .visual-legend > span:first-child i, .visual-dfs .visual-legend > span:first-child i { background: #b797ff; }
+
+.foundation-card-heading { position: relative; min-height: 112px; display: flex; align-items: center; margin-top: 16px; }
+.foundation-card-heading h3 { position: relative; z-index: 1; max-width: 65%; font-size: 23px; margin: 0; line-height: 1.4; }
+.foundation-card-art { position: absolute; width: 138px; height: 110px; right: -4px; top: 0; pointer-events: none; color: #65577f; opacity: .45; }
+.foundation-card-art path { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.foundation-card-art .card-art-accent { stroke: #83cdbf; stroke-width: 2; }
+.foundation-card-description { display: block; color: #ddd5eb; margin-bottom: 6px; }
+.foundation-card-heading + p { margin: 10px 0 24px; line-height: 1.8; }

@@ -4,6 +4,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useResource } from './App';
 import { CodeBlock, codeExtensions } from './CodeBlock';
+import { FoundationCardArt } from './FoundationCardArt';
 import { FoundationVisual } from './FoundationVisual';
 import { InlineMarkdown } from './Markdown';
 import { AnimatedDetails } from './AnimatedDetails';
@@ -37,7 +38,7 @@ export function Foundations() {
     {!data && !error && <p role="status">단원을 불러오는 중…</p>}
     {['자료구조', '알고리즘', '메서드'].map(group => <section key={group} className="foundation-category"><div className="section-heading"><h2>{group}</h2><span className="muted">설명 → 구현 · 2단계</span></div><div className="foundation-catalog">{data?.items.filter(i => i.group === group).map(item => <article className="foundation-card" key={item.id} aria-label={item.title}>
         <div className="card-top"><span className="language-tag">TypeScript</span><span className={item.state === 'passed' ? 'success-text' : 'muted'}>{item.running ? '검토 중' : item.state === 'passed' ? '✓ 완료 기록 있음' : item.can_resume ? '진행 중' : '시작 전'}</span></div>
-        <h3><Link to={`/foundations/${item.id}`}>{item.title} ↗</Link></h3><p>{item.summary}</p>
+        <div className="foundation-card-heading"><FoundationCardArt kind={item.id} /><h3><Link to={`/foundations/${item.id}`}>{item.title.split(' · ')[0]} ↗</Link></h3></div><p>{item.title.includes(' · ') && <span className="foundation-card-description">{item.title.split(' · ').slice(1).join(' · ')}</span>}{item.summary}</p>
         <small>{item.prerequisites.length ? `추천 선행: ${item.prerequisites.map(id => data.items.find(i => i.id === id)?.title.split(' · ')[0] ?? id).join(', ')}` : '바로 시작할 수 있어요'}</small>
         <div className="foundation-card-actions"><button disabled={!!starting || item.running} onClick={() => void startFresh(item)}>{starting === item.id ? '준비 중…' : '새로 진행'}</button>{item.can_resume && !starting ? <Link className="button primary" to={`/foundations/${item.id}/practice`}>이어 진행 →</Link> : <button disabled>이어 진행</button>}</div>
         <Link className="text-link foundation-concept-link" to={`/foundations/${item.id}`}>개념 먼저 살펴보기 ↗</Link>

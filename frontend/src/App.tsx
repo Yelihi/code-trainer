@@ -74,10 +74,7 @@ export function App() {
       <div className="sidebar-divider" />
       <div className="sidebar-label">실험 기능</div>
       <nav aria-label="실험 기능" onClick={() => setMenu(false)}><NavLink to="/foundations"><span aria-hidden="true">◇</span> 기초 구현 학습</NavLink></nav>
-      <div className="sidebar-divider" />
-      <div className="sidebar-label">THE PRACTICE LOOP</div>
-      <ol className="practice-loop"><li><b>01</b> Read <span>읽고 이해하기</span></li><li><b>02</b> Fix <span>문제 해결하기</span></li><li><b>03</b> Modify <span>요구사항 바꾸기</span></li><li><b>04</b> Build <span>직접 구현하기</span></li></ol>
-      <div className="sidebar-bottom"><span className={`status-dot ${health?.sandbox ? 'online' : ''}`} /><span>{health === null ? '실행 환경 확인 필요' : health.sandbox ? '샌드박스 연결됨' : '샌드박스 연결 필요'}</span><button className="icon-button" aria-label="실행 환경 다시 확인" onClick={refreshHealth}>↻</button><p>작은 코드로, 깊이 이해하기.</p></div>
+      <div className="sidebar-bottom"><span className={`status-dot ${health?.sandbox ? 'online' : ''}`} /><span>{health === null ? '실행 환경 확인 필요' : health.sandbox ? '샌드박스 연결됨' : '샌드박스 연결 필요'}</span><button className="icon-button" aria-label="실행 환경 다시 확인" onClick={refreshHealth}>↻</button></div>
     </aside>
     <div className="workspace" id="workspace">
       {error && <div className="page"><ErrorNotice error={error} /><button onClick={refreshSession}>다시 연결</button></div>}

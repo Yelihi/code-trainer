@@ -18,3 +18,11 @@ export function Markdown({ children, language }: { children: string; language: s
     },
   }}>{children}</ReactMarkdown></div>;
 }
+
+// Inline prose can appear inside labels, headings and list items without nested paragraphs.
+export function InlineMarkdown({ children }: { children: string }) {
+  return <span className="inline-markdown"><ReactMarkdown allowedElements={['p', 'code', 'strong', 'em', 'a']} unwrapDisallowed components={{
+    p: ({ children }) => <>{children}</>,
+    a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
+  }}>{children}</ReactMarkdown></span>;
+}

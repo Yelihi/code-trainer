@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { CodeBlock, codeExtensions } from "./CodeBlock";
-import { Markdown } from "./Markdown";
+import { Markdown, InlineMarkdown } from "./Markdown";
 import { PredictionInput } from "./PredictionInput";
 import {
   api,
@@ -626,7 +626,7 @@ function PracticeEditor({
             {exercise.requirements.map((requirement) => (
               <li key={requirement.id}>
                 <span>□</span>
-                {requirement.text}
+                <InlineMarkdown>{requirement.text}</InlineMarkdown>
               </li>
             ))}
           </ul>
@@ -659,7 +659,7 @@ function PracticeEditor({
             {hints.map((hint, i) => (
               <p className="hint" key={i}>
                 <b>힌트 {i + 1}</b>
-                {hint}
+                <InlineMarkdown>{hint}</InlineMarkdown>
               </p>
             ))}
             <button

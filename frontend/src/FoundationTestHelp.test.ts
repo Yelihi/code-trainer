@@ -10,6 +10,7 @@ test('test help starts with the relevant calling convention and keeps the dialog
     const { FoundationTestHelp } = await server.ssrLoadModule('/src/FoundationTestHelp.tsx');
     const render = (starter: string) => renderToStaticMarkup(createElement(FoundationTestHelp, { starter, example: 'assertEqual(1, 1);' }));
     const classHelp = render('class Queue {}');
+    assert.match(render('function hash() {}\nclass Dictionary {}'), /aria-pressed="true">클래스 테스트/);
     const functionHelp = render('function bfs() {}');
     assert.match(classHelp, /aria-haspopup="dialog"/);
     assert.match(classHelp, /<dialog[^>]+aria-labelledby=/);

@@ -6,7 +6,6 @@ from pydantic import Field, StringConstraints
 from . import ai, db, runner, service, usage
 from .schema import Model, Code
 from .foundation_catalog import CATALOG, public
-from .foundation_guides import HINTS
 
 
 class FoundationRestart(Model):
@@ -59,18 +58,6 @@ def record(row):
     if not row:
         return None
     result = json.loads(row['result'])
-    item = CATALOG.get(row['lesson_id'])
-    if item and item['version'] == row['version']:
-        hints = {'오답 감지 · '+wrong['label']: hint for wrong, hint in zip(item['mutations'], HINTS[item['id']])}
-        hints.update({
-            '공개 예제': '오류 메시지와 공개 예제를 함께 확인하세요. 반환값뿐 아니라 여러 연산을 이어서 호출했을 때의 상태도 살펴보세요.',
-            '비공개 경계 조건': '요구사항에서 빈 입력, 최소 크기, 중복값, 재사용 조건을 하나씩 점검하세요. 정상 예제 하나를 통과해도 모든 경계에서 동작한다는 뜻은 아닙니다.',
-            '내 구현 + 내가 작성한 테스트': '실제 값과 예상 값의 순서, 요구사항에 맞는 예상 값인지 확인하세요. assertEqual은 주석이 아니라 실행되는 코드에 2번 이상 있어야 합니다.',
-            '정답 구현 + 내가 작성한 테스트': '테스트의 예상 값이 요구사항과 맞는지 다시 계산해보세요. 각 테스트의 시작 상태와 앞선 호출이 남긴 상태도 확인하세요.',
-        })
-        for check in result.get('checks', []):
-            if not check['passed'] and check['label'] in hints:
-                check['hint'] = hints[check['label']]
     return {**{k: row[k] for k in ('id', 'lesson_id', 'version', 'state', 'created_at')},
             'payload': json.loads(row['payload']), 'result': result, 'error': row['error']}
 

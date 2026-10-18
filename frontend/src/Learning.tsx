@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorMessage, isPending, languages, difficulties, safeSourceUrl, type Generation, type LearningContext } from './api';
 import { ErrorNotice, GenerationStatus, useApp, useResource } from './App';
 import { CodeBlock } from './CodeBlock';
-import { Markdown } from './Markdown';
+import { Markdown, InlineMarkdown } from './Markdown';
 
 function useCourse(id?: string) {
   const resource = useResource<LearningContext>(`/contexts/${id}`);
@@ -100,7 +100,7 @@ export function Context() {
       <button className="delete-material" onClick={() => void remove()} disabled={busy || deleting || !!pending}>{deleting ? '삭제 중…' : '자료 삭제'}</button>
     </div>
     <ErrorNotice error={actionError} />
-    <h1>{data.title}</h1><p className="page-intro">{data.description}</p>
+    <h1>{data.title}</h1><p className="page-intro"><InlineMarkdown>{data.description}</InlineMarkdown></p>
     <section className="course-intro"><span className="eyebrow">LEARN, THEN PRACTICE</span><Markdown language={data.language}>{data.summary}</Markdown>
       {safeSourceUrl(data.source_url) && <a className="text-link" href={safeSourceUrl(data.source_url)} target="_blank" rel="noreferrer">학습 자료 출처 ↗</a>}
     </section>
@@ -153,7 +153,7 @@ export function Lesson() {
         {section.walkthrough && <div className="lesson-walkthrough"><h3>차근차근 따라가기</h3><Markdown language={data.language}>{section.walkthrough}</Markdown></div>}
       </section>)}
       <section className="lesson-section"><h2>자주 헷갈리는 지점</h2><ul className="lesson-pitfalls">{unit.pitfalls.map(item => <li key={item}><Markdown language={data.language}>{item}</Markdown></li>)}</ul></section>
-      <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <details className="lesson-checkpoint" key={i}><summary>{item.question}</summary><Markdown language={data.language}>{item.answer}</Markdown></details>)}</section>
+      <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <details className="lesson-checkpoint" key={i}><summary><InlineMarkdown>{item.question}</InlineMarkdown></summary><Markdown language={data.language}>{item.answer}</Markdown></details>)}</section>
       <section className="lesson-practice"><span className="eyebrow">PUT IT INTO CODE</span><h2>이제 직접 풀어볼 차례</h2><p>이 단원의 개념을 READ → FIX → MODIFY → BUILD로 연습합니다. 막히면 언제든 이 페이지로 돌아오세요.</p>
         <ErrorNotice error={actionError} /><UnitPractice key={unit.id} course={course} unitId={unit.id} />
       </section>

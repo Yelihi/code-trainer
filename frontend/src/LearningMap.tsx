@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { InlineMarkdown } from './Markdown';
+import { AnimatedDetails } from './AnimatedDetails';
 import { Link } from 'react-router-dom';
 import { api, errorMessage, languages, assistanceLabels, type Assistance, type Language } from './api';
 
@@ -13,45 +15,6 @@ function recordDate(value: string) {
   return new Date(value).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function AnimatedDetails({ summary, children, className = '', initiallyOpen = false }: {
-  summary: ReactNode; children: ReactNode; className?: string; initiallyOpen?: boolean;
-}) {
-  const animation = useRef<Animation | null>(null);
-  useEffect(() => () => animation.current?.cancel(), []);
-  return <details className={`learning-disclosure ${className}`} open={initiallyOpen}>
-    <summary onClick={event => {
-      event.preventDefault();
-      const details = event.currentTarget.parentElement as HTMLDetailsElement;
-      const opening = details.dataset.expanded === undefined ? !details.open : details.dataset.expanded !== 'true';
-      const from = details.getBoundingClientRect().height;
-      animation.current?.cancel();
-      animation.current = null;
-      details.style.height = '';
-      details.style.overflow = '';
-      delete details.dataset.expanded;
-      details.open = opening;
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const to = details.getBoundingClientRect().height;
-      details.open = true;
-      details.dataset.expanded = String(opening);
-      details.style.overflow = 'clip';
-      details.style.height = `${from}px`;
-      const next = details.animate({ height: [`${from}px`, `${to}px`] }, {
-        duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-      });
-      animation.current = next;
-      next.onfinish = () => {
-        if (animation.current !== next) return;
-        details.open = opening;
-        details.style.height = '';
-        details.style.overflow = '';
-        delete details.dataset.expanded;
-        animation.current = null;
-      };
-    }}>{summary}</summary>
-    {children}
-  </details>;
-}
 
 function ProblemLinks({ exercises }: { exercises: Evidence[] }) {
   return <ul>{exercises.map(exercise => <li key={exercise.id}>
@@ -138,7 +101,7 @@ export function LearningMap() {
       return <AnimatedDetails className="knowledge-root" initiallyOpen key={root.root_key} summary={<><span aria-hidden="true">▤ </span>{root.framework ? root.root_label : languages[root.root_label as Language] ?? root.root_label}<small>{root.framework ? '프레임워크 · 분류' : '언어'} · {concepts.length}개 개념</small></>}>
         <ul>{concepts.map(concept => <li key={concept.name}><AnimatedDetails initiallyOpen summary={<>{concept.name}<small>{concept.outcomes.length}가지 학습 내용</small></>}>
           {concept.outcomes.map((outcome, index) => <section className="knowledge-unit" key={index}>
-            <p className="learning-outcome">{outcome.summary}</p>
+            <p className="learning-outcome"><InlineMarkdown>{outcome.summary}</InlineMarkdown></p>
             <AnimatedDetails summary={<>근거가 된 통과 문제 · {outcome.exercise_ids.length}개</>}>
               <ProblemLinks exercises={data!.exercises.filter(exercise => outcome.exercise_ids.includes(exercise.id))} />
             </AnimatedDetails>

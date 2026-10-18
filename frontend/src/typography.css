@@ -2,9 +2,9 @@
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
-  --text-caption: .875rem;
-  --text-body: 1rem;
-  --text-reading: 1.125rem;
+  --text-caption: .75rem;
+  --text-body: .875rem;
+  --text-reading: 1rem;
   --text-subheading: 1.25rem;
   --text-section: 1.5rem;
   --text-page: 2rem;

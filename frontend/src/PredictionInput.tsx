@@ -87,7 +87,7 @@ export function PredictionInput({ answer, onChange, disabled }: {
       </div>
       <div className="prediction-actions">
         <button type="button" disabled={disabled || !remaining} onClick={() => addLine(lines.length - 1)}>
-          + 출력 줄 추가
+          출력 줄 추가
         </button>
         <span>{answer.length.toLocaleString()} / 4,000자</span>
       </div>

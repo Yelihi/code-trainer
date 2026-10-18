@@ -32,16 +32,16 @@ export function Foundations() {
     finally { setStarting(''); }
   }
   return <main className="page foundations-page"><div className="breadcrumb">실험 기능 <span>/</span> 기초 구현 학습</div>
-    <header className="foundation-heading"><div><span className="eyebrow">FOUNDATIONS / TYPESCRIPT</span><h1>설명하고,<br /><em>직접 구현하세요.</em></h1><p>자료구조부터 익숙한 메서드까지.<br />움직임을 살펴보고, 내 말과 코드로 이해를 확인합니다.</p></div><div className="foundation-path"><span><b>01</b> 내 말로 설명 <small>AI 피드백</small></span><i aria-hidden="true">↓</i><span><b>02</b> 구현과 테스트 <small>직접 실행 · 검증</small></span><small>{data ? `${data.items.filter(i => i.state === 'passed').length} / ${data.items.length}개 단원 완료` : '준비된 단원을 불러옵니다.'}</small></div></header>
+    <header className="foundation-heading"><div><span className="eyebrow">FOUNDATIONS / TYPESCRIPT</span><h1>설명하고,<br /><em>직접 구현하세요.</em></h1><p>자료구조부터 익숙한 메서드까지.<br />움직임을 살펴보고, 내 말과 코드로 이해를 확인합니다.</p></div><div className="foundation-path"><span><b>01</b> 내 말로 설명 <small>AI 피드백</small></span><span><b>02</b> 구현과 테스트 <small>직접 실행 · 검증</small></span><small>{data ? `${data.items.filter(i => i.state === 'passed').length} / ${data.items.length}개 단원 완료` : '준비된 단원을 불러옵니다.'}</small></div></header>
     <ErrorNotice error={error || startError} />{error && <button onClick={reload}>다시 불러오기</button>}
     <p className="muted foundation-start-note">새로 진행하면 작성 중인 답변·코드가 초기화됩니다. 제출·완료 기록은 그대로 보관됩니다.</p>
     {!data && !error && <p role="status">단원을 불러오는 중…</p>}
-    {['자료구조', '알고리즘', '메서드'].map(group => <section key={group} className="foundation-category"><div className="section-heading"><h2>{group}</h2><span className="muted">설명 → 구현 · 2단계</span></div><div className="foundation-catalog">{data?.items.filter(i => i.group === group).map(item => <article className="foundation-card" key={item.id} aria-label={item.title}>
+    {['자료구조', '알고리즘', '메서드'].map(group => <section key={group} className="foundation-category"><div className="section-heading"><h2>{group}</h2><span className="muted">설명·구현 2단계</span></div><div className="foundation-catalog">{data?.items.filter(i => i.group === group).map(item => <article className="foundation-card" key={item.id} aria-label={item.title}>
         <div className="card-top"><span className="language-tag">TypeScript</span><span className={item.state === 'passed' ? 'success-text' : 'muted'}>{item.running ? '검토 중' : item.state === 'passed' ? '✓ 완료 기록 있음' : item.can_resume ? '진행 중' : '시작 전'}</span></div>
-        <div className="foundation-card-heading"><FoundationCardArt kind={item.id} /><h3><Link to={`/foundations/${item.id}`}>{item.title.split(' · ')[0]} ↗</Link></h3></div><p>{item.title.includes(' · ') && <span className="foundation-card-description">{item.title.split(' · ').slice(1).join(' · ')}</span>}{item.summary}</p>
+        <div className="foundation-card-heading"><FoundationCardArt kind={item.id} /><h3><Link to={`/foundations/${item.id}`}>{item.title.split(' · ')[0]}</Link></h3></div><p>{item.title.includes(' · ') && <span className="foundation-card-description">{item.title.split(' · ').slice(1).join(' · ')}</span>}{item.summary}</p>
         <small>{item.prerequisites.length ? `추천 선행: ${item.prerequisites.map(id => data.items.find(i => i.id === id)?.title.split(' · ')[0] ?? id).join(', ')}` : '바로 시작할 수 있어요'}</small>
-        <div className="foundation-card-actions"><button disabled={!!starting || item.running} onClick={() => void startFresh(item)}>{starting === item.id ? '준비 중…' : '새로 진행'}</button>{item.can_resume && !starting ? <Link className="button primary" to={`/foundations/${item.id}/practice`}>이어 진행 →</Link> : <button disabled>이어 진행</button>}</div>
-        <Link className="text-link foundation-concept-link" to={`/foundations/${item.id}`}>개념 먼저 살펴보기 ↗</Link>
+        <div className="foundation-card-actions"><button disabled={!!starting || item.running} onClick={() => void startFresh(item)}>{starting === item.id ? '준비 중…' : '새로 진행'}</button>{item.can_resume && !starting ? <Link className="button primary" to={`/foundations/${item.id}/practice`}>이어 진행</Link> : <button disabled>이어 진행</button>}</div>
+        <Link className="text-link foundation-concept-link" to={`/foundations/${item.id}`}>개념 먼저 살펴보기</Link>
       </article>)}</div></section>)}
   </main>;
 }
@@ -57,8 +57,8 @@ export function FoundationLesson({ practice = false }: { practice?: boolean }) {
 function ConceptPage({ lesson }: { lesson: Lesson }) {
   return <main className="page foundation-lesson foundation-concept">
     <div className="breadcrumb"><Link to="/foundations">실험 기능 · 기초 구현 학습</Link><span>/</span>개념 탐구</div>
-    <header className="foundation-lesson-heading"><div><span className="eyebrow">EXPLORE / {lesson.group}</span><h1>{lesson.title}</h1><p>{lesson.summary}</p></div><Link className="button primary" to={`/foundations/${lesson.id}/practice`}>{lesson.unlocked ? '실습 이어하기' : '설명·구현 시작'} →</Link></header>
-    <nav className="foundation-mode" aria-label="단원 화면"><span aria-current="page">개념 탐구</span><Link to={`/foundations/${lesson.id}/practice`}>설명과 구현 ↗</Link></nav>
+    <header className="foundation-lesson-heading"><div><span className="eyebrow">EXPLORE / {lesson.group}</span><h1>{lesson.title}</h1><p>{lesson.summary}</p></div><Link className="button primary" to={`/foundations/${lesson.id}/practice`}>{lesson.unlocked ? '실습 이어하기' : '설명·구현 시작'}</Link></header>
+    <nav className="foundation-mode" aria-label="단원 화면"><span aria-current="page">개념 탐구</span><Link to={`/foundations/${lesson.id}/practice`}>설명과 구현</Link></nav>
     <div className="concept-intro"><span className="eyebrow">기억할 핵심 규칙</span><p><InlineMarkdown>{lesson.reading.invariant}</InlineMarkdown></p></div>
     <FoundationVisual kind={lesson.visualization} />
     <p className="visual-experiment"><strong>이렇게 실험해보세요</strong><InlineMarkdown>{lesson.reading.experiment}</InlineMarkdown></p>
@@ -66,8 +66,8 @@ function ConceptPage({ lesson }: { lesson: Lesson }) {
     <section className="concept-chapter concept-cost"><div className="chapter-label"><span>02</span><h2>비용과 선택 기준</h2></div><div className="concept-cost-body"><strong><InlineMarkdown>{lesson.complexity}</InlineMarkdown></strong><p><InlineMarkdown>{lesson.reading.tradeoff}</InlineMarkdown></p></div></section>
     <aside className="concept-caution"><span className="eyebrow">자주 놓치는 부분</span><p><InlineMarkdown>{lesson.reading.pitfall}</InlineMarkdown></p></aside>
     <section className="concept-chapter"><div className="chapter-label"><span>03</span><h2>실제로 어디에 쓸까요?</h2></div><p className="concept-lead"><InlineMarkdown>{lesson.application}</InlineMarkdown></p><p><InlineMarkdown>{lesson.reading.case_study}</InlineMarkdown></p></section>
-    <div className="foundation-sources">참고 자료 {lesson.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}</div>
-    <footer className="concept-start"><div><h2>이제 내 말과 코드로 확인해볼까요?</h2><p className="muted">설명 피드백을 받고, 직접 구현한 코드와 테스트를 실행합니다.</p></div><Link className="button primary" to={`/foundations/${lesson.id}/practice`}>실습으로 이동 →</Link></footer>
+    <div className="foundation-sources">참고 자료 {lesson.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</div>
+    <footer className="concept-start"><div><h2>이제 내 말과 코드로 확인해볼까요?</h2><p className="muted">설명 피드백을 받고, 직접 구현한 코드와 테스트를 실행합니다.</p></div><Link className="button primary" to={`/foundations/${lesson.id}/practice`}>실습으로 이동</Link></footer>
   </main>;
 }
 
@@ -82,7 +82,7 @@ function FeedbackView({ job }: { job: Job }) {
 function ResultView({ job }: { job: Job }) {
   return <section className="foundation-result" aria-label="구현 검증 결과"><h3>{job.state === 'passed' ? '✓ 구현과 테스트를 모두 통과했습니다' : statusLabels[job.state] ?? job.state}</h3><ErrorNotice error={job.error} />
     {job.result.checks?.map(check => <div className="foundation-check" key={check.label}><span className={check.passed ? 'success-text' : 'error-text'}>{check.passed ? '✓' : '×'}</span><div><strong>{check.label}</strong><small>{check.passed ? '통과' : check.label.startsWith('오답 감지') && check.status === 'passed' ? '이 오류를 발견할 테스트를 추가해주세요.' : statusLabels[check.status] ?? check.status}</small>{check.detail && <pre>{check.detail}</pre>}</div></div>)}
-    {job.state === 'passed' && <p><Link className="text-link" to="/me">나의 학습 기록에 저장되었습니다 →</Link></p>}
+    {job.state === 'passed' && <p><Link className="text-link" to="/me">나의 학습 기록에 저장되었습니다</Link></p>}
     {job.state === 'failed' && <p className="muted">{(job.result.checks?.length ?? 0) < 6 && '앞선 검사에서 중단되어 이후 항목은 실행하지 않았습니다. '}통과 여부는 동작 기준이며, 시간 복잡도와 내부 구현 방식은 자동 판정하지 않습니다.</p>}
   </section>;
 }
@@ -153,7 +153,7 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
     <header className="foundation-lesson-heading"><div><span className="eyebrow">TYPESCRIPT / {lesson.group}</span><h1>{lesson.title}</h1><p>{lesson.summary}</p></div><button disabled={!!busy || oversized} onClick={() => void act('save')}>{busy === 'save' ? '저장 중…' : dirty ? '변경 내용 저장' : '저장됨'}</button></header>
     <ErrorNotice error={error} />{oversized && <p className="notice error">구현은 24,000자, 테스트는 12,000자까지 저장할 수 있습니다.</p>}
     {blocker.state === 'blocked' && <div className="notice" role="alert"><p>저장하지 않은 내용이 있습니다.</p><button onClick={() => blocker.reset()}>계속 작성</button><button disabled={!!busy} onClick={async () => { setBusy('save'); try { await save(); blocker.proceed(); } catch (e) { setError(errorMessage(e)); } finally { setBusy(''); } }}>저장하고 이동</button><button onClick={() => blocker.proceed()}>저장하지 않고 이동</button></div>}
-    <nav className="foundation-mode" aria-label="단원 화면"><Link to={`/foundations/${lesson.id}`}>← 개념 탐구</Link><span aria-current="page">설명과 구현</span></nav>
+    <nav className="foundation-mode" aria-label="단원 화면"><Link to={`/foundations/${lesson.id}`}>개념 탐구</Link><span aria-current="page">설명과 구현</span></nav>
     <div className="foundation-practice">
       <section className="foundation-work"><div className="foundation-steps" role="group" aria-label="학습 단계"><button aria-pressed={step === 1} onClick={() => setStep(1)}><b>01</b> 내 말로 설명 {unlocked && '✓'}</button><button aria-pressed={step === 2} disabled={!unlocked} onClick={() => setStep(2)}><b>02</b> 구현과 테스트 {(lesson.completed || attempt?.state === 'passed') && '✓'}</button></div>
       {step === 1 ? <><h2>어떻게 동작하는지 설명해보세요.</h2><p className="muted">문장 표현보다 개념을 봅니다. 피드백을 받으면 구현으로 넘어갈 수 있어요.</p>
@@ -162,11 +162,11 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
         </form>
         {!lesson.ai_available && <p className="notice">AI 연결 후 설명을 검토할 수 있습니다. 지금 작성한 내용은 저장해둘 수 있어요.</p>}
         {review && <><p className="muted">{timestamp(review.created_at)} 제출 기준{JSON.stringify(review.payload.answers) !== JSON.stringify(draft.answers.map(a => a.trim())) && ' · 현재 입력과 다른 이전 설명의 피드백입니다.'}</p><FeedbackView job={review} /></>}
-        {unlocked && <button className="primary foundation-next" onClick={() => setStep(2)}>피드백 확인 · 구현으로 →</button>}
+        {unlocked && <button className="primary foundation-next" onClick={() => setStep(2)}>피드백 확인 · 구현으로</button>}
       </> : <><h2>직접 구현하고 검증하세요.</h2><ol className="foundation-requirements">{lesson.requirements.map(text => <li key={text}><InlineMarkdown>{text}</InlineMarkdown></li>)}</ol>
-        <AnimatedDetails className="foundation-examples" summary={<><span className="disclosure-icon" aria-hidden="true">⌘</span><span>공개 예제 살펴보기<small>호출 방법과 반환값 확인</small></span></>}><CodeBlock language="typescript" code={lesson.public_tests} /></AnimatedDetails>
+        <AnimatedDetails className="foundation-examples" summary={<><span>공개 예제 살펴보기<small>호출 방법과 반환값 확인</small></span></>}><CodeBlock language="typescript" code={lesson.public_tests} /></AnimatedDetails>
         <div className="foundation-editor"><h3>구현 <small>TypeScript</small></h3><CodeMirror value={draft.code} theme="dark" extensions={extensions} height="330px" editable={!busy} onChange={code => setDraft(previous => ({ ...previous, code }))} onCreateEditor={view => view.contentDOM.setAttribute('aria-label', '구현 코드')} /></div>
-        <div className="foundation-editor"><div className="foundation-editor-heading"><h3>내가 작성하는 테스트</h3><FoundationTestHelp starter={lesson.starter} example={lesson.public_tests} /></div><p className="muted">위 클래스·함수를 바로 호출하세요. import는 필요하지 않습니다. <code>assertEqual(실제 값, 예상 값)</code>을 2개 이상 작성하고, 정상 동작과 경계 조건을 확인하세요.</p><AnimatedDetails className="test-design-hints" summary={<><span className="disclosure-icon" aria-hidden="true">✦</span><span>어떤 테스트를 작성할까요?<small>제출 전에 확인하는 테스트 설계 힌트</small></span></>}><p>정답 코드 대신 확인할 상황을 안내합니다. 예상 결과는 위 요구사항에서 직접 계산해보세요.</p><ol>{lesson.test_hints.map(hint => <li key={hint}><InlineMarkdown>{hint}</InlineMarkdown></li>)}</ol><p>빈 입력·최소 크기·연속 호출도 확인하고, 서로 다른 상황마다 시작 상태를 새로 준비하세요.</p></AnimatedDetails><CodeMirror value={draft.test_code} theme="dark" extensions={extensions} height="240px" editable={!busy} onChange={test_code => setDraft(previous => ({ ...previous, test_code }))} onCreateEditor={view => view.contentDOM.setAttribute('aria-label', '테스트 코드')} /></div>
+        <div className="foundation-editor"><div className="foundation-editor-heading"><h3>내가 작성하는 테스트</h3><FoundationTestHelp starter={lesson.starter} example={lesson.public_tests} /></div><p className="muted">위 클래스·함수를 바로 호출하세요. import는 필요하지 않습니다. <code>assertEqual(실제 값, 예상 값)</code>을 2개 이상 작성하고, 정상 동작과 경계 조건을 확인하세요.</p><AnimatedDetails className="test-design-hints" summary={<><span>어떤 테스트를 작성할까요?<small>제출 전에 확인하는 테스트 설계 힌트</small></span></>}><p>정답 코드 대신 확인할 상황을 안내합니다. 예상 결과는 위 요구사항에서 직접 계산해보세요.</p><ol>{lesson.test_hints.map(hint => <li key={hint}><InlineMarkdown>{hint}</InlineMarkdown></li>)}</ol><p>빈 입력·최소 크기·연속 호출도 확인하고, 서로 다른 상황마다 시작 상태를 새로 준비하세요.</p></AnimatedDetails><CodeMirror value={draft.test_code} theme="dark" extensions={extensions} height="240px" editable={!busy} onChange={test_code => setDraft(previous => ({ ...previous, test_code }))} onCreateEditor={view => view.contentDOM.setAttribute('aria-label', '테스트 코드')} /></div>
         <p className="muted">동작과 테스트의 오류 감지 능력을 검사합니다. 시간 복잡도·내부 구현 방식은 자동 판정하지 않습니다.</p>
         <div className="foundation-actions"><button className="primary" disabled={!!busy || pending || oversized || !draft.test_code.trim() || !draft.code.trim()} onClick={() => void act('submit')}>{attempt?.state === 'running' ? '격리 환경에서 검증 중…' : '구현과 테스트 제출'}</button><button disabled={!!busy || pending || oversized} onClick={() => void act('solution')}>참고 풀이 보기</button></div>
         <small className="muted">참고 풀이를 열면 학습 기록에 ‘풀이 참고’로 남습니다.</small>
@@ -181,9 +181,9 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
 
 export function FoundationRecords() {
   const { data, error, reload } = useResource<{ items: { id: string; lesson_id: string; version: number; title: string; created_at: string; assistance: string; feedback: Job['result'] }[] }>('/me/foundations');
-  return <section className="foundation-records"><div className="section-heading"><div><span className="eyebrow">FOUNDATIONS</span><h2>기초 구현 학습 기록</h2></div><Link className="text-link" to="/foundations">단원 보기 →</Link></div><p className="muted">구현과 테스트를 통과하면 자동으로 쌓입니다. 설명 피드백도 함께 보관합니다.</p><ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
+  return <section className="foundation-records"><div className="section-heading"><div><span className="eyebrow">FOUNDATIONS</span><h2>기초 구현 학습 기록</h2></div><Link className="text-link" to="/foundations">단원 보기</Link></div><p className="muted">구현과 테스트를 통과하면 자동으로 쌓입니다. 설명 피드백도 함께 보관합니다.</p><ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
     {!data && !error && <p role="status">기록을 불러오는 중…</p>}
     {data?.items.length === 0 && <p className="muted">완료한 기초 구현 단원이 아직 없습니다.</p>}
-    {data?.items.map(item => <article className="foundation-record" key={item.id}><div><Link to={`/foundations/${item.lesson_id}`}>{item.title} ↗</Link><small>{timestamp(item.created_at)} · v{item.version} · {item.assistance === 'solution' ? '풀이 참고' : '설명 피드백 참고'}</small></div><AnimatedDetails summary="설명에서 보완한 내용">{item.feedback.items?.map(f => <p key={f.question_id}><InlineMarkdown>{[f.missing, f.correction].filter(Boolean).join(' ') || '이 항목에서 추가로 지적된 내용이 없습니다.'}</InlineMarkdown></p>)}</AnimatedDetails></article>)}
+    {data?.items.map(item => <article className="foundation-record" key={item.id}><div><Link to={`/foundations/${item.lesson_id}`}>{item.title}</Link><small>{timestamp(item.created_at)} · v{item.version} · {item.assistance === 'solution' ? '풀이 참고' : '설명 피드백 참고'}</small></div><AnimatedDetails summary="설명에서 보완한 내용">{item.feedback.items?.map(f => <p key={f.question_id}><InlineMarkdown>{[f.missing, f.correction].filter(Boolean).join(' ') || '이 항목에서 추가로 지적된 내용이 없습니다.'}</InlineMarkdown></p>)}</AnimatedDetails></article>)}
   </section>;
 }

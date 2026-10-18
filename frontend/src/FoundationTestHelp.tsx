@@ -7,7 +7,7 @@ export function FoundationTestHelp({ starter, example }: { starter: string; exam
   const [kind, setKind] = useState(/\bclass\s+\w+/.test(starter) ? 'class' : 'function');
   return <><button className="help-button" type="button" aria-label="테스트 작성 도움말" aria-haspopup="dialog" onClick={() => dialog.current?.showModal()}>?</button>
     <dialog ref={dialog} className="foundation-help" aria-labelledby={title}>
-      <header><div><span className="eyebrow">TESTING GUIDE</span><h2 id={title}>테스트, 이렇게 작성하세요</h2></div><button type="button" aria-label="도움말 닫기" onClick={() => dialog.current?.close()}>닫기 ×</button></header>
+      <header><div><span className="eyebrow">TESTING GUIDE</span><h2 id={title}>테스트, 이렇게 작성하세요</h2></div><button type="button" aria-label="도움말 닫기" onClick={() => dialog.current?.close()}>닫기</button></header>
       <p>구현 코드와 테스트는 함께 실행됩니다. <strong>import나 테스트 라이브러리 설치 없이</strong> 구현한 클래스·함수를 이름으로 바로 사용할 수 있어요.</p>
       <div className="help-flow" aria-label="테스트의 세 단계"><span><b>1</b> 준비<small>새 상태·입력</small></span><span><b>2</b> 실행<small>메서드·함수 호출</small></span><span><b>3</b> 검증<small>실제 값과 예상 값 비교</small></span></div>
       <div className="foundation-steps" role="group" aria-label="작성 방식"><button type="button" aria-pressed={kind === 'class'} onClick={() => setKind('class')}>클래스 테스트</button><button type="button" aria-pressed={kind === 'function'} onClick={() => setKind('function')}>함수 테스트</button></div>

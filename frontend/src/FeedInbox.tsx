@@ -72,7 +72,7 @@ export function FeedInbox() {
         <small className="muted">{post.feed_name}{post.published && ` · ${new Date(post.published).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })}`}</small><h2>{post.title}</h2>
         <p className="feed-summary">{post.summary || '본문은 포스팅에서 확인해주세요.'}</p>
         {post.generation_state === 'failed' && <p className="notice">이전 생성이 완료되지 않았습니다. 자료 주소를 확인하고 다시 시도할 수 있습니다.</p>}
-        <div className="feed-actions"><a href={safeSourceUrl(post.url)} target="_blank" rel="noreferrer">포스팅 읽기 ↗</a>{pending ? <Link to="/create">생성 중 · 진행 확인 →</Link> : <Link className="button primary" to={`/create?${query}`}>학습 자료로 등록 →</Link>}</div>
+        <div className="feed-actions"><a href={safeSourceUrl(post.url)} target="_blank" rel="noreferrer">포스팅 읽기</a>{pending ? <Link to="/create">생성 중 · 진행 확인</Link> : <Link className="button primary" to={`/create?${query}`}>학습 자료로 등록</Link>}</div>
       </article>;
     })}</div>
     {data && data.pages > 1 && <div className="feed-pagination"><button disabled={data.page <= 1} onClick={() => setPage(data.page - 1)}>이전</button><span>{data.page} / {data.pages}</span><button disabled={data.page >= data.pages} onClick={() => setPage(data.page + 1)}>다음</button></div>}

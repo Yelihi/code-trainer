@@ -16,7 +16,7 @@ test('prediction rows preserve saved output, blank lines and the shared answer l
     assert.equal((render('').match(/<input/g) ?? []).length, 1);
     assert.equal((render('a\nb', true).match(/disabled=""/g) ?? []).length, 5);
     assert.match(render('x'.repeat(3998) + '\ny'), /maxLength="1"/);
-    assert.match(render('x'.repeat(4000)), /disabled="">\+ 출력 줄 추가/);
+    assert.match(render('x'.repeat(4000)), /disabled="">출력 줄 추가/);
 
     assert.equal(replaceOutputLine('1 2\n\n  true  \n', 1, 'false'), '1 2\nfalse\n  true  \n');
     assert.equal(replaceOutputLine('first\nlast', 0, 'first\n'), 'first\n\nlast');

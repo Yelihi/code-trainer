@@ -316,7 +316,7 @@ function PracticeEditor({
       <div className="practice-heading">
         <div>
           <Link to={`/learn/${problemSet.context_id}${problemSet.unit_id ? `/units/${problemSet.unit_id}` : ""}`} className="text-link">
-            {problemSet.unit_id ? "← 개념 학습" : "← 학습 자료"}
+            {problemSet.unit_id ? "개념 학습" : "학습 자료"}
           </Link>
           <h1>{reviewId ? "복습 · " : ""}{problemSet.title}</h1>
           <p className="muted">{assistanceLabels[assistance]} · {reviewId ? "이전 풀이와 별도로 저장됩니다." : "도움 사용은 제출 기록에 함께 남습니다."}</p>
@@ -464,14 +464,14 @@ function PracticeEditor({
                 (exercise.kind === "READ" && !answer.trim())
               }
             >
-              {busy === "run" ? "실행 중…" : `▷ ${actionLabels.run}`}
+              {busy === "run" ? "실행 중…" : actionLabels.run}
             </button>
             {exercise.kind !== "READ" && (
               <button
                 onClick={() => void execute("test")}
                 disabled={!!busy || finishing || problemSet.withdrawn}
               >
-                {busy === "test" ? "검사 중…" : `✓ ${actionLabels.test}`}
+                {busy === "test" ? "검사 중…" : actionLabels.test}
               </button>
             )}
             <button
@@ -483,7 +483,7 @@ function PracticeEditor({
                 (exercise.kind === "READ" && !answer.trim())
               }
             >
-              {busy === "submit" ? "채점 중…" : `${actionLabels.submit} →`}
+              {busy === "submit" ? "채점 중…" : actionLabels.submit}
             </button>
           </div>
           <p className="execution-help">
@@ -516,7 +516,7 @@ function PracticeEditor({
                 <div className="test-code-heading">
                   <strong>풀이 코드 + 아래 테스트 코드 → 실행 결과</strong>
                   <button onClick={() => void execute("run")} disabled={!!busy || finishing || problemSet.withdrawn}>
-                    {busy === "run" ? "실행 중…" : "▷ 이 테스트 코드 실행"}
+                    {busy === "run" ? "실행 중…" : "이 테스트 코드 실행"}
                   </button>
                 </div>
                 <p>위에서 작성한 함수를 아래에서 호출해보세요. 실행하면 출력이 ‘실행 결과’에 표시됩니다.</p>
@@ -670,7 +670,7 @@ function PracticeEditor({
                 problemSet.withdrawn
               }
             >
-              ✧ {hints.length ? "다음 힌트 보기" : "힌트 열기"}
+              {hints.length ? "다음 힌트 보기" : "힌트 열기"}
             </button>
           </div>
           <section className="solution-section">
@@ -734,13 +734,13 @@ function PracticeEditor({
               disabled={index === 0 || !!busy || saving || finishing}
               onClick={() => void move(index - 1)}
             >
-              ← 이전
+              이전
             </button>
             <button
               disabled={index === problemSet.exercises.length - 1 || !!busy || saving || finishing}
               onClick={() => void move(index + 1)}
             >
-              다음 →
+              다음
             </button>
           </div>
         </aside>
@@ -752,7 +752,7 @@ function PracticeEditor({
           <p>{completedCount} / {problemSet.exercises.length} 단계 완료 · 제출한 풀이는 나의 기록에 저장되어 있습니다.</p>
         </div>
         <button className="primary" disabled={!!busy || saving || finishing || conflict} onClick={() => void finish()}>
-          {finishing ? '저장하고 마무리하는 중…' : '학습 마무리 →'}
+          {finishing ? '저장하고 마무리하는 중…' : '학습 마무리'}
         </button>
       </section>}
       {blocker.state === "blocked" && (

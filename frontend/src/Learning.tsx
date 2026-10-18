@@ -56,10 +56,10 @@ function UnitPractice({ course, unitId, disabled = false }: { course: ReturnType
       setReported(generation.id);
     } catch (error) { setError(errorMessage(error)); } finally { setReporting(false); }
   }
-  if (set) return <div className="unit-practice">{set.withdrawn ? <p className="muted">문제 제공 중단</p> : <Link className="button" to={`/practice/${set.id}`}>연습 {set.completed} / {set.total} →</Link>}</div>;
+  if (set) return <div className="unit-practice">{set.withdrawn ? <p className="muted">문제 제공 중단</p> : <Link className="button" to={`/practice/${set.id}`}>연습 {set.completed} / {set.total}</Link>}</div>;
   return <section className="unit-practice" aria-label="단원 문제 생성">
     <button className="primary" disabled={disabled || course.busy || !!course.pending || health?.ai === false || health?.sandbox === false} onClick={() => void course.generate(unitId)}>
-      {generation && isPending(generation) ? '문제 생성 중…' : generation?.state === 'failed' ? '문제 생성 다시 시도 →' : '이 단원 문제 생성 →'}
+      {generation && isPending(generation) ? '문제 생성 중…' : generation?.state === 'failed' ? '문제 생성 다시 시도' : '이 단원 문제 생성'}
     </button>
     {course.pending && course.pending.unit_id !== unitId && <p className="muted">다른 단원을 생성 중입니다. 개념 학습은 계속할 수 있습니다.</p>}
     {health && (!health.ai || !health.sandbox) && <p className="notice">문제를 생성하려면 AI와 실행 환경을 연결해주세요.</p>}
@@ -102,7 +102,7 @@ export function Context() {
     <ErrorNotice error={actionError} />
     <h1>{data.title}</h1><p className="page-intro"><InlineMarkdown>{data.description}</InlineMarkdown></p>
     <section className="course-intro"><span className="eyebrow">LEARN, THEN PRACTICE</span><Markdown language={data.language}>{data.summary}</Markdown>
-      {safeSourceUrl(data.source_url) && <a className="text-link" href={safeSourceUrl(data.source_url)} target="_blank" rel="noreferrer">학습 자료 출처 ↗</a>}
+      {safeSourceUrl(data.source_url) && <a className="text-link" href={safeSourceUrl(data.source_url)} target="_blank" rel="noreferrer">학습 자료 출처</a>}
     </section>
     <div className="section-heading"><div><span className="eyebrow">YOUR LEARNING PATH</span><h2>{units.length ? `${units.length}개 단원으로 이어지는 학습` : '개념별 학습 과정'}</h2></div><span className="muted">{units.length - missing.length} / {units.length} 세트 준비</span></div>
     {!units.length && <p className="notice">이전 방식으로 만든 자료입니다. 저장된 개념을 바탕으로 학습 순서와 상세 설명을 준비할 수 있습니다. 기존 문제와 풀이 기록은 유지됩니다.</p>}
@@ -112,7 +112,7 @@ export function Context() {
         <h3><Link to={`/learn/${data.id}/units/${unit.id}`}>{unit.title}</Link></h3><p>{unit.objective}</p>
         <p className="unit-rationale">{unit.rationale}</p>
         {!!unit.prerequisites.length && <p className="muted">먼저 배울 내용: {unit.prerequisites.map(p => units.find(u => u.id === p)?.title).join(' · ')}</p>}
-        <div className="unit-actions"><Link className="button primary" to={`/learn/${data.id}/units/${unit.id}`}>개념 학습 →</Link>
+        <div className="unit-actions"><Link className="button primary" to={`/learn/${data.id}/units/${unit.id}`}>개념 학습</Link>
 
         </div>
         <UnitPractice course={course} unitId={unit.id} disabled={deleting} />
@@ -121,10 +121,10 @@ export function Context() {
     {!units.length && <>
       {course.jobs.filter(job => !job.unit_id).map(job => <GenerationStatus key={job.id} generation={job} />)}
       <button className="primary" onClick={() => void generate()} disabled={busy || deleting || !!pending || health?.ai === false}>
-        {busy ? '요청 중…' : '학습 과정 구성하기 →'}
+        {busy ? '요청 중…' : '학습 과정 구성하기'}
       </button>
     </>}
-    {!!sets.filter(set => !set.unit_id).length && <section className="legacy-sets"><h2>이전에 만든 연습</h2><div className="set-list">{sets.filter(set => !set.unit_id).map(set => <div className="set-row" key={set.id}><div><h3>{set.title}</h3><span className="muted">{set.completed} / {set.total} 단계 완료</span></div>{!set.withdrawn && <Link className="button" to={`/practice/${set.id}`}>이어서 풀기 →</Link>}</div>)}</div></section>}
+    {!!sets.filter(set => !set.unit_id).length && <section className="legacy-sets"><h2>이전에 만든 연습</h2><div className="set-list">{sets.filter(set => !set.unit_id).map(set => <div className="set-row" key={set.id}><div><h3>{set.title}</h3><span className="muted">{set.completed} / {set.total} 단계 완료</span></div>{!set.withdrawn && <Link className="button" to={`/practice/${set.id}`}>이어서 풀기</Link>}</div>)}</div></section>}
   </main>;
 }
 
@@ -143,7 +143,7 @@ export function Lesson() {
     <div className="lesson-layout"><aside className="lesson-outline"><span className="eyebrow">LEARNING PATH</span>
       <nav aria-label="학습 단원">{units.map((item, i) => <Link key={item.id} to={`/learn/${id}/units/${item.id}`} aria-current={item.id === unit.id ? 'page' : undefined}><span>{String(i + 1).padStart(2, '0')}</span>{item.title}</Link>)}</nav>
       <nav className="lesson-toc" aria-label="이 페이지의 목차">{unit.lesson.map((section, i) => <a key={i} href={`#section-${i}`}>{section.title}</a>)}<a href="#checkpoints">이해 확인</a></nav>
-      <Link className="text-link" to={`/learn/${id}`}>← 전체 학습 과정</Link>
+      <Link className="text-link" to={`/learn/${id}`}>전체 학습 과정</Link>
     </aside><article className="lesson-article" key={unit.id}>
       <header><span className="eyebrow">LESSON {String(index + 1).padStart(2, '0')} / {String(units.length).padStart(2, '0')}</span><h1>{unit.title}</h1><p className="lesson-objective">{unit.objective}</p>
         {!!unit.prerequisites.length && <div className="lesson-prerequisites">먼저 읽기: {unit.prerequisites.map(p => <Link key={p} to={`/learn/${id}/units/${p}`}>{units.find(u => u.id === p)?.title}</Link>)}</div>}
@@ -157,7 +157,7 @@ export function Lesson() {
       <section className="lesson-practice"><span className="eyebrow">PUT IT INTO CODE</span><h2>이제 직접 풀어볼 차례</h2><p>이 단원의 개념을 READ → FIX → MODIFY → BUILD로 연습합니다. 막히면 언제든 이 페이지로 돌아오세요.</p>
         <ErrorNotice error={actionError} /><UnitPractice key={unit.id} course={course} unitId={unit.id} />
       </section>
-      <nav className="lesson-pagination" aria-label="이전 다음 단원"><span>{index > 0 && <Link to={`/learn/${id}/units/${units[index - 1].id}`}>← {units[index - 1].title}</Link>}</span><span>{index < units.length - 1 && <Link to={`/learn/${id}/units/${units[index + 1].id}`}>{units[index + 1].title} →</Link>}</span></nav>
+      <nav className="lesson-pagination" aria-label="이전 다음 단원"><span>{index > 0 && <Link to={`/learn/${id}/units/${units[index - 1].id}`}>{units[index - 1].title}</Link>}</span><span>{index < units.length - 1 && <Link to={`/learn/${id}/units/${units[index + 1].id}`}>{units[index + 1].title}</Link>}</span></nav>
     </article></div>
   </main>;
 }

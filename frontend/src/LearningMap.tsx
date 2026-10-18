@@ -19,7 +19,7 @@ function recordDate(value: string) {
 function ProblemLinks({ exercises }: { exercises: Evidence[] }) {
   return <ul>{exercises.map(exercise => <li key={exercise.id}>
     <span className="success-text">✓ 통과 · {exercise.kind === 'FOUNDATION' && exercise.assistance === 'hint' ? '설명 피드백 참고' : assistanceLabels[exercise.assistance ?? "unknown"]}</span>{exercise.deleted || exercise.withdrawn ? <span>{exercise.kind === 'FOUNDATION' ? '기초 구현' : exercise.kind} · {exercise.title} ({exercise.deleted ? '학습 자료 삭제됨' : '제공 중단'})</span> :
-      <Link to={exercise.kind === 'FOUNDATION' ? `/foundations/${exercise.unit_id}` : `/practice/${exercise.set_id}?exercise=${exercise.id}`}>{exercise.kind === 'FOUNDATION' ? '기초 구현' : exercise.kind} · {exercise.title} →</Link>}
+      <Link to={exercise.kind === 'FOUNDATION' ? `/foundations/${exercise.unit_id}` : `/practice/${exercise.set_id}?exercise=${exercise.id}`}>{exercise.kind === 'FOUNDATION' ? '기초 구현' : exercise.kind} · {exercise.title}</Link>}
     {!exercise.deleted && <Link className="text-link" to={exercise.kind === 'FOUNDATION' ? `/foundations/${exercise.unit_id}` : exercise.unit_id ? `/learn/${exercise.context_id}/units/${exercise.unit_id}` : `/learn/${exercise.context_id}`}>개념 다시 읽기</Link>}
   </li>)}</ul>;
 }
@@ -94,11 +94,11 @@ export function LearningMap() {
     {data?.state === 'stale' && <p className="muted">아직 정리하지 않은 통과 기록이 있습니다. 위 버튼으로 학습 지도를 만들어보세요.</p>}
     {data && !data.ai_available && <p className="muted">AI 설정 후 학습 내용을 정리할 수 있습니다. 통과한 문제는 아래에서 확인하세요.</p>}
     {data?.exercises.some(exercise => exercise.deleted) && <p className="muted">삭제된 학습 자료의 내용도 기록에 보관되어 있습니다. 삭제된 문제로는 이동할 수 없습니다.</p>}
-    {data?.state === 'empty' && !data.record_id && <div className="empty-state"><h2>아직 통과한 문제가 없습니다</h2><p>문제를 풀고 Submit을 통과하면 배운 내용을 정리할 수 있습니다.</p><Link className="button" to="/">학습 공간으로 →</Link></div>}
+    {data?.state === 'empty' && !data.record_id && <div className="empty-state"><h2>아직 통과한 문제가 없습니다</h2><p>문제를 풀고 Submit을 통과하면 배운 내용을 정리할 수 있습니다.</p><Link className="button" to="/">학습 공간으로</Link></div>}
     <div className="knowledge-tree" key={data?.record_id ?? 'pending'}>{roots.map(root => {
       const concepts = data?.concepts.filter(concept => concept.root_key === root.root_key) ?? [];
       if (!concepts.length) return null;
-      return <AnimatedDetails className="knowledge-root" initiallyOpen key={root.root_key} summary={<><span aria-hidden="true">▤ </span>{root.framework ? root.root_label : languages[root.root_label as Language] ?? root.root_label}<small>{root.framework ? '프레임워크 · 분류' : '언어'} · {concepts.length}개 개념</small></>}>
+      return <AnimatedDetails className="knowledge-root" initiallyOpen key={root.root_key} summary={<>{root.framework ? root.root_label : languages[root.root_label as Language] ?? root.root_label}<small>{root.framework ? '프레임워크 · 분류' : '언어'} · {concepts.length}개 개념</small></>}>
         <ul>{concepts.map(concept => <li key={concept.name}><AnimatedDetails initiallyOpen summary={<>{concept.name}<small>{concept.outcomes.length}가지 학습 내용</small></>}>
           {concept.outcomes.map((outcome, index) => <section className="knowledge-unit" key={index}>
             <p className="learning-outcome"><InlineMarkdown>{outcome.summary}</InlineMarkdown></p>

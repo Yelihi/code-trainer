@@ -28,22 +28,40 @@ class FoundationsTest(unittest.TestCase):
         return response, call.call_count
 
     def test_catalog_has_all_units_and_never_exposes_private_answers(self):
-        self.assertEqual(len(CATALOG),12)
-        self.assertEqual(len(self.client.get('/api/foundations').json()['items']),12)
+        self.assertGreaterEqual(len(CATALOG),54)
+        self.assertEqual(len(self.client.get('/api/foundations').json()['items']),len(CATALOG))
+        catalog = {item['id']: item for item in self.client.get('/api/foundations').json()['items']}
+        self.assertEqual((catalog['stack']['priority'], catalog['stack']['difficulty']), (1, '입문'))
+        self.assertEqual((catalog['bfs']['priority'], catalog['bfs']['difficulty']), (2, '보통'))
         for item in CATALOG.values():
+            self.assertIn(item['priority'], (1, 2, 3))
+            self.assertIn(item['difficulty'], ('입문', '보통', '어려움'))
             response = self.client.get('/api/foundations/'+item['id'])
             self.assertEqual(response.status_code,200)
             value=response.json()
-            self.assertNotIn('reference',value); self.assertNotIn('hidden_tests',value); self.assertNotIn('mutations',value)
+            self.assertNotIn('reference',value); self.assertNotIn('hidden_tests',value); self.assertNotIn('cost_tests',value); self.assertNotIn('mutations',value)
             self.assertNotIn('answer',value['questions'][0])
             self.assertFalse(value['unlocked']); self.assertFalse(value['completed'])
             self.assertEqual(len(item['questions']),2)
             self.assertEqual(len({w['code'] for w in item['mutations']}),2)
             self.assertTrue(all(w['code'] != item['reference'] for w in item['mutations']))
             self.assertTrue(all(p in CATALOG for p in item['prerequisites']))
+            if item['visual_frames'] is not None:
+                self.assertGreaterEqual(len(item['visual_frames']), 3)
+                for scene in item['visual_frames']:
+                    ids = [node['id'] for node in scene['nodes']]
+                    self.assertEqual(len(ids), len(set(ids)))
+                    self.assertTrue(all(a in ids and b in ids for a, b in scene['edges']))
             copy=public(item); copy['questions'][0]['prompt']='changed'
             self.assertNotEqual(item['questions'][0]['prompt'],'changed')
         self.assertEqual(self.client.get('/api/foundations/nope').status_code,404)
+
+    def test_range_tree_scenes_show_internal_sums_after_update(self):
+        segment = {node['id']: node for node in CATALOG['segment-tree']['visual_frames'][-1]['nodes']}
+        fenwick = {node['id']: node for node in CATALOG['fenwick-tree']['visual_frames'][-1]['nodes']}
+        self.assertEqual((segment['all']['label'], segment['right']['label'], segment['v2']['label']), ('15','12','8'))
+        self.assertEqual((fenwick['i2']['label'], fenwick['i4']['label']), ('8','15'))
+        self.assertEqual(fenwick['i2']['annotation'], '[0,2)')
 
     def test_public_test_guidance_is_available_before_submission_without_private_code(self):
         from .foundation_guides import HINTS, READINGS
@@ -228,3 +246,11 @@ class FoundationsTest(unittest.TestCase):
         with patch.object(f,'check',return_value={'passed':True,'caught':False,'status':'passed','detail':''}):
             checks=f.grade(CATALOG['queue'],'code','tests',None)
             self.assertFalse(checks[-1]['passed']); self.assertFalse(checks[-2]['passed'])
+
+    def test_optional_operation_budget_is_private_and_checked_before_user_tests(self):
+        item = {**CATALOG['binary-search'], 'cost_tests': 'assertEqual(comparisons, 10); assertEqual(found, true);'}
+        with patch.object(f, 'check',return_value={'passed':True,'caught':True,'status':'passed','detail':''}) as run:
+            checks = f.grade(item, 'code', 'tests', None)
+        self.assertEqual(checks[2]['label'], '연산 비용')
+        self.assertEqual(run.call_args_list[2].args[1], item['cost_tests'])
+        self.assertEqual(len(checks), 4 + len(item['mutations']) + 1)

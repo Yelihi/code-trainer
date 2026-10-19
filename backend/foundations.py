@@ -70,7 +70,7 @@ def catalog(owner):
     jobs = db.all("SELECT lesson_id,version,state FROM foundation_reviews WHERE owner=? UNION SELECT lesson_id,version,state FROM foundation_attempts WHERE owner=?", (owner, owner))
     started = set(progress) | {(r['lesson_id'], r['version']) for r in jobs}
     running = {(r['lesson_id'], r['version']) for r in jobs if r['state'] == 'running'}
-    return {'items': [{**{k: item[k] for k in ('id', 'version', 'title', 'group', 'summary', 'prerequisites')},
+    return {'items': [{**{k: item[k] for k in ('id', 'version', 'title', 'group', 'priority', 'difficulty', 'summary', 'prerequisites')},
                        'can_resume': (item['id'], item['version']) in started,
                        'running': (item['id'], item['version']) in running,
                        'revision': progress.get((item['id'], item['version']), 0),
@@ -251,6 +251,8 @@ def grade(item, code, tests, image_id):
     if not checks[-1]['passed']:
         return checks
     add('비공개 경계 조건', check(code, item['hidden_tests'], image_id))
+    if item.get('cost_tests'):
+        add('연산 비용', check(code, item['cost_tests'], image_id))
     add('내 구현 + 내가 작성한 테스트', check(code, tests, image_id, True))
     if not checks[-1]['passed']:
         return checks
@@ -271,7 +273,7 @@ def execute(owner, job_id):
         runtime = runner.pin_runtime()
         checks = grade(item, payload['code'], payload['test_code'], runtime)
         result = {'checks': checks, 'runtime': runtime}
-        state = 'passed' if all(c['passed'] for c in checks) and len(checks) == 4+len(item['mutations']) else 'failed'
+        state = 'passed' if all(c['passed'] for c in checks) and len(checks) == 4+len(item['mutations'])+bool(item.get('cost_tests')) else 'failed'
         db.execute("UPDATE foundation_attempts SET state=?,result=? WHERE id=? AND owner=? AND state='running'", (state, service.dump(result), job_id, owner))
     except Exception:
         db.execute("UPDATE foundation_attempts SET state='error',error=? WHERE id=? AND owner=? AND state='running'",

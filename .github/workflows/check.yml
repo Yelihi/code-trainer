@@ -80,9 +80,26 @@ jobs:
       - run: docker run --rm --entrypoint python trainer-app-check -c "import shutil, pathlib, backend.api; assert shutil.which('docker') is None; assert not pathlib.Path('/var/run/docker.sock').exists()"
       - run: docker build -t code-trainer-runner:v1 sandbox
       - run: .venv/bin/python scripts/check-sandbox.py
-      - run: .venv/bin/python scripts/check-foundations.py
+  foundations:
+    needs: plan
+    if: needs.plan.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+      - run: uv venv --python 3.12 .venv
+      - run: uv pip sync --python .venv/bin/python deploy/requirements.txt
+      - run: docker build -t code-trainer-runner:v1 sandbox
+      - run: .venv/bin/python scripts/check-foundations.py ${{ matrix.shard }}/4
   check:
-    needs: [plan, frontend, backend]
+    needs: [plan, frontend, backend, foundations]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -97,10 +114,12 @@ jobs:
           BACKEND_NEEDED: ${{ needs.plan.outputs.backend }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
+          FOUNDATIONS_RESULT: ${{ needs.foundations.result }}
         run: |
           test "$PLAN_RESULT" = success
           if [ "$FRONTEND_NEEDED" = true ]; then test "$FRONTEND_RESULT" = success; else test "$FRONTEND_RESULT" = skipped; fi
           if [ "$BACKEND_NEEDED" = true ]; then test "$BACKEND_RESULT" = success; else test "$BACKEND_RESULT" = skipped; fi
+          if [ "$BACKEND_NEEDED" = true ]; then test "$FOUNDATIONS_RESULT" = success; else test "$FOUNDATIONS_RESULT" = skipped; fi
       - run: python3 -m unittest deploy.test_cd -q
   deploy:
     needs: [plan, check]

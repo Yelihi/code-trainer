@@ -2004,6 +2004,14 @@ button.text-button,
 .visual-stack svg { min-width: 0; height: 340px; }
 
 .foundation-start-note { margin: 24px 0; }
+.foundation-filters { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; margin: 26px 0 36px; }
+.foundation-filter-groups { display: flex; flex-wrap: wrap; gap: 8px; }
+.foundation-filter-groups button { min-height: 38px; padding: 7px 13px; font-size: var(--text-body); }
+.foundation-filter-groups button[aria-pressed="true"] { border-color: var(--green); color: var(--green); background: #52d7b712; }
+.foundation-filters label { display: grid; gap: 6px; color: var(--muted); font-size: var(--text-caption); }
+.foundation-filters input { width: min(100%, 300px); min-width: 230px; padding: 9px 12px; font-size: var(--text-body); }
+.foundation-empty { padding: 22px; color: var(--muted); }
+.foundation-card > small a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .foundation-card { display: flex; flex-direction: column; }
 .foundation-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .foundation-card-actions > * { flex: 1; text-align: center; white-space: nowrap; }
@@ -2069,8 +2077,10 @@ button.text-button,
 
 .visual-bfs .visual-legend > span:first-child i, .visual-dfs .visual-legend > span:first-child i { background: #b797ff; }
 
-.foundation-card-heading { position: relative; min-height: 112px; display: flex; align-items: center; margin-top: 16px; }
-.foundation-card-heading h3 { position: relative; z-index: 1; max-width: 65%; overflow-wrap: anywhere; font-size: var(--text-subheading); margin: 0; line-height: var(--leading-heading); }
+.foundation-card-heading { position: relative; min-height: 48px; display: flex; align-items: center; margin-top: 16px; }
+.foundation-card-heading:has(.foundation-card-art) { min-height: 112px; }
+.foundation-card-heading h3 { position: relative; z-index: 1; overflow-wrap: anywhere; font-size: var(--text-subheading); margin: 0; line-height: var(--leading-heading); }
+.foundation-card-heading:has(.foundation-card-art) h3 { max-width: 65%; }
 .foundation-card-art { position: absolute; width: 138px; height: 110px; right: -4px; top: 0; pointer-events: none; color: #65577f; opacity: .45; }
 .foundation-card-art path { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .foundation-card-art .card-art-accent { stroke: #83cdbf; stroke-width: 2; }

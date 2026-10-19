@@ -12,7 +12,7 @@ AI_RESPONSE_TIMEOUT = 300
 DIFFICULTY_GUIDANCE = {
     'beginner': 'Beginner: one main concept at a time, a short direct implementation, explicit examples and detailed scaffolding.',
     'intermediate': 'Intermediate: combine related concepts from the source, add a meaningful boundary case or state change, and provide less scaffolding.',
-    'advanced': 'Advanced: assume basic syntax is known. Use the source-specific subtle behaviors and combine related concepts into a multi-step task with 2-3 observable requirements. Include state transitions and contrasting boundary cases that distinguish a plausible naive solution from a correct one. READ traces a sequence of mutations or interactions; FIX repairs a semantic bug; MODIFY adds a nontrivial behavior; BUILD implements the combined behavior with minimal scaffolding. A one-line property assignment or copying a lesson example is insufficient. Keep all concepts grounded in the source; do not substitute unrelated algorithms or obscure wording for depth.',
+    'advanced': 'Advanced: assume basic syntax is known. Combine source-specific behaviors and prerequisite concepts into a multi-step task with interacting requirements, state transitions and contrasting boundary cases. When natural, use a concrete everyday setting such as reservations, inventory or a work queue, while preserving the source APIs and semantics. READ traces a sequence of interactions; FIX repairs a semantic bug that appears after multiple operations or at a boundary while preserving working behavior; MODIFY extends existing behavior; BUILD implements the combined behavior with minimal scaffolding. A single conditional, property assignment or copied lesson example is insufficient. Keep the difficulty in the behavior, not obscure wording or unrelated algorithms.',
 }
 
 
@@ -76,6 +76,9 @@ def response_schema(model, kind=None, difficulty='beginner'):
         schema['properties'].pop('difficulty')  # Selected by the learner, not the model.
         schema['$defs']['LearningUnit']['properties'].pop('source_examples')  # Attached from source by ID.
         schema['$defs'].pop('SourceExample')
+    if model is ExerciseCodeRepair and difficulty == 'advanced':
+        schema['properties']['public_tests']['minItems'] = 2
+        schema['properties']['hidden_tests']['minItems'] = 2
     if kind:
         schema['properties']['kind']['enum'] = [kind]
         schema['properties']['test_mode']['enum'] = ['stdio' if kind == 'READ' else 'code']
@@ -95,6 +98,9 @@ def response_schema(model, kind=None, difficulty='beginner'):
             schema['properties']['requirements'].update(minItems=1, maxItems=1)
             schema['$defs']['Requirement']['properties']['id']['enum'] = ['r1']
             case['requirements'].update(minItems=1, maxItems=1, items={'type': 'string', 'enum': ['r1']})
+        else:
+            schema['properties']['requirements']['minItems'] = 2
+            schema['properties']['public_tests']['minItems'] = 2
         case['stdin']['const'] = ''
         if kind == 'READ':
             case['code']['const'] = case['expected']['const'] = ''
@@ -106,7 +112,7 @@ def response_schema(model, kind=None, difficulty='beginner'):
             case['code']['description'] = 'ONLY calls and printing, appended AFTER the solution. Create test inputs and instances here. NEVER include the function/class implementation. JavaScript example for a Box class: console.log(new Box(3).value());'
             evaluation['reference']['minLength'] = 1
             evaluation['reference']['description'] = 'One correct complete implementation, including all required declarations and initial object values. No example calls or test execution. Tests are appended separately; starter is NOT included.'
-            evaluation['hidden_tests']['minItems'] = 1
+            evaluation['hidden_tests']['minItems'] = 2 if advanced else 1
             evaluation['read_answer']['const'] = ''
         if not advanced:
             schema['properties']['public_tests'].update(minItems=1, maxItems=1,
@@ -344,9 +350,12 @@ Use normal public examples and different boundary cases for hidden. All must pas
 reference. Use stdin="", read_answer="". Keep the task focused on the unit's objective.
 Include 3 progressive hints without the full solution.
 """
-    instruction += ('\nFor advanced, use 2-3 observable requirements (r1, r2, r3 as needed), two public tests '
-                    'and two hidden tests with unique IDs. Test a sequence of operations and source-supported '
-                    'edge cases; link every test to the requirements it checks. Do not expose the solution in the starter.'
+    instruction += ('\nFor advanced, use 2-3 interacting observable requirements (r1, r2, r3 as needed), at least two public tests '
+                    'and two hidden tests with unique IDs. Require a meaningful sequence of operations or data transformations, '
+                    'including a case where a plausible simple implementation fails. A single calculation or one-condition wrapper '
+                    'is not advanced. A concrete everyday scenario is welcome when it clarifies the source concept, but the '
+                    'solution must still use this unit and its prerequisites. Link every test to the requirements it checks. '
+                    'Do not expose the solution in the starter.'
                     if context.difficulty == 'advanced' else
                     '\nUse one observable requirement r1, test requirements=["r1"], one public test id=public and one hidden test id=hidden.')
     data = {'language': context.language, 'difficulty': context.difficulty,
@@ -423,6 +432,7 @@ The runner creates ONE source file. Tests must call the implementation directly,
 import/require from './solution', './main' or other nonexistent local files.
 Reference is a COMPLETE replacement for starter, NOT a patch appended to it.
 Both must include all required declarations, imports and initial object values; no demonstration calls.
+For advanced exercises, keep at least two public and two hidden tests while repairing them.
 For ReferenceError/NameError, find each missing name in the starter and include its required
 declaration in the reference too. A function-only patch is invalid when it uses global objects.
 Tests contain ONLY setup, calls and printing, NEVER the implementation/class definition.
@@ -449,9 +459,9 @@ Return the corrected code fields, not a new problem or an explanation.''',
                                    code='ai_schema_invalid', issues=issues) from None
             continue
         prompt = read_instruction if kind == 'READ' else instruction + '\n' + {
-            'FIX': 'FIX: starter defines the complete function/class but has a real behavior bug; it must run and fail by wrong output. Missing definitions and syntax errors are not the intended bug.',
+            'FIX': 'FIX: starter defines the complete function/class but has a real behavior bug; it must run and fail by wrong output. For advanced, its simple case should work while a sequence or boundary breaks a stated invariant; repairing it must preserve the other behavior. Missing definitions and syntax errors are not the intended bug.',
             'MODIFY': 'MODIFY: starter defines a working simpler version of the function/class; ask to extend its behavior with a clearly stated new requirement.',
-            'BUILD': 'BUILD: provide a minimal function/class skeleton with the required interface and a TODO, never the solution.',
+            'BUILD': 'BUILD: provide a minimal function/class skeleton with the required interface and a TODO, never the solution. For advanced, implementing it must coordinate the stated behaviors across more than one case; do not ask for a thin wrapper around one built-in call.',
         }[kind]
         if kind != 'READ':
             prompt += '\nInclude exactly one complete, runnable wrong_solutions entry with a plausible behavior bug (not syntax errors, missing names, hardcoded answers or exceptions). Name the specific failing_test and requirement. The reference must pass that test, while this wrong solution must execute normally and produce a different output. Include a meaningful boundary or state-change test when supported by the task.'

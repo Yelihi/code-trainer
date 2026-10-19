@@ -442,10 +442,13 @@ class AppTest(unittest.TestCase):
         for kind in ('FIX', 'MODIFY', 'BUILD'):
             schema = ai.response_schema(ExerciseDraft, kind, 'advanced')
             properties = schema['properties']['data']['anyOf'][0]['properties']
-            self.assertEqual(properties['requirements']['maxItems'], 4)
-            self.assertEqual(properties['public_tests']['maxItems'], 4)
-            self.assertEqual(schema['$defs']['Evaluation']['properties']['hidden_tests']['maxItems'], 4)
+            self.assertEqual((properties['requirements']['minItems'], properties['requirements']['maxItems']), (2, 4))
+            self.assertEqual((properties['public_tests']['minItems'], properties['public_tests']['maxItems']), (2, 4))
+            hidden = schema['$defs']['Evaluation']['properties']['hidden_tests']
+            self.assertEqual((hidden['minItems'], hidden['maxItems']), (2, 4))
             self.assertNotIn('enum', schema['$defs']['Requirement']['properties']['id'])
+        repair = ai.response_schema(ExerciseCodeRepair, difficulty='advanced')['properties']['data']['anyOf'][0]['properties']
+        self.assertEqual((repair['public_tests']['minItems'], repair['hidden_tests']['minItems']), (2, 2))
         curriculum = ai.response_schema(CurriculumDraft)
         self.assertIn('source_example_ids', curriculum['$defs']['LearningUnit']['properties'])
         self.assertNotIn('source_examples', curriculum['$defs']['LearningUnit']['properties'])

@@ -141,7 +141,7 @@ function PracticeEditor({
     else onMove(destination);
   }, [destination, saving, dirty, busy, navigate, onMove, problemSet.context_id, reviewId]);
   const extensions = useMemo(
-    () => codeExtensions(problemSet.language),
+    () => codeExtensions(problemSet.language, true),
     [problemSet.language],
   );
 
@@ -429,7 +429,7 @@ function PracticeEditor({
                 <span>
                   {exercise.kind === "READ"
                     ? "읽기 전용 코드"
-                    : codeTests ? "풀이 코드 · 아래 테스트 코드와 함께 실행" : "단일 파일 · 표준 라이브러리"}
+                    : codeTests ? "풀이 코드 · 아래 테스트 코드와 함께 실행 · Ctrl+Space 자동완성" : "단일 파일 · 표준 라이브러리 · Ctrl+Space 자동완성"}
                 </span>
               </div>
             </div>

@@ -1,19 +1,22 @@
 import { useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
+import { completeAnyWord } from '@codemirror/autocomplete';
+import { javascript, javascriptLanguage } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
-import { cpp } from '@codemirror/lang-cpp';
-import { rust } from '@codemirror/lang-rust';
+import { cpp, cppLanguage } from '@codemirror/lang-cpp';
+import { rust, rustLanguage } from '@codemirror/lang-rust';
+import { standardApiCompletions } from './codeCompletions';
 
-export function codeExtensions(language: string) {
+export function codeExtensions(language: string, editing = false) {
+  const api = editing ? [javascriptLanguage.data.of({ autocomplete: standardApiCompletions })] : [];
   switch (language.toLowerCase()) {
-    case 'js': case 'javascript': return [javascript()];
-    case 'jsx': return [javascript({ jsx: true })];
-    case 'ts': case 'typescript': return [javascript({ typescript: true })];
-    case 'tsx': return [javascript({ typescript: true, jsx: true })];
+    case 'js': case 'javascript': return [javascript(), ...api];
+    case 'jsx': return [javascript({ jsx: true }), ...api];
+    case 'ts': case 'typescript': return [javascript({ typescript: true }), ...api];
+    case 'tsx': return [javascript({ typescript: true, jsx: true }), ...api];
     case 'py': case 'python': return [python()];
-    case 'c': case 'c++': case 'cpp': return [cpp()];
-    case 'rs': case 'rust': return [rust()];
+    case 'c': case 'c++': case 'cpp': return [cpp(), ...(editing ? [cppLanguage.data.of({ autocomplete: completeAnyWord })] : [])];
+    case 'rs': case 'rust': return [rust(), ...(editing ? [rustLanguage.data.of({ autocomplete: completeAnyWord })] : [])];
     default: return [];
   }
 }

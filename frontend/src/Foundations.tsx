@@ -93,7 +93,7 @@ function ResultView({ job }: { job: Job }) {
   return <section className="foundation-result" aria-label="구현 검증 결과"><h3>{job.state === 'passed' ? '✓ 구현과 테스트를 모두 통과했습니다' : statusLabels[job.state] ?? job.state}</h3><ErrorNotice error={job.error} />
     {job.result.checks?.map(check => <div className="foundation-check" key={check.label}><span className={check.passed ? 'success-text' : 'error-text'}>{check.passed ? '✓' : '×'}</span><div><strong>{check.label}</strong><small>{check.passed ? '통과' : check.label.startsWith('오답 감지') && check.status === 'passed' ? '이 오류를 발견할 테스트를 추가해주세요.' : statusLabels[check.status] ?? check.status}</small>{check.detail && <pre>{check.detail}</pre>}</div></div>)}
     {job.state === 'passed' && <p><Link className="text-link" to="/me">나의 학습 기록에 저장되었습니다</Link></p>}
-    {job.state === 'failed' && <p className="muted">{(job.result.checks?.length ?? 0) < 6 && '앞선 검사에서 중단되어 이후 항목은 실행하지 않았습니다. '}통과 여부는 동작 기준이며, 시간 복잡도와 내부 구현 방식은 자동 판정하지 않습니다.</p>}
+    {job.state === 'failed' && <p className="muted">{(job.result.checks?.length ?? 0) < 6 && '앞선 검사에서 중단되어 이후 항목은 실행하지 않았습니다. '}연산 비용은 해당 검사가 있는 단원에서만 확인합니다. 일반적인 시간·공간 복잡도는 자동 판정하지 않습니다.</p>}
   </section>;
 }
 

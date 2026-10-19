@@ -39,7 +39,7 @@ class FoundationsTest(unittest.TestCase):
             response = self.client.get('/api/foundations/'+item['id'])
             self.assertEqual(response.status_code,200)
             value=response.json()
-            self.assertNotIn('reference',value); self.assertNotIn('hidden_tests',value); self.assertNotIn('mutations',value)
+            self.assertNotIn('reference',value); self.assertNotIn('hidden_tests',value); self.assertNotIn('cost_tests',value); self.assertNotIn('mutations',value)
             self.assertNotIn('answer',value['questions'][0])
             self.assertFalse(value['unlocked']); self.assertFalse(value['completed'])
             self.assertEqual(len(item['questions']),2)
@@ -233,3 +233,11 @@ class FoundationsTest(unittest.TestCase):
         with patch.object(f,'check',return_value={'passed':True,'caught':False,'status':'passed','detail':''}):
             checks=f.grade(CATALOG['queue'],'code','tests',None)
             self.assertFalse(checks[-1]['passed']); self.assertFalse(checks[-2]['passed'])
+
+    def test_optional_operation_budget_is_private_and_checked_before_user_tests(self):
+        item = {**CATALOG['binary-search'], 'cost_tests': 'assertEqual(comparisons, 10); assertEqual(found, true);'}
+        with patch.object(f, 'check',return_value={'passed':True,'caught':True,'status':'passed','detail':''}) as run:
+            checks = f.grade(item, 'code', 'tests', None)
+        self.assertEqual(checks[2]['label'], '연산 비용')
+        self.assertEqual(run.call_args_list[2].args[1], item['cost_tests'])
+        self.assertEqual(len(checks), 4 + len(item['mutations']) + 1)

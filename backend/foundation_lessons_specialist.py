@@ -326,7 +326,7 @@ const other=new SegmentTree([-2,0,5,1,7]); assertEqual(other.rangeSum(2,2),0); a
 other.update(4,-3); assertEqual(other.rangeSum(0,5),1); assertEqual(other.rangeSum(4,5),-3);
 other.update(0,10); assertEqual(other.rangeSum(0,1),10);''',
         mutations=[('갱신 후 부모 합', 'this.tree[node]=this.tree[node*2]+this.tree[node*2+1];', 'this.tree[node]=this.tree[node*2];'),
-                   ('오른쪽 경계', 'end<=left', 'end<left')],
+                   ('왼쪽 경계 하나 제외', 'end<=left', 'end<=left+1')],
         visualization='segment-tree', prerequisites=['tree-inorder','prefix-sums'],
         sources=[{'title':'USACO Guide · 점 갱신과 구간 합', 'url':'https://usaco.guide/gold/PURS'}],
         reading=guide('부모의 합은 두 자식 합이며, [left,right) 구간 규칙을 생성·갱신·질의에 공통 적용합니다.',

@@ -346,7 +346,8 @@ for method in ('map', 'filter', 'reduce'):
 from .foundation_lessons_core import CORE_LESSONS
 from .foundation_lessons_patterns import PATTERN_LESSONS
 from .foundation_lessons_advanced import ADVANCED_LESSONS
-for specification in CORE_LESSONS + PATTERN_LESSONS + ADVANCED_LESSONS:
+from .foundation_lessons_specialist import SPECIALIST_LESSONS
+for specification in CORE_LESSONS + PATTERN_LESSONS + ADVANCED_LESSONS + SPECIALIST_LESSONS:
     lesson(**specification)
 
 CATALOG = {item['id']: item for item in LESSONS}

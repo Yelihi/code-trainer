@@ -70,7 +70,7 @@ def catalog(owner):
     jobs = db.all("SELECT lesson_id,version,state FROM foundation_reviews WHERE owner=? UNION SELECT lesson_id,version,state FROM foundation_attempts WHERE owner=?", (owner, owner))
     started = set(progress) | {(r['lesson_id'], r['version']) for r in jobs}
     running = {(r['lesson_id'], r['version']) for r in jobs if r['state'] == 'running'}
-    return {'items': [{**{k: item[k] for k in ('id', 'version', 'title', 'group', 'summary', 'prerequisites')},
+    return {'items': [{**{k: item[k] for k in ('id', 'version', 'title', 'group', 'priority', 'difficulty', 'summary', 'prerequisites')},
                        'can_resume': (item['id'], item['version']) in started,
                        'running': (item['id'], item['version']) in running,
                        'revision': progress.get((item['id'], item['version']), 0),

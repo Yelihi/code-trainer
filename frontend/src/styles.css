@@ -2004,6 +2004,14 @@ button.text-button,
 .visual-stack svg { min-width: 0; height: 340px; }
 
 .foundation-start-note { margin: 24px 0; }
+.foundation-filters { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; margin: 26px 0 36px; }
+.foundation-filter-groups { display: flex; flex-wrap: wrap; gap: 8px; }
+.foundation-filter-groups button { min-height: 38px; padding: 7px 13px; font-size: var(--text-body); }
+.foundation-filter-groups button[aria-pressed="true"] { border-color: var(--green); color: var(--green); background: #52d7b712; }
+.foundation-filters label { display: grid; gap: 6px; color: var(--muted); font-size: var(--text-caption); }
+.foundation-filters input { width: min(100%, 300px); min-width: 230px; padding: 9px 12px; font-size: var(--text-body); }
+.foundation-empty { padding: 22px; color: var(--muted); }
+.foundation-card > small a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .foundation-card { display: flex; flex-direction: column; }
 .foundation-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .foundation-card-actions > * { flex: 1; text-align: center; white-space: nowrap; }

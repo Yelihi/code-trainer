@@ -14,15 +14,19 @@ type Feedback = { question_id: string; understood: string; missing: string; corr
 type Check = { label: string; passed: boolean; status: string; detail: string };
 type Job = { id: string; lesson_id: string; version: number; state: string; created_at: string; error: string; payload: { answers?: string[]; code?: string; test_code?: string }; result: { items?: Feedback[]; model_answers?: { id: string; prompt: string; answer: string }[]; checks?: Check[] } };
 type Draft = { answers: string[]; code: string; test_code: string };
-type Unit = { id: string; version: number; title: string; group: string; summary: string; prerequisites: string[]; state: string; can_resume: boolean; running: boolean; revision: number };
+type Unit = { id: string; version: number; title: string; group: string; priority: 1 | 2 | 3; difficulty: '입문' | '보통' | '어려움'; summary: string; prerequisites: string[]; state: string; can_resume: boolean; running: boolean; revision: number };
 type Lesson = Unit & { reading: { invariant: string; steps: [string, string][]; pitfall: string; tradeoff: string; case_study: string; experiment: string }; concept: string; complexity: string; application: string; requirements: string[]; test_hints: string[]; questions: { id: string; prompt: string }[]; starter: string; public_tests: string; test_starter: string; visualization: string; sources: { title: string; url: string }[]; progress: (Draft & { revision: number }) | null; review: Job | null; attempt: Job | null; unlocked: boolean; completed: boolean; ai_available: boolean };
 const statusLabels: Record<string, string> = { passed: '통과', ready: '검토 완료', failed: '보완 필요', error: '처리 중단', running: '진행 중', assertion_failed: '예상 값과 다름', insufficient_assertions: 'assertEqual 검증을 2개 이상 실행해주세요', invalid_tests: '검증 결과를 확인할 수 없습니다', compile_error: '컴파일 오류', runtime_error: '실행 오류', time_limit: '시간 초과', compile_time_limit: '컴파일 시간 초과' };
 
 export function Foundations() {
   const { data, error, reload } = useResource<{ items: Unit[] }>('/foundations');
   const navigate = useNavigate();
+  const [group, setGroup] = useState('전체');
+  const [query, setQuery] = useState('');
   const [starting, setStarting] = useState('');
   const [startError, setStartError] = useState('');
+  const visible = data?.items.filter(item => (group === '전체' || item.group === group) &&
+    `${item.title} ${item.summary}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())) ?? [];
   async function startFresh(item: Unit) {
     setStarting(item.id); setStartError('');
     try {
@@ -36,13 +40,19 @@ export function Foundations() {
     <ErrorNotice error={error || startError} />{error && <button onClick={reload}>다시 불러오기</button>}
     <p className="muted foundation-start-note">새로 진행하면 작성 중인 답변·코드가 초기화됩니다. 제출·완료 기록은 그대로 보관됩니다.</p>
     {!data && !error && <p role="status">단원을 불러오는 중…</p>}
-    {['자료구조', '알고리즘', '메서드'].map(group => <section key={group} className="foundation-category"><div className="section-heading"><h2>{group}</h2><span className="muted">설명·구현 2단계</span></div><div className="foundation-catalog">{data?.items.filter(i => i.group === group).map(item => <article className="foundation-card" key={item.id} aria-label={item.title}>
-        <div className="card-top"><span className="language-tag">TypeScript</span><span className={item.state === 'passed' ? 'success-text' : 'muted'}>{item.running ? '검토 중' : item.state === 'passed' ? '✓ 완료 기록 있음' : item.can_resume ? '진행 중' : '시작 전'}</span></div>
+    {data && <div className="foundation-filters"><div className="foundation-filter-groups" role="group" aria-label="주제 선택">{['전체', '자료구조', '알고리즘', '메서드', '수학'].map(name => <button key={name} type="button" aria-pressed={group === name} onClick={() => setGroup(name)}>{name}</button>)}</div><label>단원 검색<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="개념이나 구현 주제" /></label></div>}
+    {data && !visible.length && <p role="status" className="foundation-empty">일치하는 단원이 없습니다.</p>}
+    {([1, 2, 3] as const).map(priority => {
+      const items = visible.filter(item => item.priority === priority);
+      if (!items.length) return null;
+      const label = priority === 1 ? '핵심' : priority === 2 ? '확장' : '전문';
+      return <section key={priority} className="foundation-category" aria-label={`${priority}단계 ${label}`}><div className="section-heading"><h2>{priority}단계 · {label}</h2><span className="muted">{items.filter(item => item.state === 'passed').length} / {items.length}개 완료</span></div><div className="foundation-catalog">{items.map(item => <article className="foundation-card" key={item.id} aria-label={item.title}>
+        <div className="card-top"><span className="language-tag">{item.group} · {item.difficulty}</span><span className={item.state === 'passed' ? 'success-text' : 'muted'}>{item.running ? '검토 중' : item.state === 'passed' ? '✓ 완료 기록 있음' : item.can_resume ? '진행 중' : '시작 전'}</span></div>
         <div className="foundation-card-heading"><FoundationCardArt kind={item.id} /><h3><Link to={`/foundations/${item.id}`}>{item.title.split(' · ')[0]}</Link></h3></div><p>{item.title.includes(' · ') && <span className="foundation-card-description">{item.title.split(' · ').slice(1).join(' · ')}</span>}{item.summary}</p>
-        <small>{item.prerequisites.length ? `추천 선행: ${item.prerequisites.map(id => data.items.find(i => i.id === id)?.title.split(' · ')[0] ?? id).join(', ')}` : '바로 시작할 수 있어요'}</small>
+        <small>{item.prerequisites.length ? <>추천 선행: {item.prerequisites.map((id, index) => <span key={id}>{index > 0 && ', '}<Link to={`/foundations/${id}`}>{data?.items.find(i => i.id === id)?.title.split(' · ')[0] ?? id}</Link></span>)}</> : '바로 시작할 수 있어요'}</small>
         <div className="foundation-card-actions"><button disabled={!!starting || item.running} onClick={() => void startFresh(item)}>{starting === item.id ? '준비 중…' : '새로 진행'}</button>{item.can_resume && !starting ? <Link className="button primary" to={`/foundations/${item.id}/practice`}>이어 진행</Link> : <button disabled>이어 진행</button>}</div>
         <Link className="text-link foundation-concept-link" to={`/foundations/${item.id}`}>개념 먼저 살펴보기</Link>
-      </article>)}</div></section>)}
+      </article>)}</div></section>})}
   </main>;
 }
 

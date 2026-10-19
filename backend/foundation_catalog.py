@@ -8,8 +8,10 @@ LESSONS = []
 
 
 def lesson(id, title, group, summary, concept, complexity, application, questions, requirements,
-           starter, reference, public_tests, hidden_tests, mutations, visualization, prerequisites=()):
-    LESSONS.append(dict(id=id, version=1, title=title, group=group, summary=summary, concept=concept,
+           starter, reference, public_tests, hidden_tests, mutations, visualization, prerequisites=(),
+           priority=1, difficulty='입문'):
+    LESSONS.append(dict(id=id, version=1, title=title, group=group, priority=priority,
+        difficulty=difficulty, summary=summary, concept=concept,
         complexity=complexity, application=application, prerequisites=list(prerequisites),
         questions=[{'id': f'q{i+1}', 'prompt': q, 'answer': a} for i, (q, a) in enumerate(questions)],
         requirements=requirements, starter=starter.strip(), reference=reference.strip(),
@@ -289,7 +291,8 @@ for traversal in ('bfs', 'dfs'):
         f"const graph = {{A:['B','C'],B:['D'],C:[],D:[]}}; assertEqual({traversal}(graph,'A'), {repr(['A','B','C','D'] if bfs else ['A','B','D','C'])});\nassertEqual({traversal}({{}},'X'),['X']);",
         f"assertEqual({traversal}({{A:['B','B'],B:['A'],Z:[]}},'A'),['A','B']);\nassertEqual({traversal}({{A:['A']}},'A'),['A']);\nassertEqual({traversal}({{}},'toString'),['toString']);\nassertEqual({traversal}({{A:['constructor']}},'A'),['A','constructor']);\nconst g={{A:['B'],B:[]}}; {traversal}(g,'A'); assertEqual(g,{{A:['B'],B:[]}});",
         [('탐색 순서', 'return order;', 'return order.reverse();'),
-         ('시작 정점 기록', 'order.push(node);', 'if (node !== start) order.push(node);')], traversal, ['queue' if bfs else 'stack'])
+         ('시작 정점 기록', 'order.push(node);', 'if (node !== start) order.push(node);')], traversal,
+        ['queue' if bfs else 'stack'], priority=2, difficulty='보통')
 
 for method in ('map', 'filter', 'reduce'):
     refs = {
@@ -338,7 +341,7 @@ CATALOG = {item['id']: item for item in LESSONS}
 
 
 def public(item):
-    keys = ('id', 'version', 'title', 'group', 'summary', 'concept', 'complexity', 'application',
+    keys = ('id', 'version', 'title', 'group', 'priority', 'difficulty', 'summary', 'concept', 'complexity', 'application',
             'prerequisites', 'requirements', 'starter', 'public_tests', 'test_starter', 'visualization', 'sources')
     result = {key: deepcopy(item[key]) for key in keys}
     visual_source = {'stack': 'list', 'queue': 'list', 'linked-list': 'list', 'dictionary': 'hashtable', 'priority-queue': 'heap', 'merge-sort': 'sorting', 'bfs': 'dfsbfs', 'dfs': 'dfsbfs'}.get(item['id'])

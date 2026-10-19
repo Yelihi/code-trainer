@@ -111,7 +111,7 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
   const [error, setError] = useState('');
   const [solution, setSolution] = useState('');
   const request = useRef({ key: '', id: '' });
-  const extensions = useMemo(() => codeExtensions('typescript'), []);
+  const extensions = useMemo(() => codeExtensions('typescript', true), []);
   const dirty = JSON.stringify(draft) !== saved;
   const blocker = useBlocker(dirty);
   const pending = review?.state === 'running' || attempt?.state === 'running';

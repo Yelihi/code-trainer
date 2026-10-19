@@ -28,8 +28,8 @@ class FoundationsTest(unittest.TestCase):
         return response, call.call_count
 
     def test_catalog_has_all_units_and_never_exposes_private_answers(self):
-        self.assertEqual(len(CATALOG),12)
-        self.assertEqual(len(self.client.get('/api/foundations').json()['items']),12)
+        self.assertGreaterEqual(len(CATALOG),17)
+        self.assertEqual(len(self.client.get('/api/foundations').json()['items']),len(CATALOG))
         catalog = {item['id']: item for item in self.client.get('/api/foundations').json()['items']}
         self.assertEqual((catalog['stack']['priority'], catalog['stack']['difficulty']), (1, '입문'))
         self.assertEqual((catalog['bfs']['priority'], catalog['bfs']['difficulty']), (2, '보통'))
@@ -46,6 +46,12 @@ class FoundationsTest(unittest.TestCase):
             self.assertEqual(len({w['code'] for w in item['mutations']}),2)
             self.assertTrue(all(w['code'] != item['reference'] for w in item['mutations']))
             self.assertTrue(all(p in CATALOG for p in item['prerequisites']))
+            if item['visual_frames'] is not None:
+                self.assertGreaterEqual(len(item['visual_frames']), 3)
+                for scene in item['visual_frames']:
+                    ids = [node['id'] for node in scene['nodes']]
+                    self.assertEqual(len(ids), len(set(ids)))
+                    self.assertTrue(all(a in ids and b in ids for a, b in scene['edges']))
             copy=public(item); copy['questions'][0]['prompt']='changed'
             self.assertNotEqual(item['questions'][0]['prompt'],'changed')
         self.assertEqual(self.client.get('/api/foundations/nope').status_code,404)

@@ -1,10 +1,10 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { buildTrace } from './foundationTrace';
+import { buildTrace, type Frame } from './foundationTrace';
 import { traversalGraph } from './foundationStructures';
 import { InlineMarkdown } from './Markdown';
 import { AnimatedDetails } from './AnimatedDetails';
 
-export function FoundationVisual({ kind }: { kind: string }) {
+export function FoundationVisual({ kind, scenes }: { kind: string; scenes?: Frame[] }) {
   const [doubly, setDoubly] = useState(false);
   const [start, setStart] = useState('A');
   const [input, setInput] = useState('5, 2, 7, 1');
@@ -16,11 +16,11 @@ export function FoundationVisual({ kind }: { kind: string }) {
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState('');
   const marker = useId().replaceAll(':', '');
-  const frames = useMemo(() => buildTrace(kind, values, search, { doubly, start }), [kind, values, search, doubly, start]);
+  const frames = useMemo(() => scenes ?? buildTrace(kind, values, search, { doubly, start }), [kind, scenes, values, search, doubly, start]);
   const frame = frames[Math.min(step, frames.length - 1)];
   const previous = frames[Math.max(0, step - 1)];
   const removed = previous.nodes.filter(node => !frame.nodes.some(current => current.id === node.id));
-  const fixed = ['dictionary', 'bfs', 'dfs', 'linked-list'].includes(kind);
+  const fixed = !!scenes || ['dictionary', 'bfs', 'dfs', 'linked-list'].includes(kind);
   const linked = kind === 'linked-list';
   const graph = kind === 'bfs' || kind === 'dfs';
   const heap = kind === 'priority-queue';

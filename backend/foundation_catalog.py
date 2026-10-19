@@ -9,7 +9,8 @@ LESSONS = []
 
 def lesson(id, title, group, summary, concept, complexity, application, questions, requirements,
            starter, reference, public_tests, hidden_tests, mutations, visualization, prerequisites=(),
-           priority=1, difficulty='입문', cost_tests=''):
+           priority=1, difficulty='입문', cost_tests='', reading=None, hints=None,
+           visual_frames=None, sources=None):
     LESSONS.append(dict(id=id, version=1, title=title, group=group, priority=priority,
         difficulty=difficulty, summary=summary, concept=concept,
         complexity=complexity, application=application, prerequisites=list(prerequisites),
@@ -18,7 +19,12 @@ def lesson(id, title, group, summary, concept, complexity, application, question
         public_tests=public_tests.strip(), hidden_tests=hidden_tests.strip(), cost_tests=cost_tests.strip(),
         test_starter='// assertEqual(실제 값, 예상 값)을 사용하세요.\n// 정상 동작과 경계 조건을 포함해 2개 이상 검증하세요.\n',
         mutations=[{'label': label, 'code': reference.strip().replace(old, new)} for label, old, new in mutations],
-        visualization=visualization, sources=[{'title': f'MDN · Array.{id}', 'url': MDN+id}] if group == '메서드' else [MIT]))
+        visualization=visualization, visual_frames=visual_frames,
+        sources=sources if sources is not None else ([{'title': f'MDN · Array.{id}', 'url': MDN+id}] if group == '메서드' else [MIT])))
+    if reading is not None:
+        READINGS[id] = reading
+    if hints is not None:
+        HINTS[id] = hints
 
 
 lesson('stack', '스택 · 마지막 작업부터', '자료구조', 'LIFO와 상태를 가진 객체를 구현합니다.',
@@ -337,6 +343,10 @@ for method in ('map', 'filter', 'reduce'):
          'filter':[('조건 판정','if (fn(values[i],i))','if (!fn(values[i],i))'), ('콜백 인덱스','fn(values[i],i)','fn(values[i],0)')],
          'reduce':[('초기값','let acc = initial;','let acc = 0;'), ('콜백 인덱스','fn(acc,values[i],i)','fn(acc,values[i],0)')]}[method], method)
 
+from .foundation_lessons_core import CORE_LESSONS
+for specification in CORE_LESSONS:
+    lesson(**specification)
+
 CATALOG = {item['id']: item for item in LESSONS}
 
 
@@ -351,5 +361,7 @@ def public(item):
         result['sources'].append({'title': 'Cornell CS 2110 · 첫 일치 이진 탐색', 'url': 'https://courses.cis.cornell.edu/courses/cs2110/2026sp/lectures/lec05/'})
     result['test_hints'] = deepcopy(HINTS[item['id']])
     result['reading'] = deepcopy(READINGS[item['id']])
+    if item['visual_frames'] is not None:
+        result['visual_frames'] = deepcopy(item['visual_frames'])
     result['questions'] = [{k: q[k] for k in ('id', 'prompt')} for q in item['questions']]
     return result

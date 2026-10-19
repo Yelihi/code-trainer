@@ -4,6 +4,7 @@ import { api, errorMessage, isPending, languages, difficulties, safeSourceUrl, t
 import { ErrorNotice, GenerationStatus, useApp, useResource } from './App';
 import { CodeBlock } from './CodeBlock';
 import { Markdown, InlineMarkdown } from './Markdown';
+import { AddToKnowledge } from './AddToKnowledge';
 
 function useCourse(id?: string) {
   const resource = useResource<LearningContext>(`/contexts/${id}`);
@@ -82,7 +83,7 @@ export function Context() {
   const [deleting, setDeleting] = useState(false);
   const { health } = useApp();
   async function remove() {
-    if (!data || !window.confirm(`“${data.title}” 자료를 삭제할까요?\n\n이 자료의 개념 설명, 문제 세트, 저장한 코드, 제출·제보 기록이 함께 삭제됩니다. 나의 기록에 생성해 둔 학습 요약과 생성 날짜는 유지됩니다. 삭제 후에는 되돌릴 수 없습니다.`)) return;
+    if (!data || !window.confirm(`“${data.title}” 자료를 삭제할까요?\n\n이 자료의 개념 설명, 문제 세트, 저장한 코드, 제출·제보 기록이 함께 삭제됩니다. 개념 지도에 추가한 내용과 나의 기록에 생성해 둔 학습 요약은 유지됩니다. 삭제 후에는 되돌릴 수 없습니다.`)) return;
     setDeleting(true); setActionError('');
     try {
       await api(`/contexts/${data.id}`, 'DELETE', {});
@@ -113,7 +114,7 @@ export function Context() {
         <p className="unit-rationale">{unit.rationale}</p>
         {!!unit.prerequisites.length && <p className="muted">먼저 배울 내용: {unit.prerequisites.map(p => units.find(u => u.id === p)?.title).join(' · ')}</p>}
         <div className="unit-actions"><Link className="button primary" to={`/learn/${data.id}/units/${unit.id}`}>개념 학습</Link>
-
+          <AddToKnowledge key={`${data.id}:${unit.id}`} path={`/contexts/${data.id}/units/${unit.id}/knowledge`} addedAt={data.knowledge_added_units?.[unit.id]} disabled={deleting} />
         </div>
         <UnitPractice course={course} unitId={unit.id} disabled={deleting} />
       </div></li>;
@@ -154,7 +155,11 @@ export function Lesson() {
       </section>)}
       <section className="lesson-section"><h2>자주 헷갈리는 지점</h2><ul className="lesson-pitfalls">{unit.pitfalls.map(item => <li key={item}><Markdown language={data.language}>{item}</Markdown></li>)}</ul></section>
       <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <details className="lesson-checkpoint" key={i}><summary><InlineMarkdown>{item.question}</InlineMarkdown></summary><Markdown language={data.language}>{item.answer}</Markdown></details>)}</section>
-      <section className="lesson-practice"><span className="eyebrow">PUT IT INTO CODE</span><h2>이제 직접 풀어볼 차례</h2><p>이 단원의 개념을 READ → FIX → MODIFY → BUILD로 연습합니다. 막히면 언제든 이 페이지로 돌아오세요.</p>
+      <section className="lesson-section"><span className="eyebrow">KEEP WHAT YOU LEARNED</span><h2>개념 학습 마무리</h2>
+        <p>개념 학습으로 마쳐도 괜찮습니다. 기억할 내용을 지도에 직접 추가하세요.</p>
+        <AddToKnowledge key={`${data.id}:${unit.id}`} path={`/contexts/${data.id}/units/${unit.id}/knowledge`} addedAt={data.knowledge_added_units?.[unit.id]} />
+      </section>
+      <section className="lesson-practice"><span className="eyebrow">PUT IT INTO CODE</span><h2>코드로도 연습해볼까요?</h2><p>이 단원의 개념을 READ → FIX → MODIFY → BUILD로 연습합니다. 막히면 언제든 이 페이지로 돌아오세요.</p>
         <ErrorNotice error={actionError} /><UnitPractice key={unit.id} course={course} unitId={unit.id} />
       </section>
       <nav className="lesson-pagination" aria-label="이전 다음 단원"><span>{index > 0 && <Link to={`/learn/${id}/units/${units[index - 1].id}`}>{units[index - 1].title}</Link>}</span><span>{index < units.length - 1 && <Link to={`/learn/${id}/units/${units[index + 1].id}`}>{units[index + 1].title}</Link>}</span></nav>

@@ -79,12 +79,15 @@ def catalog(owner):
 
 def view(owner, lesson_id):
     item = lesson(lesson_id)
+    added = db.one('SELECT created_at FROM knowledge_entries WHERE owner=? AND context_id IS NULL AND unit_id=? AND version=?',
+                   (owner, lesson_id, item['version']))
     progress = db.one('SELECT * FROM foundation_progress WHERE owner=? AND lesson_id=? AND version=?', (owner, lesson_id, item['version']))
     since = progress['restarted_at'] if progress else ''
     review = db.one('SELECT * FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version'], since))
     ready = db.one("SELECT id FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='ready' LIMIT 1", (owner, lesson_id, item['version'], since))
     attempt = db.one('SELECT * FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version'], since))
-    return {**public(item), 'ai_available': ai.available(), 'unlocked': bool(ready),
+    return {**public(item), 'knowledge_added_at': added['created_at'] if added else None,
+            'ai_available': ai.available(), 'unlocked': bool(ready),
             'progress': {'revision': progress['revision'], **json.loads(progress['data'])} if progress else None,
             'review': record(review), 'attempt': record(attempt),
             'completed': bool(db.one("SELECT id FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='passed' LIMIT 1", (owner, lesson_id, item['version'], since)))}

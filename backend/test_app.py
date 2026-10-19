@@ -10,7 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from fastapi.testclient import TestClient
-from . import ai, db, service, source, learning
+from . import ai, db, service, source, learning, knowledge
 from .api import app
 from .sample import sample
 from .schema import Case, Credentials, CurriculumDraft, ExerciseCodeRepair, ExerciseDraft, FixStarterRepair, GenerationInput, ReportInput, SetDraft, LearningSummary
@@ -200,6 +200,122 @@ class AppTest(unittest.TestCase):
         self.client.post('/api/logout', json={})
         self.assertEqual(self.client.get(endpoint).status_code, 401)
         self.assertEqual(self.client.post(endpoint, json={}).status_code, 401)
+
+    def test_knowledge_graph_keeps_evidence_ownership_and_historical_scope(self):
+        problem_set = self.make_set()
+        read, fix = problem_set['exercises'][:2]
+        for problem in (read, fix):
+            db.execute('INSERT INTO attempts VALUES (?,?,?,?,?,?,?,?)',
+                       (service.uid(), self.owner, problem['id'], problem['id'], '{"code":"private-code"}', 'passed', '{}', service.now()))
+        evidence = learning.public_evidence(learning.evidence(self.owner))
+        saved = {'concepts': [{'root_key': 'javascript', 'name': '클로저', 'outcomes': [
+            {'summary': '독립적인 상태를 추적했습니다.', 'exercise_ids': [read['id'], read['id']]}]}],
+                 'exercises': [next(e for e in evidence if e['id'] == read['id'])]}
+        db.execute('INSERT INTO learning_records VALUES (?,?,?,?,?)', ('graph-record', self.owner, 'key', service.dump(saved), '2026-10-01'))
+        endpoint = '/api/me/knowledge-graph'
+        self.assertEqual(self.client.get(endpoint).json()['nodes'], [])
+        added = self.client.post(f"/api/contexts/{problem_set['context_id']}/units/u1/knowledge", json={})
+        self.assertEqual(added.status_code, 200, added.text)
+        graph = self.client.get(endpoint).json()
+        self.assertEqual(len(graph['exercises']), 2)
+        self.assertEqual(len([n for n in graph['nodes'] if n['kind'] == 'unit']), 1)
+        self.assertTrue(next(n for n in graph['nodes'] if n['kind'] == 'unit')['descriptions'])
+        self.assertEqual(len([e for e in graph['edges'] if e['kind'] == 'evidence']), 1)
+        self.assertEqual(next(e for e in graph['edges'] if e['kind'] == 'evidence')['exercise_ids'], [read['id']])
+        self.assertNotIn('private-code', service.dump(graph))
+        self.assertNotIn('hidden_tests', service.dump(graph))
+        historical = self.client.get(endpoint + '?record_id=graph-record').json()
+        self.assertEqual(len(historical['exercises']), 1)
+        self.assertEqual(historical['created_at'], '2026-10-01')
+        self.assertEqual(knowledge.view('other-owner')['nodes'], [])
+        with self.assertRaises(service.Error) as error:
+            knowledge.view('other-owner', 'graph-record')
+        self.assertEqual(error.exception.status, 404)
+        original_ids = {n['id'] for n in graph['nodes']}
+        self.client.request('DELETE', '/api/contexts/' + problem_set['context_id'], json={})
+        deleted = self.client.get(endpoint).json()
+        self.assertEqual({n['id'] for n in deleted['nodes']}, original_ids)
+        self.assertTrue(all(e['deleted'] for e in deleted['exercises']))
+        self.assertEqual(db.one('SELECT data FROM learning_records WHERE id=?', ('graph-record',))['data'], service.dump(saved))
+        self.client.post('/api/logout', json={})
+        self.assertEqual(self.client.get(endpoint).status_code, 401)
+
+    def test_knowledge_registration_without_problems_is_owned_idempotent_and_preserves_snapshot(self):
+        context, _ = sample()
+        db.execute('INSERT INTO contexts VALUES (?,?,?,?,?)', ('reading-only', self.owner, context.model_dump_json(), None, service.now()))
+        endpoint = '/api/contexts/reading-only/units/u1/knowledge'
+        with patch.object(ai, 'available', return_value=False), patch.object(ai, 'generate') as generate:
+            self.assertEqual(self.client.get('/api/me/knowledge-graph').json()['nodes'], [])
+            first = self.client.post(endpoint, json={})
+            self.assertEqual(first.status_code, 200, first.text)
+            self.assertEqual(self.client.post(endpoint, json={}).json(), first.json())
+            generate.assert_not_called()
+        self.assertEqual(len(db.all('SELECT * FROM knowledge_entries')), 1)
+        course = self.client.get('/api/contexts/reading-only').json()
+        self.assertEqual(course['knowledge_added_units']['u1'], first.json()['knowledge_added_at'])
+        graph = self.client.get('/api/me/knowledge-graph').json()
+        self.assertEqual(graph['exercises'], [])
+        self.assertEqual(graph['current_passed_count'], 0)
+        self.assertEqual(len(graph['nodes']), 1 + len(context.units[0].concepts))
+        self.assertTrue(all(e['kind'] == 'coverage' for e in graph['edges']))
+        self.assertTrue(all(n['exercise_ids'] == [] for n in graph['nodes']))
+        self.assertNotIn('learning_notes', service.dump(graph))
+        self.assertEqual(self.client.post('/api/contexts/reading-only/units/absent/knowledge', json={}).status_code, 404)
+        with self.assertRaises(service.Error) as error:
+            knowledge.add_unit('other-owner', 'reading-only', 'u1')
+        self.assertEqual(error.exception.status, 404)
+        self.assertEqual(knowledge.view('other-owner')['nodes'], [])
+        saved = db.one('SELECT data FROM knowledge_entries')['data']
+        context.units[0].title = 'Changed after registration'
+        db.execute('UPDATE contexts SET data=? WHERE id=?', (context.model_dump_json(), 'reading-only'))
+        self.client.post(endpoint, json={})
+        self.assertEqual(db.one('SELECT data FROM knowledge_entries')['data'], saved)
+        self.assertEqual(self.client.request('DELETE', '/api/contexts/reading-only', json={}).status_code, 200)
+        deleted = self.client.get('/api/me/knowledge-graph').json()
+        unit = next(n for n in deleted['nodes'] if n['kind'] == 'unit')
+        self.assertFalse(unit['source_available'])
+        self.assertEqual(unit['descriptions'], next(n for n in graph['nodes'] if n['kind'] == 'unit')['descriptions'])
+        self.assertEqual(db.one('SELECT data FROM knowledge_entries')['data'], saved)
+        self.client.post('/api/logout', json={})
+        self.assertEqual(self.client.post(endpoint, json={}).status_code, 401)
+
+    def test_foundation_concepts_can_be_added_without_review_or_implementation(self):
+        for lesson_id in ('stack', 'queue'):
+            endpoint = f'/api/foundations/{lesson_id}/knowledge?version=1'
+            first = self.client.post(endpoint, json={})
+            self.assertEqual(first.status_code, 200, first.text)
+            self.assertEqual(first.json(), self.client.post(endpoint, json={}).json())
+            lesson = self.client.get('/api/foundations/' + lesson_id).json()
+            self.assertTrue(lesson['knowledge_added_at'])
+            self.assertFalse(lesson['completed'])
+            self.assertIsNone(lesson['review'])
+        graph = self.client.get('/api/me/knowledge-graph').json()
+        self.assertEqual(len(graph['nodes']), 2)
+        self.assertEqual(len(graph['edges']), 1)
+        self.assertEqual(graph['edges'][0]['kind'], 'prerequisite')
+        self.assertEqual(graph['exercises'], [])
+        self.assertEqual(self.client.post('/api/foundations/stack/knowledge?version=99', json={}).status_code, 409)
+        self.assertEqual(self.client.post('/api/foundations/absent/knowledge?version=1', json={}).status_code, 404)
+
+    def test_knowledge_graph_uses_versioned_catalog_edges_without_guessing_synonyms(self):
+        current = [{
+            'id': 'foundation:' + unit, 'root_key': 'typescript', 'root_label': 'typescript', 'framework': False,
+            'set_id': None, 'context_id': None, 'unit_id': unit, 'withdrawn': False,
+            'title': unit, 'kind': 'FOUNDATION', 'assistance': 'none', 'unit_title': unit,
+            'content_version': 1, 'description': unit + ' explanation',
+        } for unit in ('stack', 'queue')]
+        saved = {'exercises': learning.public_evidence(current), 'concepts': [
+            {'root_key': root, 'name': '상태', 'outcomes': [{'summary': '상태를 연습했습니다.', 'exercise_ids': ['foundation:queue']}]}
+            for root in ('typescript', 'framework:React')]}
+        graph = knowledge.build(saved, current)
+        self.assertEqual(len([n for n in graph['nodes'] if n['kind'] == 'concept']), 2)
+        prerequisite = next(e for e in graph['edges'] if e['kind'] == 'prerequisite')
+        labels = {n['id']: n['label'] for n in graph['nodes']}
+        self.assertEqual((labels[prerequisite['source']], labels[prerequisite['target']]), ('stack', 'queue'))
+        self.assertEqual({e['id'] for e in graph['edges']}, {e['id'] for e in knowledge.build(saved, list(reversed(current)))['edges']})
+        current[1]['content_version'] = 99
+        self.assertFalse(any(e['kind'] == 'prerequisite' for e in knowledge.build(saved, current)['edges']))
+        self.assertEqual(knowledge.build({'exercises': [], 'concepts': []}, current, historical=True)['nodes'], [])
 
     def test_legacy_learning_record_keeps_original_date_even_after_source_deletion(self):
         data = {'concepts': [{'root_key': 'javascript', 'name': '클래스', 'outcomes': [

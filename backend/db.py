@@ -84,6 +84,10 @@ def initialize():
         CREATE TABLE IF NOT EXISTS learning_records (
           id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), fingerprint TEXT NOT NULL,
           data TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(owner, fingerprint));
+        CREATE TABLE IF NOT EXISTS knowledge_entries (
+          owner TEXT NOT NULL REFERENCES users(id), node_id TEXT NOT NULL,
+          context_id TEXT, unit_id TEXT NOT NULL, version INTEGER,
+          data TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(owner, node_id));
         ''')
         c.executescript("""
         CREATE TABLE IF NOT EXISTS feed_sync (

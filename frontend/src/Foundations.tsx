@@ -10,13 +10,14 @@ import type { Frame } from './foundationTrace';
 import { InlineMarkdown } from './Markdown';
 import { AnimatedDetails } from './AnimatedDetails';
 import { FoundationTestHelp } from './FoundationTestHelp';
+import { AddToKnowledge } from './AddToKnowledge';
 
 type Feedback = { question_id: string; understood: string; missing: string; correction: string };
 type Check = { label: string; passed: boolean; status: string; detail: string };
 type Job = { id: string; lesson_id: string; version: number; state: string; created_at: string; error: string; payload: { answers?: string[]; code?: string; test_code?: string }; result: { items?: Feedback[]; model_answers?: { id: string; prompt: string; answer: string }[]; checks?: Check[] } };
 type Draft = { answers: string[]; code: string; test_code: string };
 type Unit = { id: string; version: number; title: string; group: string; priority: 1 | 2 | 3; difficulty: '입문' | '보통' | '어려움'; summary: string; prerequisites: string[]; state: string; can_resume: boolean; running: boolean; revision: number };
-type Lesson = Unit & { reading: { invariant: string; steps: [string, string][]; pitfall: string; tradeoff: string; case_study: string; experiment: string }; concept: string; complexity: string; application: string; requirements: string[]; test_hints: string[]; questions: { id: string; prompt: string }[]; starter: string; public_tests: string; test_starter: string; visualization: string; visual_frames?: Frame[]; visual_round?: boolean; sources: { title: string; url: string }[]; progress: (Draft & { revision: number }) | null; review: Job | null; attempt: Job | null; unlocked: boolean; completed: boolean; ai_available: boolean };
+type Lesson = Unit & { knowledge_added_at?: string | null; reading: { invariant: string; steps: [string, string][]; pitfall: string; tradeoff: string; case_study: string; experiment: string }; concept: string; complexity: string; application: string; requirements: string[]; test_hints: string[]; questions: { id: string; prompt: string }[]; starter: string; public_tests: string; test_starter: string; visualization: string; visual_frames?: Frame[]; visual_round?: boolean; sources: { title: string; url: string }[]; progress: (Draft & { revision: number }) | null; review: Job | null; attempt: Job | null; unlocked: boolean; completed: boolean; ai_available: boolean };
 const statusLabels: Record<string, string> = { passed: '통과', ready: '검토 완료', failed: '보완 필요', error: '처리 중단', running: '진행 중', assertion_failed: '예상 값과 다름', insufficient_assertions: 'assertEqual 검증을 2개 이상 실행해주세요', invalid_tests: '검증 결과를 확인할 수 없습니다', compile_error: '컴파일 오류', runtime_error: '실행 오류', time_limit: '시간 초과', compile_time_limit: '컴파일 시간 초과' };
 
 export function Foundations() {
@@ -78,6 +79,8 @@ function ConceptPage({ lesson }: { lesson: Lesson }) {
     <aside className="concept-caution"><span className="eyebrow">자주 놓치는 부분</span><p><InlineMarkdown>{lesson.reading.pitfall}</InlineMarkdown></p></aside>
     <section className="concept-chapter"><div className="chapter-label"><span>03</span><h2>실제로 어디에 쓸까요?</h2></div><p className="concept-lead"><InlineMarkdown>{lesson.application}</InlineMarkdown></p><p><InlineMarkdown>{lesson.reading.case_study}</InlineMarkdown></p></section>
     <div className="foundation-sources">참고 자료 {lesson.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</div>
+    <p className="muted">개념 학습만으로도 지도에 추가할 수 있습니다. 문제 통과 여부는 별도로 기록됩니다.</p>
+    <AddToKnowledge path={`/foundations/${lesson.id}/knowledge?version=${lesson.version}`} addedAt={lesson.knowledge_added_at} />
     <footer className="concept-start"><div><h2>이제 내 말과 코드로 확인해볼까요?</h2><p className="muted">설명 피드백을 받고, 직접 구현한 코드와 테스트를 실행합니다.</p></div><Link className="button primary" to={`/foundations/${lesson.id}/practice`}>실습으로 이동</Link></footer>
   </main>;
 }

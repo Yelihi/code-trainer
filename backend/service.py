@@ -146,6 +146,9 @@ def context_view(owner, row):
     value = json.loads(row['data'])
     value.setdefault('difficulty', 'beginner')
     value.pop('learning_notes', None)
+    added = {r['unit_id']: r['created_at'] for r in db.all(
+        'SELECT unit_id,created_at FROM knowledge_entries WHERE owner=? AND context_id=?', (owner, row['id']))}
+    value['knowledge_added_units'] = added
     sets = summaries(owner, row['id'])
     return {**value, 'id': row['id'], 'source_url': row['source_url'], 'created_at': row['created_at'], 'sets': sets,
         'generation': diagnostics.view(db.one('SELECT id,state,stage,context_id,set_id,unit_id,error,events FROM generations WHERE context_id=? AND owner=? AND unit_id IS NULL ORDER BY created_at DESC LIMIT 1', (row['id'], owner))),

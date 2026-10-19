@@ -344,7 +344,8 @@ for method in ('map', 'filter', 'reduce'):
          'reduce':[('초기값','let acc = initial;','let acc = 0;'), ('콜백 인덱스','fn(acc,values[i],i)','fn(acc,values[i],0)')]}[method], method)
 
 from .foundation_lessons_core import CORE_LESSONS
-for specification in CORE_LESSONS:
+from .foundation_lessons_patterns import PATTERN_LESSONS
+for specification in CORE_LESSONS + PATTERN_LESSONS:
     lesson(**specification)
 
 CATALOG = {item['id']: item for item in LESSONS}

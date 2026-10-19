@@ -28,7 +28,7 @@ class FoundationsTest(unittest.TestCase):
         return response, call.call_count
 
     def test_catalog_has_all_units_and_never_exposes_private_answers(self):
-        self.assertGreaterEqual(len(CATALOG),30)
+        self.assertGreaterEqual(len(CATALOG),46)
         self.assertEqual(len(self.client.get('/api/foundations').json()['items']),len(CATALOG))
         catalog = {item['id']: item for item in self.client.get('/api/foundations').json()['items']}
         self.assertEqual((catalog['stack']['priority'], catalog['stack']['difficulty']), (1, '입문'))

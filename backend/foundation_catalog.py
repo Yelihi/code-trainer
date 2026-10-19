@@ -10,7 +10,7 @@ LESSONS = []
 def lesson(id, title, group, summary, concept, complexity, application, questions, requirements,
            starter, reference, public_tests, hidden_tests, mutations, visualization, prerequisites=(),
            priority=1, difficulty='입문', cost_tests='', reading=None, hints=None,
-           visual_frames=None, sources=None):
+           visual_frames=None, sources=None, visual_round=False):
     LESSONS.append(dict(id=id, version=1, title=title, group=group, priority=priority,
         difficulty=difficulty, summary=summary, concept=concept,
         complexity=complexity, application=application, prerequisites=list(prerequisites),
@@ -19,7 +19,7 @@ def lesson(id, title, group, summary, concept, complexity, application, question
         public_tests=public_tests.strip(), hidden_tests=hidden_tests.strip(), cost_tests=cost_tests.strip(),
         test_starter='// assertEqual(실제 값, 예상 값)을 사용하세요.\n// 정상 동작과 경계 조건을 포함해 2개 이상 검증하세요.\n',
         mutations=[{'label': label, 'code': reference.strip().replace(old, new)} for label, old, new in mutations],
-        visualization=visualization, visual_frames=visual_frames,
+        visualization=visualization, visual_frames=visual_frames, visual_round=visual_round,
         sources=sources if sources is not None else ([{'title': f'MDN · Array.{id}', 'url': MDN+id}] if group == '메서드' else [MIT])))
     if reading is not None:
         READINGS[id] = reading
@@ -345,7 +345,8 @@ for method in ('map', 'filter', 'reduce'):
 
 from .foundation_lessons_core import CORE_LESSONS
 from .foundation_lessons_patterns import PATTERN_LESSONS
-for specification in CORE_LESSONS + PATTERN_LESSONS:
+from .foundation_lessons_advanced import ADVANCED_LESSONS
+for specification in CORE_LESSONS + PATTERN_LESSONS + ADVANCED_LESSONS:
     lesson(**specification)
 
 CATALOG = {item['id']: item for item in LESSONS}
@@ -364,5 +365,7 @@ def public(item):
     result['reading'] = deepcopy(READINGS[item['id']])
     if item['visual_frames'] is not None:
         result['visual_frames'] = deepcopy(item['visual_frames'])
+    if item['visual_round']:
+        result['visual_round'] = True
     result['questions'] = [{k: q[k] for k in ('id', 'prompt')} for q in item['questions']]
     return result

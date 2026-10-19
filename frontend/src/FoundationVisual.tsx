@@ -4,7 +4,7 @@ import { traversalGraph } from './foundationStructures';
 import { InlineMarkdown } from './Markdown';
 import { AnimatedDetails } from './AnimatedDetails';
 
-export function FoundationVisual({ kind, scenes }: { kind: string; scenes?: Frame[] }) {
+export function FoundationVisual({ kind, scenes, roundNodes = false }: { kind: string; scenes?: Frame[]; roundNodes?: boolean }) {
   const [doubly, setDoubly] = useState(false);
   const [start, setStart] = useState('A');
   const [input, setInput] = useState('5, 2, 7, 1');
@@ -24,7 +24,7 @@ export function FoundationVisual({ kind, scenes }: { kind: string; scenes?: Fram
   const linked = kind === 'linked-list';
   const graph = kind === 'bfs' || kind === 'dfs';
   const heap = kind === 'priority-queue';
-  const round = heap || kind === 'bfs' || kind === 'dfs';
+  const round = roundNodes || heap || kind === 'bfs' || kind === 'dfs';
   const atEnd = step >= frames.length - 1;
   useEffect(() => {
     if (!playing || atEnd) return;

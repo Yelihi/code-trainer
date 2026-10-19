@@ -56,6 +56,13 @@ class FoundationsTest(unittest.TestCase):
             self.assertNotEqual(item['questions'][0]['prompt'],'changed')
         self.assertEqual(self.client.get('/api/foundations/nope').status_code,404)
 
+    def test_range_tree_scenes_show_internal_sums_after_update(self):
+        segment = {node['id']: node for node in CATALOG['segment-tree']['visual_frames'][-1]['nodes']}
+        fenwick = {node['id']: node for node in CATALOG['fenwick-tree']['visual_frames'][-1]['nodes']}
+        self.assertEqual((segment['all']['label'], segment['right']['label'], segment['v2']['label']), ('15','12','8'))
+        self.assertEqual((fenwick['i2']['label'], fenwick['i4']['label']), ('8','15'))
+        self.assertEqual(fenwick['i2']['annotation'], '[0,2)')
+
     def test_public_test_guidance_is_available_before_submission_without_private_code(self):
         from .foundation_guides import HINTS, READINGS
         self.assertEqual(set(CATALOG), set(READINGS))

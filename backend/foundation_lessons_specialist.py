@@ -3,6 +3,32 @@ from .foundation_lessons_patterns import guide, scenes
 from .foundation_lessons_advanced import graph_scene
 
 
+def segment_scene(values, active, note, detail, code):
+    points = [('all',275,20),('left',125,115),('right',425,115),
+              ('v0',25,225),('v1',160,225),('v2',330,225),('v3',500,225)]
+    edges = [('all','left'),('all','right'),('left','v0'),('left','v1'),('right','v2'),('right','v3')]
+    result = graph_scene(points, edges, active, note, detail, code)
+    labels = {'all':sum(values), 'left':sum(values[:2]), 'right':sum(values[2:]),
+              **{f'v{i}':value for i,value in enumerate(values)}}
+    intervals = {'all':'[0,4)', 'left':'[0,2)', 'right':'[2,4)',
+                 **{f'v{i}':f'[{i},{i+1})' for i in range(4)}}
+    for node in result['nodes']:
+        node['label'] = str(labels[node['id']])
+        node['annotation'] = intervals[node['id']]
+    return result
+
+
+def fenwick_scene(values, active, note, detail, code):
+    points = [('i1',35,170),('i2',205,85),('i3',345,170),('i4',505,35)]
+    result = graph_scene(points, [('i1','i2'),('i2','i4'),('i3','i4')], active, note, detail, code)
+    labels = {'i1':values[0], 'i2':sum(values[:2]), 'i3':values[2], 'i4':sum(values)}
+    intervals = {'i1':'[0,1)', 'i2':'[0,2)', 'i3':'[2,3)', 'i4':'[0,4)'}
+    for node in result['nodes']:
+        node['label'] = str(labels[node['id']])
+        node['annotation'] = intervals[node['id']]
+    return result
+
+
 SPECIALIST_LESSONS = [
     dict(
         id='scc', title='강한 연결 요소 · 서로 도달하는 묶음', group='알고리즘', priority=3, difficulty='어려움',
@@ -310,9 +336,9 @@ other.update(0,10); assertEqual(other.rangeSum(0,1),10);''',
             '수정되는 날짜별 판매량에서 기간 합계를 조회합니다.',
             '[2,1,3,4]에서 세 번째 값을 8로 바꾼 뒤 전체 합을 보세요.'),
         hints=['가운데 원소를 바꾼 뒤 전체 구간과 그 원소만 질의하세요.', '빈 구간과 마지막 원소 하나만 포함한 구간을 확인하세요.'],
-        visual_frames=scenes(([2,1,3,4],[0,1],'네 개의 값을 두 구간으로 나눕니다.','[2,1]과 [3,4]의 합은 3과 7입니다.','[3,7]'),
-                              ([3,7],[0,1],'부모에 전체 합 10을 저장합니다.','부분 합을 재사용합니다.','10'),
-                              ([2,1,8,4],[2],'3을 8로 바꾸면 관련 구간만 바뀝니다.','[8,4]의 합은 12, 전체 합은 15입니다.','15'))),
+        visual_frames=[segment_scene([2,1,3,4],('left','right'),'두 자식 구간의 합을 저장합니다.','[0,2)의 합은 3이고 [2,4)의 합은 7입니다.','3 + 7 = 10'),
+                       segment_scene([2,1,3,4],('v2',),'세 번째 값 3을 8로 바꿉니다.','[2,3) 잎에서 부모 방향으로 합을 다시 계산합니다.','update(2, 8)'),
+                       segment_scene([2,1,8,4],('v2','right','all'),'관련 조상 구간의 합이 바뀝니다.','[2,4)는 12, 전체 [0,4)는 15가 됩니다.','12 + 3 = 15')]),
     dict(
         id='fenwick-tree', title='펜윅 트리 · 접두 합 누적하기', group='자료구조', priority=3, difficulty='어려움',
         summary='한 값에 변화량을 더하고 접두 구간의 합을 빠르게 구합니다.',
@@ -356,9 +382,9 @@ other.add(0,12); assertEqual(other.rangeSum(0,1),10);''',
             '늘어나는 일별 이벤트 수에서 누적 합계를 조회합니다.',
             '[2,1,3,4]의 두 번째 원소에 5를 더하고 [1,4)를 더해 보세요.'),
         hints=['첫 원소와 마지막 원소를 각각 갱신해 보세요.', '빈 구간의 합과 앞에서 end개 원소의 합을 확인하세요.'],
-        visual_frames=scenes(([2,1,3,4],[0,1,2],'처음 값의 접두 합을 살핍니다.','앞의 세 값 합은 6입니다.','prefixSum(3)=6'),
-                              ([2,6,3,4],[1],'두 번째 값에 5를 더합니다.','이 값을 포함하는 내부 구간들만 갱신합니다.','add(1,5)'),
-                              ([6,13],[0,1],'[1,4) 합을 두 접두 합의 차로 구합니다.','15에서 첫 값 2를 빼면 13입니다.','15-2=13'))),
+        visual_frames=[fenwick_scene([2,1,3,4],('i3','i2'),'접두 합을 저장 구간 둘로 모읍니다.','앞의 세 값은 [0,2)와 [2,3)을 합쳐 3 + 3 = 6입니다.','prefixSum(3)=6'),
+                       fenwick_scene([2,1,3,4],('i2','i4'),'두 번째 값에 5를 더합니다.','[0,2)와 [0,4)를 저장하는 내부 인덱스 2, 4만 갱신합니다.','2 → 4'),
+                       fenwick_scene([2,6,3,4],('i2','i4'),'내부 구간 합을 다시 확인합니다.','[0,4)는 15이고 [1,4)는 15 - [0,1)의 합 2 = 13입니다.','15 - 2 = 13')]),
     dict(
         id='kmp', title='KMP · 앞에서 본 접두사 재사용하기', group='알고리즘', priority=3, difficulty='어려움',
         summary='문자열에서 패턴의 모든 등장 위치를 선형 시간에 찾습니다.',

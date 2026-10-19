@@ -2077,8 +2077,10 @@ button.text-button,
 
 .visual-bfs .visual-legend > span:first-child i, .visual-dfs .visual-legend > span:first-child i { background: #b797ff; }
 
-.foundation-card-heading { position: relative; min-height: 112px; display: flex; align-items: center; margin-top: 16px; }
-.foundation-card-heading h3 { position: relative; z-index: 1; max-width: 65%; overflow-wrap: anywhere; font-size: var(--text-subheading); margin: 0; line-height: var(--leading-heading); }
+.foundation-card-heading { position: relative; min-height: 48px; display: flex; align-items: center; margin-top: 16px; }
+.foundation-card-heading:has(.foundation-card-art) { min-height: 112px; }
+.foundation-card-heading h3 { position: relative; z-index: 1; overflow-wrap: anywhere; font-size: var(--text-subheading); margin: 0; line-height: var(--leading-heading); }
+.foundation-card-heading:has(.foundation-card-art) h3 { max-width: 65%; }
 .foundation-card-art { position: absolute; width: 138px; height: 110px; right: -4px; top: 0; pointer-events: none; color: #65577f; opacity: .45; }
 .foundation-card-art path { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .foundation-card-art .card-art-accent { stroke: #83cdbf; stroke-width: 2; }

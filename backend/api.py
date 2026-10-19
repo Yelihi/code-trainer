@@ -8,7 +8,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations
+from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -187,6 +187,16 @@ def problem_set(set_id: str, current=Depends(user)):
     return service.get_set(current['id'], set_id)
 
 
+@app.post('/api/contexts/{context_id}/units/{unit_id}/knowledge')
+def add_unit_knowledge(context_id: str, unit_id: str, current=Depends(user)):
+    return knowledge.add_unit(current['id'], context_id, unit_id)
+
+
+@app.post('/api/foundations/{lesson_id}/knowledge')
+def add_foundation_knowledge(lesson_id: str, version: int = Query(ge=1), current=Depends(user)):
+    return knowledge.add_foundation(current['id'], lesson_id, version)
+
+
 @app.delete('/api/contexts/{context_id}')
 def delete_context(context_id: str, current=Depends(user)):
     return service.delete_context(current['id'], context_id)
@@ -248,6 +258,11 @@ def history(current=Depends(user)):
 @app.get('/api/me/learning-summary')
 def learning_summary(current=Depends(user), record_id: str | None = None):
     return learning.status(current['id'], record_id)
+
+
+@app.get('/api/me/knowledge-graph')
+def knowledge_graph(current=Depends(user), record_id: str | None = None):
+    return knowledge.view(current['id'], record_id)
 
 
 @app.post('/api/me/learning-summary', status_code=202)

@@ -1,114 +1,60 @@
-import { useCallback, useEffect, useState } from 'react';
-import { InlineMarkdown } from './Markdown';
-import { AnimatedDetails } from './AnimatedDetails';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, errorMessage, languages, assistanceLabels, type Assistance, type Language } from './api';
-
-type Evidence = { assistance?: Assistance; id: string; root_key: string; root_label: string; framework: boolean; set_id: string | null; context_id: string | null; unit_id: string | null; withdrawn: boolean; deleted?: boolean; title: string; kind: string };
-type Summary = {
-  state: 'empty' | 'stale' | 'running' | 'ready' | 'failed'; error: string; updated_at: string | null; ai_available: boolean;
-  exercises: Evidence[]; current_passed_count: number; created_at: string | null; record_id: string | null; records: { id: string; created_at: string }[];
-  concepts: { root_key: string; name: string; outcomes: { summary: string; exercise_ids: string[] }[] }[];
-};
+import { api, errorMessage } from './api';
+import { KnowledgeExplorer } from './KnowledgeExplorer';
+import type { KnowledgeGraph } from './knowledgeGraph';
+import './knowledgeGraph.css';
 
 function recordDate(value: string) {
-  return new Date(value).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-
-function ProblemLinks({ exercises }: { exercises: Evidence[] }) {
-  return <ul>{exercises.map(exercise => <li key={exercise.id}>
-    <span className="success-text">✓ 통과 · {exercise.kind === 'FOUNDATION' && exercise.assistance === 'hint' ? '설명 피드백 참고' : assistanceLabels[exercise.assistance ?? "unknown"]}</span>{exercise.deleted || exercise.withdrawn ? <span>{exercise.kind === 'FOUNDATION' ? '기초 구현' : exercise.kind} · {exercise.title} ({exercise.deleted ? '학습 자료 삭제됨' : '제공 중단'})</span> :
-      <Link to={exercise.kind === 'FOUNDATION' ? `/foundations/${exercise.unit_id}` : `/practice/${exercise.set_id}?exercise=${exercise.id}`}>{exercise.kind === 'FOUNDATION' ? '기초 구현' : exercise.kind} · {exercise.title}</Link>}
-    {!exercise.deleted && <Link className="text-link" to={exercise.kind === 'FOUNDATION' ? `/foundations/${exercise.unit_id}` : exercise.unit_id ? `/learn/${exercise.context_id}/units/${exercise.unit_id}` : `/learn/${exercise.context_id}`}>개념 다시 읽기</Link>}
-  </li>)}</ul>;
+  return new Date(value).toLocaleString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function LearningMap() {
-  const [data, setData] = useState<Summary | null>(null);
+  const [data, setData] = useState<KnowledgeGraph | null>(null);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState(false);
   const [recordId, setRecordId] = useState('');
-  const load = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const value = await api<Summary>(`/me/learning-summary${recordId ? '?record_id=' + encodeURIComponent(recordId) : ''}`, 'GET', undefined, signal);
-      setData(value); setError('');
-    } catch (error) { if (!signal?.aborted) setError(errorMessage(error)); }
-  }, [recordId]);
+  const [revision, setRevision] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
-  }, [load]);
-  useEffect(() => {
-    if (data?.state !== 'running') return;
-    const controller = new AbortController();
-    const timer = window.setInterval(() => { void load(controller.signal); }, 2000);
-    return () => { window.clearInterval(timer); controller.abort(); };
-  }, [data?.state, load]);
+    let timer: ReturnType<typeof setTimeout>;
+    setError(''); setData(null);
+    async function load() {
+      try {
+        const value = await api<KnowledgeGraph>(`/me/knowledge-graph${recordId ? '?record_id=' + encodeURIComponent(recordId) : ''}`, 'GET', undefined, controller.signal);
+        if (controller.signal.aborted) return;
+        setData(value);
+        if (value.state === 'running') timer = setTimeout(() => void load(), 2000);
+      } catch (error) { if (!controller.signal.aborted) setError(errorMessage(error)); }
+    }
+    void load();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [recordId, revision]);
+
   async function summarize() {
     setStarting(true); setError('');
-    try { setData(await api<Summary>('/me/learning-summary', 'POST', {})); setRecordId(''); }
-    catch (error) { setError(errorMessage(error)); }
+    try {
+      await api('/me/learning-summary', 'POST', {});
+      setRecordId(''); setRevision(value => value + 1);
+    } catch (error) { setError(errorMessage(error)); }
     finally { setStarting(false); }
   }
   const pending = starting || data?.state === 'running';
-  const roots = [...new Map((data?.exercises ?? []).map(item => [item.root_key, item])).values()];
-  const cited = new Set(data?.concepts.flatMap(concept => concept.outcomes.flatMap(outcome => outcome.exercise_ids)));
-  const remaining = data?.exercises.filter(exercise => !cited.has(exercise.id)) ?? [];
-  return <>
-    <p className="page-intro learning-map-intro">문제를 풀며 쌓은 배움을, 연결된 개념으로 돌아보세요.</p>
-    <section className="learning-record-panel" aria-labelledby="learning-record-heading" aria-busy={pending}>
-      <header className="learning-record-header">
-        <div><h2 id="learning-record-heading">학습 기록</h2><p>통과한 풀이에서 확인한 내용을 AI가 정리했어요.</p></div>
-        {data?.state === 'ready' && !pending ? <span className="learning-record-status"><span aria-hidden="true">✓</span> 최신 기록 반영됨</span> :
-          !!data?.current_passed_count && <button className="primary" disabled={pending || !data.ai_available} onClick={() => void summarize()}>
-            {pending ? '배운 내용 정리 중…' : data.state === 'failed' ? '정리 다시 시도' : 'AI로 배운 내용 정리'}
-          </button>}
-      </header>
-      <div className="learning-record-body">
-        {data?.records.length ? <div className="learning-record-picker">
-          <label htmlFor="learning-record-select">기록 선택 <span>{data.records.length}개의 기록</span></label>
-          <div className="learning-record-select">
-            <select id="learning-record-select" value={recordId} onChange={event => setRecordId(event.target.value)} aria-describedby="learning-record-date">
-              <option value="">최근 기록 · {recordDate(data.records[0].created_at)}</option>
-              {data.records.slice(1).map(record => <option key={record.id} value={record.id}>{recordDate(record.created_at)}</option>)}
-            </select>
-            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m6 9 6 6 6-6" /></svg>
-          </div>
-        </div> : <p className="learning-record-placeholder">{data ? '첫 학습 기록을 기다리고 있어요.' : '학습 기록을 불러오는 중…'}</p>}
-        <dl className="learning-record-stats" aria-label="선택한 기록의 학습 현황">
-          <div><dt>통과한 문제</dt><dd>{data?.exercises.length ?? '—'}<span>개</span></dd></div>
-          <div><dt>정리한 개념</dt><dd>{data?.concepts.length ?? '—'}<span>개</span></dd></div>
-        </dl>
-      </div>
-      <footer className="learning-record-footer">
-        <p id="learning-record-date">{data?.created_at ? <>기록 생성일 <time dateTime={data.created_at}>{recordDate(data.created_at)}</time></> : '정리가 완료되면 생성 날짜와 함께 저장됩니다.'}</p>
-        <span>자료를 삭제해도 이 기록은 보관됩니다.</span>
-      </footer>
-    </section>
-    {error && <p className="notice error" role="alert">{error} <button onClick={() => void load()}>다시 불러오기</button></p>}
-    {data?.error && <p className="notice error" role="alert">{data.error} 통과 기록은 그대로 보관되어 있습니다.</p>}
-    {!data && !error && <p role="status">학습 기록을 불러오는 중…</p>}
-    {pending && <p role="status">비슷한 개념을 연결하고 문제별 학습 내용을 정리하고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
-    {data?.state === 'stale' && <p className="muted">아직 정리하지 않은 통과 기록이 있습니다. 위 버튼으로 학습 지도를 만들어보세요.</p>}
-    {data && !data.ai_available && <p className="muted">AI 설정 후 학습 내용을 정리할 수 있습니다. 통과한 문제는 아래에서 확인하세요.</p>}
-    {data?.exercises.some(exercise => exercise.deleted) && <p className="muted">삭제된 학습 자료의 내용도 기록에 보관되어 있습니다. 삭제된 문제로는 이동할 수 없습니다.</p>}
-    {data?.state === 'empty' && !data.record_id && <div className="empty-state"><h2>아직 통과한 문제가 없습니다</h2><p>문제를 풀고 Submit을 통과하면 배운 내용을 정리할 수 있습니다.</p><Link className="button" to="/">학습 공간으로</Link></div>}
-    <div className="knowledge-tree" key={data?.record_id ?? 'pending'}>{roots.map(root => {
-      const concepts = data?.concepts.filter(concept => concept.root_key === root.root_key) ?? [];
-      if (!concepts.length) return null;
-      return <AnimatedDetails className="knowledge-root" initiallyOpen key={root.root_key} summary={<>{root.framework ? root.root_label : languages[root.root_label as Language] ?? root.root_label}<small>{root.framework ? '프레임워크 · 분류' : '언어'} · {concepts.length}개 개념</small></>}>
-        <ul>{concepts.map(concept => <li key={concept.name}><AnimatedDetails initiallyOpen summary={<>{concept.name}<small>{concept.outcomes.length}가지 학습 내용</small></>}>
-          {concept.outcomes.map((outcome, index) => <section className="knowledge-unit" key={index}>
-            <p className="learning-outcome"><InlineMarkdown>{outcome.summary}</InlineMarkdown></p>
-            <AnimatedDetails summary={<>근거가 된 통과 문제 · {outcome.exercise_ids.length}개</>}>
-              <ProblemLinks exercises={data!.exercises.filter(exercise => outcome.exercise_ids.includes(exercise.id))} />
-            </AnimatedDetails>
-          </section>)}
-        </AnimatedDetails></li>)}</ul>
-      </AnimatedDetails>;
-    })}</div>
-    {!!remaining.length && <AnimatedDetails className="knowledge-root knowledge-unit" summary={<>{data?.state === 'ready' ? '아직 요약에 연결되지 않은 통과 문제' : '통과한 문제'} · {remaining.length}개</>}><ProblemLinks exercises={remaining} /></AnimatedDetails>}
-  </>;
+  const concepts = data?.nodes.filter(node => node.kind === 'concept').length ?? 0;
+  return <main className="page graph-page">
+    <div className="breadcrumb"><Link to="/">Workspace</Link><span>/</span> 관계<span>/</span> 지식 그래프</div>
+    <header className="graph-page-heading"><div><span className="eyebrow">A MAP OF WHAT YOU KNOW</span><h1>배움은, 서로 연결됩니다.</h1><p>학습 화면에서 직접 추가한 개념을 따라 나만의 지식 지도를 탐색하세요.</p></div>
+      <button className="primary" disabled={!data?.current_passed_count || pending || !data.ai_available || data.state === 'ready'} onClick={() => void summarize()}>{pending ? '개념 정리 중…' : data?.state === 'ready' ? '최신 개념 반영됨' : 'AI로 개념 정리'}</button>
+    </header>
+    <div className="graph-overview"><dl><div><dt>정리한 개념</dt><dd>{data ? concepts : '—'}</dd></div><div><dt>학습 단원</dt><dd>{data ? data.nodes.length - concepts : '—'}</dd></div><div><dt>연결</dt><dd>{data?.edges.length ?? '—'}</dd></div><div><dt>통과 문제</dt><dd>{data?.exercises.length ?? '—'}</dd></div></dl>
+      <label className="graph-record-picker">학습 기록<select value={recordId} disabled={starting} onChange={event => setRecordId(event.target.value)}><option value="">현재까지의 배움</option>{data?.records.map(record => <option key={record.id} value={record.id}>{recordDate(record.created_at)}</option>)}</select></label>
+    </div>
+    {error && <p className="notice error" role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>다시 불러오기</button></p>}
+    {data?.error && <p className="notice error" role="alert">{data.error} 이전 기록은 보관되어 있습니다.</p>}
+    {pending && <p className="notice" role="status">통과한 풀이에서 개념을 정리하고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
+    {data?.state === 'stale' && <p className="graph-state-note">아직 정리하지 않은 통과 기록이 있습니다. AI 요약은 보관되며, 현재 지도에는 직접 추가한 단원과 연결된 풀이만 표시됩니다.</p>}
+    {data && !data.ai_available && <p className="graph-state-note">AI 연결 후 새로운 개념을 정리할 수 있습니다. 저장된 기록과 학습 단원은 계속 탐색할 수 있습니다.</p>}
+    {!data && !error && <div className="graph-loading" role="status"><span />지식 지도를 불러오는 중…</div>}
+    {data && (data.nodes.length ? <KnowledgeExplorer key={`${recordId}:${data.record_id ?? 'live'}`} data={data} /> : <section className="graph-empty"><div aria-hidden="true">◌ — ◈ — ◌</div><span className="eyebrow">YOUR FIRST CONNECTION</span><h2>첫 배움이 지도의 시작입니다.</h2><p>학습 화면에서 ‘개념 지도에 추가하기’를 눌러주세요.<br />문제를 만들거나 풀지 않아도 괜찮습니다.</p><Link className="button primary" to="/foundations">기초 구현 학습하기</Link><Link className="text-link" to="/">내 학습 자료 보기 ↗</Link></section>)}
+  </main>;
 }

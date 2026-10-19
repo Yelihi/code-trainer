@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { FoundationRecords } from './Foundations';
-import { LearningMap } from './LearningMap';
 import { UsagePanel } from './Reviews';
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, isPending, languages, difficulties, difficultyDescriptions, timestamp, type Difficulty, type Generation, type Health, type History, type Language, type LearningContext, type Session } from './api';
@@ -71,6 +70,9 @@ export function App() {
         {!!session?.user?.admin && <NavLink to="/admin/sources">원본 자료 · 관리자</NavLink>}
         {!!session?.user?.admin && <NavLink to="/admin/operations">운영 상태</NavLink>}
       </nav>
+      <div className="sidebar-divider" />
+      <div className="sidebar-label">관계</div>
+      <nav aria-label="관계" onClick={() => setMenu(false)}><NavLink to="/knowledge">지식 그래프</NavLink></nav>
       <div className="sidebar-divider" />
       <div className="sidebar-label">실험 기능</div>
       <nav aria-label="실험 기능" onClick={() => setMenu(false)}><NavLink to="/foundations">기초 구현 학습</NavLink></nav>
@@ -243,9 +245,9 @@ export function Me() {
   const { data, error, reload } = useResource<History>('/me');
   const { isAdmin } = useApp();
   return <main className="page knowledge-page"><div className="breadcrumb">Workspace<span>/</span> 나의 기록</div>
-    <span className="eyebrow">MY LEARNING MAP</span><h1>내가 배운 개념</h1>
+    <span className="eyebrow">MY LEARNING RECORDS</span><h1>나의 학습 기록</h1>
+    <div className="graph-record-link"><div><strong>배운 개념은 지식 그래프에서</strong><p>개념의 연결과 풀었던 문제를 한눈에 탐색하세요.</p></div><Link className="button" to="/knowledge">지식 그래프 열기 ↗</Link></div>
     <FoundationRecords />
-    <LearningMap />
     <UsagePanel />
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
     {!!data?.reports.length && <details className="report-history"><summary>내 문제 제보 · {data.reports.length}개</summary>{data.reports.map(report => <div className="list-row" key={report.id}><div><small>{report.exercise_title}</small><p>{report.message}</p></div><span>{report.status}<small>{timestamp(report.created_at)}</small></span></div>)}</details>}

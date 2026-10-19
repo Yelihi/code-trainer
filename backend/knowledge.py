@@ -137,6 +137,10 @@ def build(saved, current, historical=False, entries=None):
             edges[key] = {'id': key, 'source': source, 'target': target, 'kind': 'prerequisite',
                           'label': '선행 단원', 'exercise_ids': [],
                           'description': '등록 당시 학습 과정에 지정된 권장 순서입니다. 개념 전체의 필수 조건을 뜻하지 않습니다.'}
+    for edge in edges.values():
+        if edge['kind'] == 'coverage':
+            # Related unit exercises aid review; coverage itself remains separate from solving evidence.
+            nodes[edge['target']]['exercise_ids'] = list(nodes[edge['source']]['exercise_ids'])
     return {'nodes': list(nodes.values()), 'edges': list(edges.values()), 'exercises': list(exercises.values())}
 
 

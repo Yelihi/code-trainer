@@ -218,6 +218,8 @@ class AppTest(unittest.TestCase):
         self.assertEqual(added.status_code, 200, added.text)
         graph = self.client.get(endpoint).json()
         self.assertEqual(len(graph['exercises']), 2)
+        for topic in (n for n in graph['nodes'] if n['id'].startswith('topic:')):
+            self.assertEqual(set(topic['exercise_ids']), {read['id'], fix['id']})
         self.assertEqual(len([n for n in graph['nodes'] if n['kind'] == 'unit']), 1)
         self.assertTrue(next(n for n in graph['nodes'] if n['kind'] == 'unit')['descriptions'])
         self.assertEqual(len([e for e in graph['edges'] if e['kind'] == 'evidence']), 1)

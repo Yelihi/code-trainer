@@ -104,6 +104,11 @@ class FixStarterRepair(Model):
     hints: list[Text] = Field(min_length=1, max_length=3)
 
 
+class WrongSolutionRepair(Model):
+    code: Code
+    reason: Text
+
+
 class ExerciseCodeRepair(Model):
     starter: Code
     reference: Code

@@ -5,7 +5,7 @@ import time
 import httpx
 from pydantic import ValidationError
 from . import diagnostics, usage, source as source_material
-from .schema import CurriculumDraft, ExerciseCodeRepair, ExerciseDraft, FixStarterRepair, SetDraft, SourceExample, LearningSummary
+from .schema import CurriculumDraft, ExerciseCodeRepair, ExerciseDraft, FixStarterRepair, WrongSolutionRepair, SetDraft, SourceExample, LearningSummary
 
 AI_RESPONSE_TIMEOUT = 300
 
@@ -299,14 +299,16 @@ Adapt explanations and learning objectives to the supplied difficulty guidance.'
 def inline_solution_tests(exercise, language):
     if language not in ('javascript', 'typescript') or exercise.test_mode != 'code':
         return exercise
-    # shortcut: only leading, unaliased named imports; other forms need an explicit code repair.
+    # shortcut: only leading, unaliased imports of the solution; other forms need explicit repair.
     name = r'[A-Za-z_$][\w$]*'
-    pattern = rf'''\A\s*import\s+(?:type\s+)?\{{\s*{name}(?:\s*,\s*{name})*\s*,?\s*\}}\s+from\s+(['"])\./solution(?:\.[jt]s)?\1[ \t]*;?[ \t]*(?:\r?\n|$)'''
+    names = rf'\{{\s*{name}(?:\s*,\s*{name})*\s*,?\s*\}}'
+    prefix = r'\A(?P<prefix>(?:\s|//[^\r\n]*(?:\r?\n|$)|/\*[\s\S]*?\*/)*)'
+    pattern = prefix + rf'''(?:import\s+(?:type\s+)?{names}\s+from\s+(['"])\./solution(?:\.[jt]s)?\2|(?:const|let|var)\s+{names}\s*=\s*require\(\s*(['"])\./(?:solution(?:\.[jt]s)?)?\3\s*\))[ \t]*;?[ \t]*(?:\r?\n|$)'''
     value = exercise.model_dump()
     changed = False
     for test in value['public_tests'] + value['evaluation']['hidden_tests']:
         while True:
-            code, count = re.subn(pattern, '', test['code'], count=1)
+            code, count = re.subn(pattern, r'\g<prefix>', test['code'], count=1)
             if not count:
                 break
             test['code'] = code
@@ -423,6 +425,28 @@ the full solution. Do not change the task or its required behavior.''',
                  'target_unit': data['target_unit'], 'difficulty_guidance': DIFFICULTY_GUIDANCE[context.difficulty],
                  'exercise': old.model_dump(), 'validation_failures': failures})
             exercises.append(ExerciseDraft.model_validate({**old.model_dump(), **repair.model_dump()}))
+            continue
+        if old and failures and all(f['check'].startswith('wrong:') for f in failures):
+            diagnostics.event('검증된 문제와 테스트는 유지하고 대표 오답만 수정합니다.', kind=kind, code='wrong_solution_repair')
+            value = old.model_dump()
+            for wrong in value['evaluation']['wrong_solutions']:
+                failed = [f for f in failures if f['check'] == 'wrong:' + wrong['requirement']]
+                if not failed:
+                    continue
+                repair = generate(WrongSolutionRepair, '''Repair ONLY this representative wrong implementation.
+The reference, starter, requirements and tests have passed validation and are immutable.
+Start from the complete reference and introduce a plausible behavior bug in the named requirement.
+It must run normally but print a DIFFERENT output on the EXISTING failing_test.
+Use the actual execution results: a changed internal cursor/count may not change observable output
+when a second mechanism (such as a set of seen IDs) compensates for it. Trace the full test and
+choose a behavior bug that is actually observable. Do not repeat a mutation that still passes.
+Preserve the whole interface and all declarations. No syntax errors, missing names, exceptions,
+test-specific hardcoded answers, or changes to the tests or task. Tests are appended in the same file.
+Return only the complete wrong code and a Korean explanation of the observable failure.''',
+                    {'language': context.language, 'exercise': old.model_dump(),
+                     'wrong_solution': wrong, 'validation_failures': failed})
+                wrong.update(repair.model_dump())
+            exercises.append(ExerciseDraft.model_validate(value))
             continue
         if old and failures and kind != 'READ' and not any(f['check'].startswith('wrong:') for f in failures):
             repair = generate(ExerciseCodeRepair, '''Repair only the code and tests of this exercise.

@@ -52,6 +52,10 @@ def rate(key, limit, seconds=60):
 
 def initialize():
     db.initialize()
+    from . import ontology
+    ontology.migrate()
+    db.execute("UPDATE knowledge_proposals SET state='failed',error='서버가 다시 시작되었습니다. 다시 분석해주세요.' WHERE state='running'")
+    db.execute("UPDATE reference_reviews SET state='failed',error='서버가 다시 시작되었습니다. 설명은 보관되었습니다. 다시 질문을 요청해주세요.' WHERE state='running'")
     from .learning import archive_existing
     archive_existing()
     diagnostics.initialize()
@@ -188,6 +192,9 @@ def delete_context(owner, context_id):
         c.execute('DELETE FROM exercises WHERE set_id IN (SELECT id FROM sets WHERE context_id=?)', (context_id,))
         for table in ('sets', 'generation_drafts', 'generations'):
             c.execute(f'DELETE FROM {table} WHERE context_id=?', (context_id,))
+        c.execute("""UPDATE knowledge_sources SET state='deleted' WHERE owner=? AND kind='learning'
+                     AND origin_id IN (SELECT node_id FROM knowledge_entries WHERE owner=? AND context_id=?)""",
+                  (owner, owner, context_id))
         c.execute('DELETE FROM contexts WHERE id=?', (context_id,))
     return {'ok': True}
 

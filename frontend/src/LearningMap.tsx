@@ -44,9 +44,9 @@ export function LearningMap() {
   return <main className="page graph-page">
     <div className="breadcrumb"><Link to="/">Workspace</Link><span>/</span> 관계<span>/</span> 지식 그래프</div>
     <header className="graph-page-heading"><div><span className="eyebrow">A MAP OF WHAT YOU KNOW</span><h1>배움은, 서로 연결됩니다.</h1><p>학습 화면에서 직접 추가한 개념을 따라 나만의 지식 지도를 탐색하세요.</p></div>
-      <button className="primary" disabled={!data?.current_passed_count || pending || !data.ai_available || data.state === 'ready'} onClick={() => void summarize()}>{pending ? '개념 정리 중…' : data?.state === 'ready' ? '최신 개념 반영됨' : 'AI로 개념 정리'}</button>
+      <button className="primary" disabled={!data?.current_passed_count || pending || !data.ai_available || data.state === 'ready'} onClick={() => void summarize()}>{pending ? '풀이 기록 정리 중…' : data?.state === 'ready' ? '최신 풀이 기록 반영됨' : 'AI로 풀이 기록 정리'}</button>
     </header>
-    <div className="graph-overview"><dl><div><dt>정리한 개념</dt><dd>{data ? concepts : '—'}</dd></div><div><dt>학습 단원</dt><dd>{data ? data.nodes.length - concepts : '—'}</dd></div><div><dt>연결</dt><dd>{data?.edges.length ?? '—'}</dd></div><div><dt>통과 문제</dt><dd>{data?.exercises.length ?? '—'}</dd></div></dl>
+    <div className="graph-overview"><dl><div><dt>정리한 개념</dt><dd>{data ? concepts : '—'}</dd></div><div><dt>학습 단원 · 노트</dt><dd>{data ? data.nodes.length - concepts : '—'}</dd></div><div><dt>연결</dt><dd>{data?.edges.length ?? '—'}</dd></div><div><dt>통과 문제</dt><dd>{data?.exercises.length ?? '—'}</dd></div></dl>
       <label className="graph-record-picker">학습 기록<select value={recordId} disabled={starting} onChange={event => setRecordId(event.target.value)}><option value="">현재까지의 배움</option>{data?.records.map(record => <option key={record.id} value={record.id}>{recordDate(record.created_at)}</option>)}</select></label>
     </div>
     {error && <p className="notice error" role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>다시 불러오기</button></p>}

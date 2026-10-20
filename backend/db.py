@@ -89,6 +89,8 @@ def initialize():
           context_id TEXT, unit_id TEXT NOT NULL, version INTEGER,
           data TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(owner, node_id));
         ''')
+        from . import ontology
+        ontology.initialize(c)
         c.executescript("""
         CREATE TABLE IF NOT EXISTS feed_sync (
           id INTEGER PRIMARY KEY CHECK(id=1), attempted REAL NOT NULL DEFAULT 0,

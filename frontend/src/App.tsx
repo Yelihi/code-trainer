@@ -4,7 +4,7 @@ import { UsagePanel } from './Reviews';
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, isPending, languages, difficulties, difficultyDescriptions, timestamp, type Difficulty, type Generation, type Health, type History, type Language, type LearningContext, type Session } from './api';
 
-type AppContext = { isAdmin: boolean; health: Health | null; refreshHealth: () => void };
+type AppContext = { isAdmin: boolean; userId: string; health: Health | null; refreshHealth: () => void };
 export function useApp() { return useOutletContext<AppContext>(); }
 export function ErrorNotice({ error }: { error: string }) { return error ? <p className="notice error" role="alert">{error}</p> : null; }
 
@@ -65,6 +65,7 @@ export function App() {
         <NavLink to="/" end>학습 공간</NavLink>
         <NavLink to="/create">연습 만들기</NavLink>
         <NavLink to="/inbox">등록 대기 포스팅</NavLink>
+        <NavLink to="/references">레퍼런스 노트</NavLink>
         <NavLink to="/reviews">오늘의 복습</NavLink>
         <NavLink to="/me">나의 기록</NavLink>
         {!!session?.user?.admin && <NavLink to="/admin/sources">원본 자료 · 관리자</NavLink>}
@@ -80,7 +81,7 @@ export function App() {
     </aside>
     <div className="workspace" id="workspace">
       {error && <div className="page"><ErrorNotice error={error} /><button onClick={refreshSession}>다시 연결</button></div>}
-      {opened && <Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin } satisfies AppContext} />}
+      {opened && <Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} />}
       {!session && !error && <div className="loading" role="status">학습 공간을 여는 중…</div>}
     </div>
     {session && !session.user && <Login access={session.auth_mode === 'access'} setup={session.setup_required} onSuccess={() => { refreshSession(); refreshHealth(); }} />}

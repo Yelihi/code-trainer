@@ -9,6 +9,8 @@ import { Reviews, Operations } from './Reviews';
 import { FeedInbox } from './FeedInbox';
 import { Foundations, FoundationLesson } from './Foundations';
 import { LearningMap } from './LearningMap';
+import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
+import { ReferenceReview } from './ReferenceReview';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
@@ -26,6 +28,10 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/foundations/:id/practice', element: <FoundationLesson key="practice" practice /> },
   { path: '/me', element: <Me /> },
   { path: '/knowledge', element: <LearningMap /> },
+  { path: '/references', element: <ReferenceNotes /> },
+  { path: '/references/new', element: <ReferenceNoteRoute /> },
+  { path: '/references/:id', element: <ReferenceNoteRoute /> },
+  { path: '/reference-reviews/:id', element: <ReferenceReview /> },
   { path: '/admin/sources', element: <Sources /> },
   { path: '/admin/sources/:sourceId', element: <Sources /> },
   { path: '*', element: <main className="page"><h1>페이지를 찾을 수 없습니다.</h1><a href="/">학습 공간으로</a></main> },

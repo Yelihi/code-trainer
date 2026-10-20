@@ -141,3 +141,7 @@
 .knowledge-save > span { color: var(--green); }
 .knowledge-save > .error { width: 100%; }
 .graph-edge.coverage:not(.highlighted) { stroke: #b998f7; }
+.graph-node.note .node-core { fill: #173329; stroke: #52d7b7; }
+.graph-kind.note { color: #52d7b7; }
+.graph-legend i.note { background: #52d7b7; }
+.graph-edge.RELATED_TO { stroke-dasharray: 3 4; }

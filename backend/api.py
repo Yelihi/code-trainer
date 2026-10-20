@@ -6,9 +6,10 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge
+from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db
+from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -62,8 +63,9 @@ async def local_boundary(request: Request, call_next):
         if request.headers.get('content-type', '').split(';')[0] != 'application/json':
             return JSONResponse({'detail': 'JSON 요청을 사용해주세요.'}, status_code=415)
         body = bytearray()
+        limit = 5700000 if request.url.path == '/api/reference-images' and request.method == 'POST' else 260000
         async for chunk in request.stream():
-            if len(body) + len(chunk) > 260000:
+            if len(body) + len(chunk) > limit:
                 return JSONResponse({'detail': '요청 크기 제한을 초과했습니다.'}, status_code=413)
             body.extend(chunk)
         request._body = bytes(body)
@@ -263,6 +265,94 @@ def learning_summary(current=Depends(user), record_id: str | None = None):
 @app.get('/api/me/knowledge-graph')
 def knowledge_graph(current=Depends(user), record_id: str | None = None):
     return knowledge.view(current['id'], record_id)
+
+
+@app.get('/api/knowledge/concepts')
+def knowledge_concepts(current=Depends(user), q: str = Query(default='', max_length=160)):
+    return ontology.concepts(current['id'], q)
+
+
+@app.get('/api/reference-notes')
+def reference_list(current=Depends(user), q: str = Query(default='', max_length=160),
+                   page: int = Query(default=1, ge=1), archived: bool = False):
+    return reference_notes.listing(current['id'], q, page, archived)
+
+
+@app.post('/api/reference-notes')
+def reference_save(body: ReferenceInput, current=Depends(user)):
+    return reference_notes.save(current['id'], body)
+
+
+@app.get('/api/reference-notes/{note_id}')
+def reference_get(note_id: str, current=Depends(user)):
+    return reference_notes.view(current['id'], note_id)
+
+
+@app.get('/api/reference-notes/{note_id}/versions/{revision}')
+def reference_version(note_id: str, revision: int, current=Depends(user)):
+    import json
+    reference_notes.owned(current['id'], note_id)
+    row = db.one('SELECT data FROM reference_note_versions WHERE owner=? AND note_id=? AND revision=?', (current['id'], note_id, revision))
+    if not row:
+        raise service.Error('노트 버전을 찾을 수 없습니다.', 404)
+    return json.loads(row['data'])
+
+
+@app.post('/api/reference-notes/{note_id}/archive')
+def reference_archive(note_id: str, body: ArchiveInput, current=Depends(user)):
+    return reference_notes.archive(current['id'], note_id, body.archived)
+
+
+@app.get('/api/reference-notes/{note_id}/export')
+def reference_export(note_id: str, current=Depends(user)):
+    return Response(reference_notes.export(current['id'], note_id), media_type='application/zip',
+                    headers={'Content-Disposition': 'attachment; filename="reference-note.zip"'})
+
+
+@app.post('/api/reference-images')
+def reference_image_upload(body: ImageInput, current=Depends(user)):
+    return reference_notes.image_upload(current['id'], body)
+
+
+@app.get('/api/reference-images/{image_id}')
+def reference_image_get(image_id: str, current=Depends(user)):
+    return Response(reference_notes.image_read(current['id'], image_id), media_type='image/webp')
+
+
+@app.post('/api/reference-notes/{note_id}/proposals', status_code=202)
+def reference_propose(note_id: str, body: RevisionInput, tasks: BackgroundTasks, current=Depends(user)):
+    key, fresh = reference_notes.begin_proposal(current['id'], note_id, body.revision)
+    if fresh:
+        tasks.add_task(reference_notes.propose, current['id'], key)
+    return reference_notes.proposal_view(current['id'], key)
+
+
+@app.get('/api/reference-proposals/{proposal_id}')
+def reference_proposal_get(proposal_id: str, current=Depends(user)):
+    return reference_notes.proposal_view(current['id'], proposal_id)
+
+
+@app.post('/api/reference-notes/{note_id}/knowledge')
+def reference_register(note_id: str, body: RegisterKnowledge, current=Depends(user)):
+    return reference_notes.register(current['id'], note_id, body)
+
+
+@app.post('/api/reference-reviews')
+def reference_review_start(body: ReviewStart, current=Depends(user)):
+    return reference_notes.start_review(current['id'], body)
+
+
+@app.get('/api/reference-reviews/{review_id}')
+def reference_review_get(review_id: str, current=Depends(user)):
+    return reference_notes.review_view(current['id'], review_id)
+
+
+@app.post('/api/reference-reviews/{review_id}/answers', status_code=202)
+def reference_review_answer(review_id: str, body: ReviewAnswer, tasks: BackgroundTasks, current=Depends(user)):
+    fresh = reference_notes.answer_review(current['id'], review_id, body)
+    if fresh:
+        tasks.add_task(reference_notes.follow_up, current['id'], review_id)
+    return reference_notes.review_view(current['id'], review_id)
 
 
 @app.post('/api/me/learning-summary', status_code=202)

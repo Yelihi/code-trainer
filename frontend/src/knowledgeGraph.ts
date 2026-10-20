@@ -1,8 +1,10 @@
 import type { Assistance } from './api.ts';
 
 export type GraphEvidence = { id: string; root_key: string; root_label: string; framework: boolean; set_id: string | null; context_id: string | null; unit_id: string | null; title: string; kind: string; assistance?: Assistance; withdrawn: boolean; deleted?: boolean };
-export type GraphNode = { added_at?: string; context_id?: string | null; unit_id?: string; source_available?: boolean; id: string; kind: 'concept' | 'foundation' | 'unit'; label: string; scope: string; descriptions: string[]; exercise_ids: string[] };
-export type GraphEdge = { id: string; source: string; target: string; kind: 'evidence' | 'prerequisite' | 'coverage'; label: string; description: string; exercise_ids: string[] };
+export type GraphSource = { id: string; title: string; version: number; state: string; note_id: string | null; quote: string; basis?: string; disposition?: 'supports' | 'refutes'; metadata?: { locator?: string } };
+export type GraphNode = { added_at?: string; context_id?: string | null; unit_id?: string; source_available?: boolean; id: string; kind: 'concept' | 'foundation' | 'unit' | 'note'; label: string; scope: string; descriptions: string[]; exercise_ids: string[];
+  note_id?: string; needs_review?: boolean; ontology_status?: string; aliases?: string[]; sources?: GraphSource[]; claims?: { text: string; scope: string; contested: boolean; sources: GraphSource[] }[] };
+export type GraphEdge = { id: string; source: string; target: string; kind: 'evidence' | 'prerequisite' | 'coverage' | 'PREREQUISITE_OF' | 'BROADER_THAN' | 'USED_IN' | 'RELATED_TO'; label: string; description: string; exercise_ids: string[]; sources?: GraphSource[] };
 export type KnowledgeGraph = {
   nodes: GraphNode[]; edges: GraphEdge[]; exercises: GraphEvidence[];
   state: 'empty' | 'stale' | 'running' | 'ready' | 'failed'; error: string; ai_available: boolean;

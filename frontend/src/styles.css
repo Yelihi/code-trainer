@@ -1603,6 +1603,38 @@ button.text-button,
 .login-dialog .auth-card {
   max-width: none;
 }
+.access-card {
+  padding: 32px;
+  background: var(--panel);
+  border-color: var(--line);
+  border-radius: 12px;
+}
+.access-card h1 {
+  margin: 12px 0 16px;
+  font-size: var(--text-section);
+  color: var(--text);
+}
+.auth-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+.auth-actions > * {
+  min-height: 44px;
+  padding: 10px;
+  text-align: center;
+}
+.access-card .auth-preservation {
+  margin: 24px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-caption);
+}
+@media (max-width: 480px) {
+  .access-card { padding: 24px; }
+  .auth-actions { grid-template-columns: 1fr; }
+}
 .review-actions {
   display: flex;
   gap: 8px;

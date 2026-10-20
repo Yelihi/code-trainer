@@ -1,7 +1,7 @@
 """Explicitly saved learning snapshots and their separate problem-solving evidence."""
 import hashlib
 import json
-from . import db, learning, service
+from . import db, learning, service, ontology
 from .foundations import CATALOG
 
 
@@ -42,6 +42,7 @@ def save(c, owner, key, context_id, unit_id, version, data):
     c.execute('INSERT OR IGNORE INTO knowledge_entries VALUES (?,?,?,?,?,?,?)',
               (owner, key, context_id, unit_id, version, service.dump(data), service.now()))
     row = c.execute('SELECT created_at FROM knowledge_entries WHERE owner=? AND node_id=?', (owner, key)).fetchone()
+    ontology.save_entry(c, owner, key, data, row['created_at'])
     return {'node_id': key, 'knowledge_added_at': row['created_at']}
 
 
@@ -159,5 +160,8 @@ def view(owner, record_id=None):
         live = {item['id']: item for item in current}
         saved = {**saved, 'exercises': [e for e in saved['exercises'] if exercise_node(e, live.get(e['id'], {})) in keys]}
         current = [e for e in current if exercise_node(e, e) in keys]
-    graph = build(saved, current, historical=bool(record_id), entries=entries)
+    # Legacy AI summaries remain in dated records; the current graph uses persisted concept IDs.
+    graph = build(saved if record_id else {**saved, 'concepts': []}, current, historical=bool(record_id), entries=entries)
+    if not record_id:
+        graph = ontology.extend_graph(owner, graph)
     return {**saved, **graph}

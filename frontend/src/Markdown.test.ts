@@ -29,6 +29,11 @@ test('lesson markdown renders readable structure without executing embedded cont
     const inline = renderToStaticMarkup(createElement(InlineMarkdown, { children: '설명과 `peek(): number | undefined`를 구분합니다. `<script>` [외부](javascript:alert%281%29)' }));
     assert.match(inline, /<code>peek\(\): number \| undefined<\/code>/);
     assert.doesNotMatch(inline, /<p>|<script|href="javascript:/);
+    const note = renderToStaticMarkup(createElement(Markdown, { language: '', images: true, children:
+      '![내 이미지](/api/reference-images/' + 'a'.repeat(32) + ')\n\n![추적](https://evil.example/pixel)\n\n![위장](/api/reference-images/' + 'a'.repeat(32) + '?external=1)\n\n<img src=x onerror=alert(1)>' }));
+    assert.equal((note.match(/<img /g) ?? []).length, 1);
+    assert.match(note, /src="\/api\/reference-images\/a{32}"/);
+    assert.doesNotMatch(note, /src="https:|src="x"|<img[^>]*onerror=/);
     const { codeExtensions } = await server.ssrLoadModule('/src/CodeBlock.tsx');
     const tree = codeExtensions('typescript')[0].language.parser.parse('const identity = <T>(value: T): T => value;');
     assert.doesNotMatch(tree.toString(), /⚠/, 'TypeScript generics must not be parsed as JSX');

@@ -4,7 +4,7 @@ import { InlineMarkdown } from './Markdown';
 import { assistanceLabels, languages, type Language } from './api';
 import { layoutGraph, neighbors, zoomView, type GraphEvidence, type KnowledgeGraph, type Point, type ViewBox } from './knowledgeGraph';
 
-const kindLabels = { concept: '정리한 개념', foundation: '기초 학습', unit: '자료 학습' };
+const kindLabels = { concept: '정리한 개념', foundation: '기초 학습', unit: '자료 학습', note: '레퍼런스 노트' };
 
 function ExerciseLinks({ exercises }: { exercises: GraphEvidence[] }) {
   return <ul className="graph-exercises">{exercises.map(exercise => <li key={exercise.id}>
@@ -98,7 +98,7 @@ export function KnowledgeExplorer({ data }: { data: KnowledgeGraph }) {
         <button aria-pressed={mode === 'relations'} onClick={() => setMode('relations')}>관계 목록 <span>{data.edges.length}</span></button>
       </div>
       <label className="graph-search"><span className="sr-only">노드 검색</span><span aria-hidden="true">⌕</span><input ref={search} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="개념이나 단원 찾기" /></label>
-      <label className="graph-filter"><span className="sr-only">관계 종류</span><select value={relationKind} onChange={event => setRelationKind(event.target.value)}><option value="all">모든 관계</option><option value="coverage">다루는 개념</option><option value="evidence">풀이 근거</option><option value="prerequisite">선행 단원</option></select></label>
+      <label className="graph-filter"><span className="sr-only">관계 종류</span><select value={relationKind} onChange={event => setRelationKind(event.target.value)}><option value="all">모든 관계</option><option value="coverage">다루는 개념</option><option value="evidence">풀이 근거</option><option value="prerequisite">선행 단원</option><option value="PREREQUISITE_OF">선행 개념</option><option value="BROADER_THAN">상하 개념</option><option value="USED_IN">활용 관계</option><option value="RELATED_TO">연관 개념</option></select></label>
     </div>
     {query.trim() && <div className="graph-search-results" aria-live="polite"><small>{matches.length}개 노드</small>{matches.map(item => <button key={item.id} onClick={event => choose(item.id, event.currentTarget)}>{item.label}</button>)}{!matches.length && <span>일치하는 개념이나 단원이 없습니다.</span>}</div>}
     <div className={`graph-body ${node ? 'with-drawer' : ''}`}>
@@ -123,7 +123,7 @@ export function KnowledgeExplorer({ data }: { data: KnowledgeGraph }) {
               const distance = Math.hypot(b.x - a.x, b.y - a.y) || 1, dx = (b.x - a.x) / distance, dy = (b.y - a.y) / distance;
               const highlighted = active === edge.source || active === edge.target;
               const dimmed = (!!active && !highlighted) || (!!query.trim() && !matching.has(edge.source) && !matching.has(edge.target));
-              return <path key={edge.id} className={`graph-edge ${edge.kind} ${highlighted ? 'highlighted' : ''} ${dimmed ? 'dimmed' : ''}`} d={`M ${a.x + dx * 26} ${a.y + dy * 26} L ${b.x - dx * 30} ${b.y - dy * 30}`} markerEnd={`url(#graph-arrow${highlighted ? '-active' : ''})`} />;
+              return <path key={edge.id} className={`graph-edge ${edge.kind} ${highlighted ? 'highlighted' : ''} ${dimmed ? 'dimmed' : ''}`} d={`M ${a.x + dx * 26} ${a.y + dy * 26} L ${b.x - dx * 30} ${b.y - dy * 30}`} markerEnd={edge.kind === 'RELATED_TO' ? undefined : `url(#graph-arrow${highlighted ? '-active' : ''})`} />;
             })}</g>
             {data.nodes.map(item => {
               const point = layout.positions.get(item.id)!;
@@ -142,23 +142,29 @@ export function KnowledgeExplorer({ data }: { data: KnowledgeGraph }) {
           </svg>
           <div className="graph-controls" aria-label="그래프 배율"><button aria-label="확대" onClick={() => zoom(.8)}>＋</button><output aria-label="현재 배율">{Math.round(layout.bounds.width / view.width * 100)}%</output><button aria-label="축소" onClick={() => zoom(1.25)}>−</button><button onClick={() => setView(layout.bounds)}>전체 보기</button></div>
         </> : <div className="graph-relations"><h2>관계를 따라 읽기</h2><p>선의 방향과 연결한 이유를 확인하세요.</p>{edges.filter(edge => !query.trim() || matching.has(edge.source) || matching.has(edge.target)).map(edge => <article key={edge.id}>
-          <div><button onClick={event => choose(edge.source, event.currentTarget)}>{labels.get(edge.source)}</button><span aria-label="방향">→</span><button onClick={event => choose(edge.target, event.currentTarget)}>{labels.get(edge.target)}</button></div><small>{edge.label}</small><p>{edge.description}</p>
+          <div><button onClick={event => choose(edge.source, event.currentTarget)}>{labels.get(edge.source)}</button><span aria-label="방향">{edge.kind === 'RELATED_TO' ? '↔' : '→'}</span><button onClick={event => choose(edge.target, event.currentTarget)}>{labels.get(edge.target)}</button></div><small>{edge.label}</small><p>{edge.description}</p>
         </article>)}{!edges.some(edge => !query.trim() || matching.has(edge.source) || matching.has(edge.target)) && <p className="notice">표시할 관계가 없습니다. 다른 관계 종류를 선택하거나 개념 정리를 실행해주세요.</p>}</div>}
       </div>
       {node && <aside className="graph-drawer" ref={panel} tabIndex={-1} aria-labelledby="graph-node-title">
         <header><span className={`graph-kind ${node.kind}`}>{kindLabels[node.kind]}</span><button className="icon-button" aria-label="상세 패널 닫기" onClick={close}>×</button></header>
         <h2 id="graph-node-title">{node.label}</h2><p className="graph-node-meta">{languages[node.scope as Language] ?? node.scope} · 통과 문제 {node.exercise_ids.length}개</p>
         {node.added_at && <p>직접 추가한 학습 · {new Date(node.added_at).toLocaleDateString('ko-KR')}</p>}
+        {node.note_id && <Link className="button" to={'/references/' + node.note_id}>레퍼런스 노트 · 설명 복습 열기 ↗</Link>}
+        {node.needs_review && <p className="notice">등록 이후 노트가 변경되었습니다. 근거를 다시 검토해주세요.</p>}
+        {!!node.aliases?.length && <p>별칭 · {node.aliases.join(', ')}</p>}
+        {node.ontology_status === 'provisional' && <p className="muted">기존 단원에서 옮긴 개념입니다. 다른 노트와 연결할 때 정의와 적용 범위를 확인해주세요.</p>}
         {node.unit_id && (node.source_available ? <Link className="text-link" to={node.kind === 'foundation' ? `/foundations/${node.unit_id}` : `/learn/${node.context_id}/units/${node.unit_id}`}>개념 다시 읽기 ↗</Link> : <p>원본 자료를 열 수 없습니다. 추가 당시의 개념 설명은 보관되어 있습니다.</p>)}
         <section><h3>{node.kind === 'concept' ? '학습한 내용' : '개념 설명'}</h3>{node.descriptions.length ? node.descriptions.map((description, i) => <p className="prose" key={i}><InlineMarkdown>{description}</InlineMarkdown></p>) : <p>이 단원에서 통과한 문제를 모았습니다. 개념 정리를 실행하면 학습한 내용을 연결해 볼 수 있습니다.</p>}</section>
+        {!!node.claims?.length && <section><h3>기록한 주장과 근거</h3>{node.claims.map((claim, i) => <div key={i}><p>{claim.text}{claim.scope && <small> · {claim.scope}</small>}{claim.contested && <small> · 반박 근거 있음</small>}</p>{claim.sources.map((source, j) => <details key={source.id + j}><summary>{source.disposition === 'refutes' ? '반박' : '지지'} · {source.title} v{source.version}</summary><p>{source.quote}</p>{source.note_id && <Link className="text-link" to={'/references/' + source.note_id}>근거 노트 열기</Link>}</details>)}</div>)}</section>}
+        {!!node.sources?.length && <section><h3>출처와 근거</h3><ul className="graph-neighbors">{node.sources.map((source, i) => <li key={source.id + ':' + i}><strong>{source.title}</strong><small>v{source.version} · {source.state === 'active' ? '등록한 근거' : source.state === 'deleted' ? '보관·삭제된 출처' : '변경됨 · 재검토 필요'}{source.basis === 'interpretation' ? ' · 나의 해석' : source.basis === 'question' ? ' · 미해결 질문' : ''}</small><p>{source.quote}</p>{source.metadata?.locator && <small>{source.metadata.locator}</small>}{source.note_id && <Link className="text-link" to={'/references/' + source.note_id}>노트와 복습 열기 ↗</Link>}</li>)}</ul></section>}
         <section><h3>연결된 노드 <span>{nodeEdges.length}</span></h3>{nodeEdges.length ? <ul className="graph-neighbors">{nodeEdges.map(edge => {
           const outgoing = edge.source === node.id, other = outgoing ? edge.target : edge.source;
-          return <li key={edge.id}><small>{edge.label} · {outgoing ? '나가는 연결 →' : '들어오는 연결 ←'}</small><button onClick={() => choose(other)}>{labels.get(other)} <span>↗</span></button><p>{edge.description}</p></li>;
+          return <li key={edge.id}><small>{edge.label} · {edge.kind === 'RELATED_TO' ? '양방향 ↔' : outgoing ? '나가는 연결 →' : '들어오는 연결 ←'}</small><button onClick={() => choose(other)}>{labels.get(other)} <span>↗</span></button><p>{edge.description}</p>{edge.sources?.map((source, i) => <div key={source.id + ':' + i}><small>{source.disposition === 'refutes' ? '반박 · ' : ''}{source.title} · v{source.version}</small><p>{source.quote}</p>{source.note_id && <Link className="text-link" to={'/references/' + source.note_id}>근거 노트 열기</Link>}</div>)}</li>;
         })}</ul> : <p>이 기록에는 아직 연결된 노드가 없습니다.</p>}</section>
         <section><h3>풀었던 문제 · 복습</h3><p>{node.exercise_ids.length ? '이전에 통과한 문제를 열어 복습할 수 있습니다.' : '개념 학습으로 추가되었습니다. 아직 통과한 문제는 없으며, 문제 풀이 없이도 지도에 보관됩니다.'}</p><ExerciseLinks exercises={data.exercises.filter(exercise => node.exercise_ids.includes(exercise.id))} /></section>
       </aside>}
     </div>
     <footer className="graph-footer"><div className="graph-legend">{Object.entries(kindLabels).map(([kind, label]) => <span key={kind}><i className={kind} />{label}</span>)}</div><p id="graph-instructions">드래그로 이동 · 휠 또는 +/−로 확대·축소 · 노드 선택으로 상세 보기 · Esc로 닫기</p></footer>
-    <p className="graph-evidence-note">실선은 단원에서 다루는 개념 또는 풀이 근거, 점선은 학습 과정에 지정된 선행 단원입니다. 연결만으로 개념의 숙달을 뜻하지 않습니다.</p>
+    <p className="graph-evidence-note">연결을 선택해 종류·방향·근거를 확인하세요. 연관 개념은 양방향이며, 점선은 선행 단원입니다. 등록과 연결은 숙달을 뜻하지 않습니다.</p>
   </section>;
 }

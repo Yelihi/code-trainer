@@ -23,6 +23,10 @@ test('private origin, authentication, CSRF, identity forwarding and upstream fai
   assert.equal(sent.headers.get('x-trainer-user-jwt'), 'aaa.bbb.ccc');
   assert.equal(sent.headers.get('cookie'), null);
   assert.equal(sent.headers.get('authorization'), null);
+  env.CODE_TRAINER_API.fetch = () => new Response('zip', { headers: { 'content-type': 'application/zip', 'content-disposition': 'attachment; filename="reference-note.zip"' } });
+  const exported = await call('/api/reference-notes/note/export', { headers });
+  assert.equal(exported.headers.get('content-disposition'), 'attachment; filename="reference-note.zip"');
+  assert.equal(exported.headers.get('cache-control'), 'private, no-store');
   env.CODE_TRAINER_API.fetch = () => new Response(null, { status: 302, headers: { location: 'https://evil.example' } });
   assert.equal((await call('/api/session', { headers })).status, 502);
   env.CODE_TRAINER_API.fetch = () => { throw new Error('disconnected'); };

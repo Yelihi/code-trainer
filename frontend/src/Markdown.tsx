@@ -1,13 +1,14 @@
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from './CodeBlock';
 
-export function Markdown({ children, language }: { children: string; language: string }) {
+export function Markdown({ children, language, images = false }: { children: string; language: string; images?: boolean }) {
   return <div className="prose markdown"><ReactMarkdown components={{
     // Lessons already have page and section headings; prose headings sit below them.
     h1: ({ children }) => <h3>{children}</h3>,
     h2: ({ children }) => <h3>{children}</h3>,
     a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
-    img: ({ alt }) => <span>{alt}</span>,
+    img: ({ alt, src }) => images && src && /^\/api\/reference-images\/[a-f0-9]{32}$/.test(src)
+      ? <img src={src} alt={alt ?? ''} loading="lazy" /> : <span>{alt}</span>,
     pre: ({ node, children }) => {
       const block = node?.children[0];
       if (block?.type !== 'element' || block.tagName !== 'code') return <pre>{children}</pre>;

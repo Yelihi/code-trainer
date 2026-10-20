@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from . import ai, db, service, source, learning, knowledge
 from .api import app
 from .sample import sample
-from .schema import Case, Credentials, CurriculumDraft, ExerciseCodeRepair, ExerciseDraft, FixStarterRepair, GenerationInput, ReportInput, SetDraft, LearningSummary
+from .schema import Case, Credentials, CurriculumDraft, ExerciseCodeRepair, ExerciseDraft, FixStarterRepair, WrongSolutionRepair, GenerationInput, ReportInput, SetDraft, LearningSummary
 
 
 class AppTest(unittest.TestCase):
@@ -1155,6 +1155,50 @@ class AppTest(unittest.TestCase):
         exercise.public_tests[0].code = "import type { Stable } from './solution';\nimport { makeCounter } from './solution';\nmakeCounter();"
         self.assertEqual(ai.inline_solution_tests(exercise, 'typescript').public_tests[0].code, 'makeCounter();')
         self.assertEqual(ai.inline_solution_tests(exercise, 'python'), exercise)
+
+    def test_commented_self_require_is_removed_without_changing_test_behavior(self):
+        context, draft = sample()
+        exercise = draft.exercises[1]
+        original = exercise.model_copy(deep=True)
+        for test in exercise.public_tests + exercise.evaluation.hidden_tests:
+            test.code = "// test scenario\n/* setup */\nconst { makeCounter } = require('./');\n" + test.code
+        feedback = [{'kind': 'FIX', 'check': name, 'result': {'status': 'runtime_error'}}
+                    for name in ('reference', 'wrong:r1', 'starter')]
+        with patch.object(ai, 'generate') as generate:
+            result = ai.create_set(context, context.units[0], previous=draft, feedback=feedback)
+        generate.assert_not_called()
+        fixed = result.exercises[1]
+        self.assertEqual(fixed.evaluation.reference, original.evaluation.reference)
+        self.assertEqual(fixed.evaluation.wrong_solutions, original.evaluation.wrong_solutions)
+        self.assertEqual(fixed.public_tests[0].code, '// test scenario\n/* setup */\n' + original.public_tests[0].code)
+        for statement in ("const { makeCounter } = require('./solution.js');\n",
+                          'let { makeCounter, } = require("./solution");\n'):
+            exercise.public_tests[0].code = statement + original.public_tests[0].code
+            self.assertEqual(ai.inline_solution_tests(exercise, 'javascript').public_tests[0].code, original.public_tests[0].code)
+        for code in ("const { makeCounter: other } = require('./');\nother();",
+                     "const { makeCounter = fallback } = require('./');\nmakeCounter();",
+                     "const { makeCounter } = require('./other');\nmakeCounter();",
+                     "const text = `\nconst { makeCounter } = require('./');\n`;",
+                     "/*\nconst { makeCounter } = require('./');\n*/"):
+            exercise.public_tests[0].code = code
+            self.assertEqual(ai.inline_solution_tests(exercise, 'javascript').public_tests[0].code, code)
+
+    def test_wrong_solution_repair_preserves_validated_task_and_tests(self):
+        context, draft = sample()
+        exercise = draft.exercises[3]
+        original = draft.model_dump()
+        feedback = [{'kind': 'BUILD', 'check': 'wrong:r1', 'result': {'status': 'passed'}}]
+        repair = WrongSolutionRepair(code=exercise.evaluation.wrong_solutions[0].code + '\n// repaired mutation',
+                                     reason='누적 결과를 잘못 반환하는 오류를 검사합니다.')
+        with patch.object(ai, 'generate', return_value=repair) as generate:
+            result = ai.create_set(context, context.units[0], previous=draft, feedback=feedback)
+        generate.assert_called_once()
+        self.assertIs(generate.call_args.args[0], WrongSolutionRepair)
+        self.assertEqual(generate.call_args.args[2]['validation_failures'], feedback)
+        expected = draft.model_dump()
+        expected['exercises'][3]['evaluation']['wrong_solutions'][0].update(repair.model_dump())
+        self.assertEqual([e.model_dump() for e in result.exercises], expected['exercises'])
+        self.assertEqual(draft.model_dump(), original)
 
     def test_read_answer_uses_execution_feedback_and_is_revalidated_without_ai(self):
         context, draft = sample()

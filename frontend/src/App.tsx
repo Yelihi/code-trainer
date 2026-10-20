@@ -98,11 +98,14 @@ function Login({ setup, access, onSuccess }: { setup: boolean; access: boolean; 
     try { await api('/auth', 'POST', { username: fields.get('username'), password: fields.get('password'), ...(setup ? { admin_password: fields.get('admin_password') || '' } : {}) }); onSuccess(); }
     catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
   }
-  if (access) return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" onCancel={event => event.preventDefault()}><section className="auth-card">
-    <span className="eyebrow">YOUR PRIVATE WORKSPACE</span><h1 id="auth-title">다시 로그인해주세요.</h1>
-    <p>새 탭에서 허용된 이메일로 인증한 뒤 이 화면으로 돌아오세요. 작성 중인 코드는 이 화면에 남아 있습니다.</p>
-    <a className="button primary" href="/" target="_blank" rel="noreferrer">새 탭에서 이메일 인증</a>
-    <button onClick={onSuccess}>인증 완료 · 다시 연결</button>
+  if (access) return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" aria-describedby="auth-description" onCancel={event => event.preventDefault()}><section className="auth-card access-card">
+    <span className="eyebrow">PRIVATE WORKSPACE</span><h1 id="auth-title">다시 로그인해주세요.</h1>
+    <p id="auth-description">새 탭에서 허용된 이메일로 인증한 뒤,<br />이 화면으로 돌아와 다시 연결해주세요.</p>
+    <div className="auth-actions">
+      <a className="button primary" href="/" target="_blank" rel="noreferrer">새 탭에서 이메일 인증</a>
+      <button onClick={onSuccess}>인증 완료 · 다시 연결</button>
+    </div>
+    <p className="auth-preservation">작성 중인 코드는 이 화면에 유지됩니다.</p>
   </section></dialog>;
   return <dialog ref={dialog} className="login-dialog" aria-labelledby="auth-title" onCancel={event => event.preventDefault()}><section className="auth-card">
     <span className="eyebrow">YOUR LOCAL WORKSPACE</span><h1 id="auth-title">이해는 코드에서<br />시작됩니다.</h1>

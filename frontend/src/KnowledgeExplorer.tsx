@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -99,7 +100,7 @@ export function KnowledgeExplorer({ data }: { data: KnowledgeGraph }) {
         <button aria-pressed={mode === 'relations'} onClick={() => setMode('relations')}>관계 목록 <span>{data.edges.length}</span></button>
       </div>
       <label className="graph-search"><span className="sr-only">노드 검색</span><span aria-hidden="true">⌕</span><input ref={search} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="개념이나 단원 찾기" /></label>
-      <label className="graph-filter"><span className="sr-only">관계 종류</span><select value={relationKind} onChange={event => setRelationKind(event.target.value)}><option value="all">모든 관계</option><option value="coverage">다루는 개념</option><option value="evidence">풀이 근거</option><option value="prerequisite">선행 단원</option><option value="PREREQUISITE_OF">선행 개념</option><option value="BROADER_THAN">상하 개념</option><option value="USED_IN">활용 관계</option><option value="RELATED_TO">연관 개념</option></select></label>
+      <label className="graph-filter"><span className="sr-only">관계 종류</span><Select value={relationKind} onChange={event => setRelationKind(event.target.value)}><option value="all">모든 관계</option><option value="coverage">다루는 개념</option><option value="evidence">풀이 근거</option><option value="prerequisite">선행 단원</option><option value="PREREQUISITE_OF">선행 개념</option><option value="BROADER_THAN">상하 개념</option><option value="USED_IN">활용 관계</option><option value="RELATED_TO">연관 개념</option></Select></label>
     </div>
     {query.trim() && <div className="graph-search-results" aria-live="polite"><small>{matches.length}개 노드</small>{matches.map(item => <button key={item.id} onClick={event => choose(item.id, event.currentTarget)}>{item.label}</button>)}{!matches.length && <span>일치하는 개념이나 단원이 없습니다.</span>}</div>}
     <div className={`graph-body ${node ? 'with-drawer' : ''}`}>

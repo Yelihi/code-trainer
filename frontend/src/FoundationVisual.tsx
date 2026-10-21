@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { buildTrace, type Frame } from './foundationTrace';
 import { traversalGraph } from './foundationStructures';
@@ -34,7 +35,7 @@ export function FoundationVisual({ kind, scenes, roundNodes = false }: { kind: s
   return <section className={`foundation-visual visual-${kind}`} aria-label="개념 시각화">
     <div className="section-heading"><div><span className="eyebrow">SEE IT MOVE</span><h2>움직임으로 이해하기</h2></div><span className="visual-counter">{String(step + 1).padStart(2, '0')} <small>/ {frames.length}</small></span></div>
     {linked && <div className="visual-options"><div role="group" aria-label="연결 리스트 비교"><button aria-pressed={!doubly} onClick={() => { setDoubly(false); setStep(0); setPlaying(false); }}>단일 연결 · next</button><button aria-pressed={doubly} onClick={() => { setDoubly(true); setStep(0); setPlaying(false); }}>이중 연결 · prev + next</button></div><p>개념 비교: 중간 삽입 → 제거 → 순서 변경. 구현 과제는 단일 연결 리스트의 앞 삽입·제거입니다.</p></div>}
-    {graph && <div className="visual-options graph-options"><label>시작 정점<select value={start} onChange={event => { setStart(event.target.value); setStep(0); setPlaying(false); }}>{Object.keys(traversalGraph).map(id => <option key={id}>{id}</option>)}</select></label><p>방향 그래프 · 갈림길, 공유 이웃, 순환, 떨어진 정점 G</p><AnimatedDetails summary="인접 목록과 방문 순서 규칙"><p>각 목록의 왼쪽 이웃부터 검사합니다. 같은 그래프라도 시작점·이웃 순서에 따라 방문 순서가 달라집니다.</p><div className="graph-adjacency">{Object.entries(traversalGraph).map(([id, neighbors]) => <code key={id}>{id}: [{neighbors.join(', ')}]</code>)}</div></AnimatedDetails></div>}
+    {graph && <div className="visual-options graph-options"><label>시작 정점<Select value={start} onChange={event => { setStart(event.target.value); setStep(0); setPlaying(false); }}>{Object.keys(traversalGraph).map(id => <option key={id}>{id}</option>)}</Select></label><p>방향 그래프 · 갈림길, 공유 이웃, 순환, 떨어진 정점 G</p><AnimatedDetails summary="인접 목록과 방문 순서 규칙"><p>각 목록의 왼쪽 이웃부터 검사합니다. 같은 그래프라도 시작점·이웃 순서에 따라 방문 순서가 달라집니다.</p><div className="graph-adjacency">{Object.entries(traversalGraph).map(([id, neighbors]) => <code key={id}>{id}: [{neighbors.join(', ')}]</code>)}</div></AnimatedDetails></div>}
     <div className="visual-stage-layout"><div className="visual-stage" tabIndex={0} role="region" aria-label="시각화 그림 · 넓은 그림은 좌우로 스크롤할 수 있습니다">
     <div className="visual-legend"><span><i />현재 살펴보는 원소</span><span>{heap ? '완전 이진 트리 · 최소 힙' : fixed ? '정해진 예시를 단계별로 탐색합니다' : '값을 바꿔 동작을 비교해보세요'}</span>{graph && <><span><i className="discovered" />발견</span><span><i className="finished" />처리 완료</span></>}</div>
     <svg viewBox={kind === 'stack' ? '240 0 200 340' : '0 0 640 340'} role="img" aria-label={`${frame.note} ${frame.detail}`}>

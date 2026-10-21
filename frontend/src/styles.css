@@ -1825,10 +1825,6 @@ button.text-button,
 .learning-record-picker { min-width: 0; max-width: 500px; }
 .learning-record-picker label { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: var(--text-caption); font-weight: var(--weight-medium); }
 .learning-record-picker label span { color: var(--muted); font-weight: var(--weight-regular); }
-.learning-record-select { position: relative; }
-.learning-record-select select { display: block; appearance: none; min-height: 46px; padding: 12px 38px 12px 14px; font-size: var(--text-body); line-height: var(--leading-body); cursor: pointer; transition: border-color .15s; }
-.learning-record-select select:hover { border-color: #65517e; }
-.learning-record-select svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); }
 .learning-record-stats { display: flex; gap: 36px; margin: 0; padding-left: 32px; border-left: 1px solid var(--line); }
 .learning-record-stats dt { font-size: var(--text-caption); color: var(--muted); white-space: nowrap; }
 .learning-record-stats dd { margin: 5px 0 0; font-size: var(--text-page); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); font-variant-numeric: tabular-nums; font-weight: var(--weight-semibold); }
@@ -1848,7 +1844,6 @@ button.text-button,
 @media (max-width: 600px) {
   .learning-record-header { align-items: flex-start; flex-direction: column; gap: 14px; padding: 20px 18px 0; }
   .learning-record-body { padding: 22px 18px; }
-  .learning-record-select select { font-size: var(--text-caption); }
   .learning-record-footer { padding: 14px 18px; font-size: var(--text-caption); }
   .learning-record-footer time { display: block; margin-left: 0; }
 }
@@ -2125,7 +2120,7 @@ button.text-button,
 .visual-options button[aria-pressed='true'] { border-color: var(--green); background: #52d7b715; color: var(--green); }
 .visual-options p { color: var(--muted); margin: 12px 0 0; line-height: var(--leading-body); }
 .graph-options label { display: flex; gap: 15px; align-items: center; }
-.graph-options select { width: 85px; }
+.graph-options .select-field { width: 100px; }
 .graph-options .learning-disclosure { margin-top: 14px; }
 .graph-adjacency { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 .visual-legend { flex-wrap: wrap; }

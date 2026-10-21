@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from './api';
@@ -71,16 +72,16 @@ export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote
       <fieldset disabled={!!pending}><legend>개념과 근거</legend>
         {data.concepts.map((c, i) => <article className="reference-candidate" key={c.key}>
           <header><strong>개념 {i + 1}</strong><button type="button" disabled={data.concepts.length === 1} onClick={() => change({ concepts: data.concepts.filter(x => x.key !== c.key), assertions: data.assertions.filter(a => a.subject !== c.key && a.object !== c.key) })}>제외</button></header>
-          <label>연결할 개념<select value={c.existing_id} onChange={e => {
+          <label>연결할 개념<Select value={c.existing_id} onChange={e => {
             const found = concepts.find(x => x.id === e.target.value);
             concept(i, found ? { existing_id: found.id, pref_label: found.pref_label, definition: found.definition, scope: found.scope, aliases: [] } : { existing_id: '' });
-          }}><option value="">새 개념으로 등록</option>{c.existing_id && !concepts.some(x => x.id === c.existing_id) && <option value={c.existing_id}>{c.pref_label} · 선택된 개념</option>}{concepts.map(x => <option key={x.id} value={x.id}>{x.pref_label} · {x.scope || '범위 미지정'}{x.status === 'provisional' ? ' · 기존 단원' : ''}</option>)}</select></label>
+          }}><option value="">새 개념으로 등록</option>{c.existing_id && !concepts.some(x => x.id === c.existing_id) && <option value={c.existing_id}>{c.pref_label} · 선택된 개념</option>}{concepts.map(x => <option key={x.id} value={x.id}>{x.pref_label} · {x.scope || '범위 미지정'}{x.status === 'provisional' ? ' · 기존 단원' : ''}</option>)}</Select></label>
           <div className="reference-fields"><label>대표명<input required value={c.pref_label} maxLength={160} readOnly={!!c.existing_id} onChange={e => concept(i, { pref_label: e.target.value })} /></label><label>적용 범위<input maxLength={200} value={c.scope} readOnly={!!c.existing_id && concepts.find(x => x.id === c.existing_id)?.status !== 'provisional'} onChange={e => concept(i, { scope: e.target.value })} /></label></div>
           <label>정의<textarea required maxLength={3000} value={c.definition} readOnly={!!c.existing_id && concepts.find(x => x.id === c.existing_id)?.status !== 'provisional'} onChange={e => concept(i, { definition: e.target.value })} /></label>
           {concepts.find(x => x.id === c.existing_id)?.status === 'provisional' && <p className="muted">기존 단원에서 가져온 개념입니다. 이번 근거로 정의를 구체화하면 같은 개념 ID에 반영됩니다.</p>}
           <label>확인한 별칭 · 쉼표로 구분<input defaultValue={c.aliases.join(', ')} key={c.key + c.existing_id} maxLength={1200} onBlur={e => concept(i, { aliases: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} /></label>
           <label>근거 문장 · 본문에서 그대로 가져오기<textarea required maxLength={3000} value={c.quote} onChange={e => concept(i, { quote: e.target.value })} /></label>
-          <label>근거의 성격<select value={c.basis} onChange={e => concept(i, { basis: e.target.value as Candidate['basis'] })}>{Object.entries(bases).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+          <label>근거의 성격<Select value={c.basis} onChange={e => concept(i, { basis: e.target.value as Candidate['basis'] })}>{Object.entries(bases).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></label>
         </article>)}
         <button type="button" disabled={data.concepts.length >= 16} onClick={() => change({ ...data, concepts: [...data.concepts, blankConcept('c' + crypto.randomUUID().slice(0, 8))] })}>+ 개념 추가</button>
       </fieldset>
@@ -88,14 +89,14 @@ export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote
         <p className="muted">근거가 있는 관계만 남겨주세요. 상하·선행 관계의 순환은 저장할 수 없습니다.</p>
         {data.assertions.map((a, i) => <article className="reference-candidate" key={i}>
           <header><strong>{relations[a.kind]}</strong><button type="button" onClick={() => change({ ...data, assertions: data.assertions.filter((_, j) => i !== j) })}>제외</button></header>
-          <label>관계 종류<select value={a.kind} onChange={e => assertion(i, { kind: e.target.value as Assertion['kind'], object: e.target.value === 'CLAIM' ? '' : data.concepts.find(c => c.key !== a.subject)?.key ?? '' })}>{Object.entries(relations).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
-          <div className="reference-fields"><label>시작 개념<select value={a.subject} onChange={e => assertion(i, { subject: e.target.value })}>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</select></label>
-            {a.kind !== 'CLAIM' && <label>도착 개념<select required value={a.object} onChange={e => assertion(i, { object: e.target.value })}><option value="">개념 선택</option>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</select></label>}</div>
+          <label>관계 종류<Select value={a.kind} onChange={e => assertion(i, { kind: e.target.value as Assertion['kind'], object: e.target.value === 'CLAIM' ? '' : data.concepts.find(c => c.key !== a.subject)?.key ?? '' })}>{Object.entries(relations).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></label>
+          <div className="reference-fields"><label>시작 개념<Select value={a.subject} onChange={e => assertion(i, { subject: e.target.value })}>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</Select></label>
+            {a.kind !== 'CLAIM' && <label>도착 개념<Select required value={a.object} onChange={e => assertion(i, { object: e.target.value })}><option value="">개념 선택</option>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</Select></label>}</div>
           <label>주장 또는 연결 이유<textarea required maxLength={3000} value={a.text} onChange={e => assertion(i, { text: e.target.value })} /></label>
           <label>적용 조건<input maxLength={200} value={a.scope} onChange={e => assertion(i, { scope: e.target.value })} /></label>
           <label>근거 문장<textarea required maxLength={3000} value={a.quote} onChange={e => assertion(i, { quote: e.target.value })} /></label>
-          <label>근거의 성격<select value={a.basis} onChange={e => assertion(i, { basis: e.target.value as Assertion['basis'] })}>{Object.entries(bases).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
-          <label>근거의 방향<select value={a.disposition ?? 'supports'} onChange={e => assertion(i, { disposition: e.target.value as Assertion['disposition'] })}><option value="supports">이 주장 / 관계를 지지함</option><option value="refutes">이 주장 / 관계를 반박함</option></select></label>
+          <label>근거의 성격<Select value={a.basis} onChange={e => assertion(i, { basis: e.target.value as Assertion['basis'] })}>{Object.entries(bases).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></label>
+          <label>근거의 방향<Select value={a.disposition ?? 'supports'} onChange={e => assertion(i, { disposition: e.target.value as Assertion['disposition'] })}><option value="supports">이 주장 / 관계를 지지함</option><option value="refutes">이 주장 / 관계를 반박함</option></Select></label>
         </article>)}
         <button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</button>
       </fieldset>

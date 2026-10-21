@@ -121,8 +121,7 @@
   .graph-toolbar { padding: 12px; gap: 10px; }
   .graph-view-switch { width: 100%; }
   .graph-search { flex: 1; min-width: 0; width: auto; }
-  .graph-filter { max-width: 120px; }
-  .graph-filter select { padding-inline: 8px; }
+  .graph-filter { max-width: 150px; }
   .graph-body { min-height: 480px; height: 65vh; }
   .graph-canvas-caption { top: 18px; left: 18px; }
   .knowledge-canvas { padding: 66px 4px; }

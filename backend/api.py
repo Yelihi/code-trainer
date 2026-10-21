@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
-from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput
+from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -313,6 +313,11 @@ def knowledge_graph(current=Depends(user), record_id: str | None = None):
 @app.get('/api/knowledge/concepts')
 def knowledge_concepts(current=Depends(user), q: str = Query(default='', max_length=160)):
     return ontology.concepts(current['id'], q)
+
+
+@app.post('/api/knowledge/concept-matches')
+def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
+    return ontology.concept_matches(current['id'], body)
 
 
 @app.get('/api/reference-notes')

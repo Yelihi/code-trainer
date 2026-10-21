@@ -1,6 +1,7 @@
 """Shared concept identity, typed assertions and versioned provenance."""
 import hashlib
 import json
+import unicodedata
 from . import db, service
 from .note_schema import KnowledgeProposal
 
@@ -87,6 +88,29 @@ def concepts(owner, query=''):
     return [{**r, 'aliases': [a['label'] for a in aliases if a['concept_id'] == r['id']]} for r in rows]
 
 
+def concept_matches(owner, lookup):
+    def normalized(label):
+        return ''.join(unicodedata.normalize('NFKC', label).casefold().split())
+    names = {normalized(n) for n in [lookup.pref_label, *lookup.aliases] if n.strip()}
+    if not names:
+        return []
+    aliases = {}
+    for row in db.all('SELECT concept_id,label FROM knowledge_aliases WHERE owner=?', (owner,)):
+        aliases.setdefault(row['concept_id'], []).append(row['label'])
+    matches = []
+    for concept in db.all('SELECT * FROM knowledge_concepts WHERE owner=?', (owner,)):
+        concept['aliases'] = aliases.get(concept['id'], [])
+        labels = {normalized(n) for n in [concept['pref_label'], *concept['aliases']]}
+        exact = bool(names & labels)
+        partial = any(len(a) >= 2 and len(b) >= 2 and (a in b or b in a) for a in names for b in labels)
+        if exact or partial:
+            matches.append((0 if exact else 1, {'concept': concept, 'reason':
+                '이름 또는 별칭이 일치합니다. 정의와 적용 범위도 같은지 비교해주세요.' if exact else
+                '이름 또는 별칭에 공통 표현이 있습니다. 같은 개념인지 비교해주세요.'}))
+    matches.sort(key=lambda m: (m[0], m[1]['concept']['pref_label'], m[1]['concept']['id']))
+    return [item for _, item in matches[:3]]
+
+
 def evidence(c, owner, source, body, quote, basis, concept_id=None, assertion_id=None, disposition='supports'):
     start = body.find(quote)
     if start < 0:
@@ -105,6 +129,14 @@ def validate_proposal(owner, data, body):
     for item in data.concepts:
         if item.existing_id and item.existing_id not in existing:
             raise service.Error('연결할 기존 개념을 찾을 수 없습니다.', 422)
+    seen_matches = set()
+    for match in getattr(data, 'matches', []):
+        pair = (match.key, match.existing_id)
+        if match.key not in keys or match.existing_id not in existing:
+            raise service.Error('추천한 기존 개념 또는 후보를 찾을 수 없습니다.', 422)
+        if pair in seen_matches or sum(key == match.key for key, _ in seen_matches) >= 3:
+            raise service.Error('기존 개념 추천은 후보별로 중복 없이 3개까지 가능합니다.', 422)
+        seen_matches.add(pair)
     for item in [*data.concepts, *data.assertions]:
         if item.quote not in body:
             raise service.Error('근거 문장이 저장된 노트 본문과 일치하지 않습니다.', 422)

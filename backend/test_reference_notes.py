@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 from PIL import Image
 from . import ai, db, ontology, reference_notes, service, test_app
-from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback
+from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup
 from .sample import sample
 
 
@@ -277,6 +277,58 @@ class ReferenceNotesTest(unittest.TestCase):
         updated = self.client.post('/api/reference-notes', json={**payload, 'revision': 1, 'body': note['body'] + '\n새로운 주장을 추가했다.'}).json()
         self.assertEqual(self.register(updated)[0].status_code, 409)
         self.assertEqual(db.all('SELECT * FROM knowledge_sources'), [])
+
+    def test_concept_matches_search_all_owned_concepts_and_explain_name_matches(self):
+        with db.connect(write=True) as c:
+            for i in range(205):
+                c.execute('INSERT INTO knowledge_concepts VALUES (?,?,?,?,?,?,?,?)',
+                          (self.owner, f'concept-{i}', f'A filler {i:03}', '무관한 개념', '', 'confirmed', None, service.now()))
+            c.execute('INSERT INTO knowledge_concepts VALUES (?,?,?,?,?,?,?,?)',
+                      (self.owner, 'stack-id', '스택', '마지막에 들어간 항목을 먼저 꺼내는 구조', '자료구조', 'confirmed', None, service.now()))
+            c.execute('INSERT INTO knowledge_aliases VALUES (?,?,?,?)', (self.owner, 'stack-id', 'Stack', 'en'))
+        self.assertFalse(any(c['id'] == 'stack-id' for c in ontology.concepts(self.owner)))
+        response = self.client.post('/api/knowledge/concept-matches', json={'pref_label': 'ＳＴＡＣＫ', 'aliases': []})
+        self.assertEqual(response.status_code, 200, response.text)
+        match = response.json()[0]
+        self.assertEqual(match['concept']['id'], 'stack-id')
+        self.assertIn('일치', match['reason'])
+        self.assertEqual(match['concept']['scope'], '자료구조')
+        db.execute('INSERT INTO knowledge_concepts VALUES (?,?,?,?,?,?,?,?)',
+                   (self.owner, 'memory-stack', '스택', '함수 호출 프레임이 저장되는 영역', '메모리', 'confirmed', None, service.now()))
+        homonyms = ontology.concept_matches(self.owner, ConceptLookup(pref_label='스택'))
+        self.assertEqual({m['concept']['scope'] for m in homonyms}, {'자료구조', '메모리'})
+        self.assertEqual(len(ontology.concept_matches(self.owner, ConceptLookup(pref_label='A filler'))), 3)
+        self.assertEqual(ontology.concept_matches('other', ConceptLookup(pref_label='스택')), [])
+        self.assertEqual(self.client.post('/api/knowledge/concept-matches', json={'pref_label': '무관함'}).json(), [])
+        self.assertEqual(self.client.post('/api/knowledge/concept-matches', json={'pref_label': ''}).json(), [])
+        self.assertEqual(self.client.post('/api/knowledge/concept-matches', json={'pref_label': 'x' * 161}).status_code, 422)
+
+    def test_semantic_match_reasons_are_validated_and_return_current_owned_definitions(self):
+        note, _ = self.note()
+        self.register(note)
+        existing = db.one("SELECT * FROM knowledge_concepts WHERE pref_label='인출 연습'")
+        next_note, _ = self.note(title='두 번째 정리')
+        data = KnowledgeProposal.model_validate(self.graph_data(next_note))
+        reviewed = ReviewedKnowledgeProposal(**data.model_dump(), review={'summary': '정의 확인', 'issues': []}, matches=[{
+            'key': 'a', 'existing_id': existing['id'], 'reason': '둘 다 기억을 스스로 떠올리는 학습 방법이며 적용 범위가 같습니다.'}])
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[data, reviewed]):
+            result = self.client.post(f"/api/reference-notes/{next_note['id']}/proposals", json={'revision': 1})
+        proposal = reference_notes.proposal_view(self.owner, result.json()['id'])
+        self.assertEqual(proposal['state'], 'ready')
+        self.assertEqual(proposal['matches'][0]['concept']['definition'], existing['definition'])
+        self.assertEqual(proposal['matches'][0]['reason'], reviewed.matches[0].reason)
+        self.assertNotIn('matches', proposal['data'])
+        self.assertEqual(proposal['data']['concepts'][0]['existing_id'], '')
+        self.assertEqual(len(db.all('SELECT * FROM knowledge_sources')), 1)
+        for key, target in [('unknown', existing['id']), ('a', 'not-owned-id')]:
+            invalid = reviewed.model_copy(deep=True)
+            invalid.matches[0].key = key
+            invalid.matches[0].existing_id = target
+            with self.assertRaises(service.Error):
+                ontology.validate_proposal(self.owner, invalid, next_note['body'])
+        reviewed.matches.append(reviewed.matches[0])
+        with self.assertRaises(service.Error):
+            ontology.validate_proposal(self.owner, reviewed, next_note['body'])
 
     def test_connected_review_preserves_answers_and_grounds_followups(self):
         note, _ = self.note()

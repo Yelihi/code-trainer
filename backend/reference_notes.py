@@ -10,7 +10,7 @@ import zipfile
 from urllib.parse import urlsplit
 from PIL import Image, ImageOps, UnidentifiedImageError
 from . import ai, db, ontology, service, usage
-from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback
+from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup
 
 IMAGE_PATH = re.compile(r'/api/reference-images/([a-f0-9]{32})')
 
@@ -151,6 +151,16 @@ def proposal_view(owner, proposal_id):
         raise service.Error('개념 후보를 찾을 수 없습니다.', 404)
     row['data'] = json.loads(row['data']) if row['data'] else None
     row['review'] = row['data'].pop('review', None) if row['data'] else None
+    matches = row['data'].pop('matches', []) if row['data'] else []
+    for concept in row['data']['concepts'] if row['data'] else []:
+        if concept['existing_id'] and not any(m['key'] == concept['key'] and m['existing_id'] == concept['existing_id'] for m in matches):
+            matches.append({'key': concept['key'], 'existing_id': concept['existing_id'], 'reason': 'AI가 정의와 적용 범위를 비교해 연결 후보로 제안했습니다.'})
+    row['matches'] = []
+    for match in matches:
+        concept = db.one('SELECT * FROM knowledge_concepts WHERE owner=? AND id=?', (owner, match['existing_id']))
+        if concept:
+            concept['aliases'] = [r['label'] for r in db.all('SELECT label FROM knowledge_aliases WHERE owner=? AND concept_id=?', (owner, concept['id']))]
+            row['matches'].append({'key': match['key'], 'concept': concept, 'reason': match['reason']})
     return row
 
 
@@ -200,6 +210,12 @@ challenged and quote is the contrary evidence. Preserve conflicting claims inste
 The user will explicitly review and approve; your output itself is not source evidence.
 The note may be about any subject, not necessarily programming.''', {'note': note, 'existing_concepts': candidates})
         ontology.validate_proposal(owner, data, note['body'])
+        # Search across the owner's labels/aliases before the semantic review, beyond the initial 200 rows.
+        known = {c['id']: c for c in candidates}
+        for candidate in data.concepts:
+            for match in ontology.concept_matches(owner, ConceptLookup(pref_label=candidate.pref_label, aliases=candidate.aliases)):
+                known[match['concept']['id']] = match['concept']
+        candidates = list(known.values())
         data = ai.generate(ReviewedKnowledgeProposal, '''Independently review this note AND the extracted graph in Korean.
 Do not assume that a statement is true because the learner wrote it or because extraction copied it.
 Check factual definitions, logical contradictions, conditions, exceptions, claim strength, and relationship directions.
@@ -219,7 +235,14 @@ review.summary explains the scope and any extraction corrections. Empty issues m
 Keep the summary to two concise sentences. Explain each issue in plain Korean using concept names, never internal
 keys, field names or relation enum values. Suggestions should be usable note text or concrete verification steps.
 Preserve unresolved questions as questions and refuting evidence as refuting, never established supporting claims.
-Do not rewrite the original note. Return the full candidate graph plus review.''',
+matches is an IDENTITY/reuse recommendation, NOT a related-topic list. For each candidate return zero to three
+existing_concepts that plausibly denote the SAME concept with compatible scope, using its local key, existing_id,
+and a concise Korean reason comparing definitions and scope. Different names may still denote the same concept.
+Do NOT recommend opposites (FIFO vs LIFO), broader/narrower concepts, implementations vs principles (stack vs LIFO),
+or anything merely useful for comparison. Such items must remain separate concepts, not identity matches.
+Return no match when only related concepts exist; never pad the list to three. Names alone never prove identity.
+Never fabricate IDs or change the candidate definition to fit a match. The learner must explicitly choose to reuse it.
+Do not rewrite the original note. Return the full candidate graph plus review and matches.''',
             {'note': note, 'candidate_graph': data.model_dump(), 'existing_concepts': candidates})
         ontology.validate_proposal(owner, data, note['body'])
         if any(issue.quote not in note['body'] for issue in data.review.issues):

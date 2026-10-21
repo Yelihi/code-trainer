@@ -170,7 +170,7 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
     <nav className="foundation-mode" aria-label="단원 화면"><Link to={`/foundations/${lesson.id}`}>개념 탐구</Link><span aria-current="page">설명과 구현</span></nav>
     <div className="foundation-practice">
       <section className="foundation-work"><div className="foundation-steps" role="group" aria-label="학습 단계"><button aria-pressed={step === 1} onClick={() => setStep(1)}><b>01</b> 내 말로 설명 {unlocked && '✓'}</button><button aria-pressed={step === 2} disabled={!unlocked} onClick={() => setStep(2)}><b>02</b> 구현과 테스트 {(lesson.completed || attempt?.state === 'passed') && '✓'}</button></div>
-      {step === 1 ? <><h2>어떻게 동작하는지 설명해보세요.</h2><p className="muted">문장 표현보다 개념을 봅니다. 피드백을 받으면 구현으로 넘어갈 수 있어요.</p>
+      {step === 1 ? <><h2>어떻게 동작하는지 설명해보세요.</h2><p className="page-intro">문장 표현보다 개념을 봅니다. 피드백을 받으면 구현으로 넘어갈 수 있어요.</p>
         <form onSubmit={e => { e.preventDefault(); void act('explain'); }}>{lesson.questions.map((q, index) => <label className="explanation-question" key={q.id}><span>{index + 1}. <InlineMarkdown>{q.prompt}</InlineMarkdown></span><textarea value={draft.answers[index]} maxLength={3000} required rows={4} disabled={!!busy} onChange={e => setAnswer(index, e.target.value)} placeholder="이해한 내용을 내 말로 적어주세요." /><small>{draft.answers[index].length} / 3,000</small></label>)}
           <button className="primary" disabled={!!busy || pending || oversized || draft.answers.some(a => !a.trim())}>{review?.state === 'running' ? '설명을 검토하고 있어요…' : '설명 제출 · AI 피드백 받기'}</button>
         </form>

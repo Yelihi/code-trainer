@@ -34,10 +34,11 @@ export function PredictionInput({ answer, onChange, disabled }: {
   return (
     <div className="prediction" role="group" aria-labelledby={`${id}-title`}>
       <strong id={`${id}-title`}>예상 출력</strong>
-      <p id={`${id}-help`} className="prediction-help">
-        true, false, 숫자 등 출력되는 값만 순서대로 입력하세요. 값 사이 공백·줄바꿈은 채점에 영향을 주지 않아요.
-        Enter로 다음 칸을 추가할 수 있어요. 문자열은 코드에 표시된 출력 형식을 따르세요.
-      </p>
+      <div id={`${id}-help`} className="prediction-help">
+        <strong>출력값 작성 안내</strong>
+        <p>true, false, 숫자 등 출력되는 값만 순서대로 입력하세요. 값 사이 공백·줄바꿈은 채점에 영향을 주지 않아요.</p>
+        <p><kbd>Enter</kbd>로 다음 칸을 추가할 수 있어요. 문자열은 코드에 표시된 출력 형식을 따르세요.</p>
+      </div>
       <div className="prediction-lines">
         {lines.map((line, index) => (
           <div className="prediction-line" key={index}>

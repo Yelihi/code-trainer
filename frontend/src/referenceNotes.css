@@ -26,7 +26,7 @@
 .reference-tabs button[aria-pressed="true"] { background: #52d7b710; color: var(--green); border-color: #52d7b740; }
 .reference-tabs small { margin-left: auto; color: var(--muted); }
 .reference-title { display: block; margin: 0 0 20px; }
-.reference-title input { border: 0; border-radius: 0; background: transparent; padding: 12px 0; font-size: clamp(24px,3vw,36px); font-weight: 650; }
+.reference-title input { border: 1px solid transparent; border-radius: 8px; background: transparent; padding: 12px 20px; font-size: clamp(24px,3vw,36px); font-weight: 650; }
 .reference-metadata { margin: 0 0 24px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; }
 .reference-metadata summary { cursor: pointer; }
 .reference-metadata .disclosure-label > span { color: var(--muted); font-size: 13px; margin-left: 16px; }
@@ -36,7 +36,9 @@
 .reference-detail label input,.reference-detail label select,.reference-detail label textarea { margin-top: 7px; color: var(--text); }
 .reference-detail fieldset { min-width: 0; padding: 0; border: 0; }
 .reference-detail fieldset label { margin-bottom: 16px; }
-.reference-editor { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--panel); }
+.reference-editor { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--panel); transition: border-color 200ms ease, box-shadow 200ms ease; }
+.reference-editor:has(textarea:focus-visible) { border-color: #b59aff; box-shadow: 0 0 0 4px #9868ff1f, 0 0 16px #9868ff0a; }
+@media (prefers-reduced-motion: reduce) { .reference-editor { transition: none; } }
 .reference-editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .reference-formatting,.reference-editor-modes { display: flex; flex-wrap: wrap; gap: 4px; }
 .reference-formatting button,.reference-editor-modes button { min-height: 38px; padding: 6px 10px; font-size: 13px; background: transparent; border-color: transparent; }

@@ -55,6 +55,22 @@ class KnowledgeProposal(Model):
     assertions: list[AssertionCandidate] = Field(max_length=24)
 
 
+class NoteIssue(Model):
+    kind: Literal['correction_needed', 'needs_verification']
+    quote: Description
+    explanation: Description
+    suggestion: Description
+
+
+class NoteContentReview(Model):
+    summary: Description
+    issues: list[NoteIssue] = Field(max_length=12)
+
+
+class ReviewedKnowledgeProposal(KnowledgeProposal):
+    review: NoteContentReview
+
+
 class RevisionInput(Model):
     revision: int = Field(ge=1)
 

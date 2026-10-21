@@ -1,13 +1,14 @@
 import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Markdown } from './Markdown';
 import { api, errorMessage } from './api';
 import { ErrorNotice, useApp } from './App';
 import { clearReferenceDraft, bases, relations, type Assertion, type Candidate, type Concept, type Proposal, type ProposalData, type ReferenceNote } from './referenceTypes';
 
 const blankConcept = (key: string): Candidate => ({ key, existing_id: '', pref_label: '', definition: '', scope: '', aliases: [], quote: '', basis: 'source' });
 
-export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote; onRegistered: (note: ReferenceNote) => void }) {
+export function ReferenceKnowledge({ note, onNoteChange, onEdit }: { note: ReferenceNote; onNoteChange: (note: ReferenceNote) => void; onEdit: () => void }) {
   const { userId } = useApp();
   const [draftKey] = useState(`reference-graph-draft:${userId}:${note.id}:${note.revision}`);
   const [restored] = useState(() => {
@@ -18,7 +19,7 @@ export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote
   const [search, setSearch] = useState('');
   const [data, setData] = useState<ProposalData | null>(restored?.data ?? null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [proposalId, setProposalId] = useState(note.proposal?.revision === note.revision ? note.proposal.id : '');
+  const [proposalId, setProposalId] = useState(note.proposal?.id ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [requestId, setRequestId] = useState<string>(restored?.requestId ?? crypto.randomUUID());
@@ -36,11 +37,11 @@ export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote
         if (controller.signal.aborted) return;
         setProposal(result);
         if (result.state === 'running') timer = setTimeout(() => void load(), 1500);
-        else if (result.data) setData(current => current ?? result.data);
+        else if (result.data && result.revision === note.revision) setData(current => current ?? result.data);
       } catch (e) { if (!controller.signal.aborted) setError(errorMessage(e)); }
     };
     void load(); return () => { controller.abort(); clearTimeout(timer); };
-  }, [proposalId]);
+  }, [proposalId, note.revision]);
   function change(next: ProposalData) {
     const requestId = crypto.randomUUID(); setData(next); setRequestId(requestId);
     try { localStorage.setItem(draftKey, JSON.stringify({ data: next, requestId })); }
@@ -50,23 +51,37 @@ export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote
   function assertion(index: number, patch: Partial<Assertion>) { if (data) change({ ...data, assertions: data.assertions.map((a, i) => i === index ? { ...a, ...patch } : a) }); }
   async function analyze() {
     setBusy(true); setError('');
-    try { const result = await api<Proposal>(`/reference-notes/${note.id}/proposals`, 'POST', { revision: note.revision }); setData(null); clearReferenceDraft(draftKey); setProposal(result); setProposalId(result.id); }
+    try { const result = await api<Proposal>(`/reference-notes/${note.id}/proposals`, 'POST', { revision: note.revision }); setData(result.data); setRequestId(crypto.randomUUID()); clearReferenceDraft(draftKey); setProposal(result); setProposalId(result.id); onNoteChange({ ...note, proposal: { id: result.id, state: result.state, revision: result.revision } }); }
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   async function register() {
     setBusy(true); setError('');
-    try { const result = await api<ReferenceNote>(`/reference-notes/${note.id}/knowledge`, 'POST', { revision: note.revision, request_id: requestId, proposal_id: proposal?.state === 'ready' ? proposal.id : null, data }); clearReferenceDraft(draftKey); onRegistered(result); }
+    try { const result = await api<ReferenceNote>(`/reference-notes/${note.id}/knowledge`, 'POST', { revision: note.revision, request_id: requestId, proposal_id: proposal?.state === 'ready' ? proposal.id : null, data }); clearReferenceDraft(draftKey); onNoteChange(result); }
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   const pending = busy || proposal?.state === 'running';
+  const reviewBlocked = !!proposalId && (!proposal?.review || proposal.state !== 'ready' || proposal.revision !== note.revision || proposal.review.issues.length > 0);
   if (note.registration?.version === note.revision && note.registration.state === 'active') return <section className="reference-connected"><span className="eyebrow">CONNECTED</span><h2>개념 지도에 등록했습니다.</h2><p>이 노트 v{note.revision}의 근거와 연결을 보관하고 있습니다.</p><Link className="button" to="/knowledge">지식 그래프 열기 ↗</Link></section>;
   return <section className="reference-knowledge">
     <div className="section-heading"><div><span className="eyebrow">CONNECT WITH INTENTION</span><h2>개념 지도에 연결하기</h2></div><span className="reference-version">노트 v{note.revision}</span></div>
     <p>기존 개념, 새로운 주장과 관계를 검토하고 직접 등록하세요. 후보를 준비하는 것만으로 지도에 추가되지는 않습니다.</p>
     {note.registration && <p className="notice">이전 등록은 v{note.registration.version}입니다. 변경된 근거를 확인해 새 버전을 등록해주세요.</p>}
-    <div className="reference-actions"><button disabled={pending} onClick={() => void analyze()}>{pending ? '후보 준비 중…' : 'AI로 연결 후보 준비'}</button><button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] })}>직접 개념 입력</button></div>
+    <div className="reference-actions"><button disabled={pending} onClick={() => void analyze()}>{pending ? '개념 추출·검토 중…' : 'AI로 후보 생성·내용 검토'}</button><button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] })}>직접 개념 입력</button></div>
     <ErrorNotice error={error || proposal?.error || ''} />
-    {proposal?.state === 'running' && <p role="status" className="notice">노트에서 개념과 근거를 찾고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
+    {proposal?.state === 'running' && <p role="status" className="notice">개념과 근거를 추출한 뒤, 별도 검토로 본문과 후보의 정확성을 살피고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
+    {proposal?.review && <section className="reference-content-review" aria-label="AI 내용 검토" aria-live="polite">
+      <header><span className="eyebrow">CONTENT REVIEW · v{proposal.revision}</span><h3>{proposal.review.issues.length ? '본문에서 먼저 확인할 내용이 있습니다.' : '검토 범위에서 수정할 오류를 발견하지 못했습니다.'}</h3></header>
+      <Markdown language="">{proposal.review.summary}</Markdown>
+      <p className="muted">AI의 지식에 기반한 검토입니다. 원문 자료나 최신 정보를 외부에서 확인한 결과는 아니며, 정확성을 보장하지 않습니다.</p>
+      {proposal.revision !== note.revision && <p className="notice">이전 v{proposal.revision}의 검토입니다. 저장한 v{note.revision}에서 AI 후보 생성·내용 검토를 다시 진행해주세요.</p>}
+      {proposal.review.issues.map((issue, i) => <article className="reference-review-issue" key={i}>
+        <h4><span>{i + 1}</span>{issue.kind === 'correction_needed' ? '수정 필요' : '추가 확인 필요'}</h4>
+        <blockquote>{issue.quote}</blockquote>
+        <dl><dt>검토 이유</dt><dd><Markdown language="">{issue.explanation}</Markdown></dd><dt>수정·확인 제안</dt><dd><Markdown language="">{issue.suggestion}</Markdown></dd></dl>
+      </article>)}
+      {proposal.review.issues.length > 0 && <footer><p>제안을 검토해 본문을 수정하고 저장한 뒤 다시 검토해주세요. 수정한 내용을 근거로 개념 지도에 등록합니다.</p><button type="button" onClick={onEdit}>본문 수정하러 가기</button></footer>}
+    </section>}
+    {proposal?.state === 'ready' && !proposal.review && <p className="notice">내용 검토 기능 적용 전의 후보입니다. AI 후보를 다시 생성해 검토해주세요.</p>}
     {data && <form onSubmit={e => { e.preventDefault(); void register(); }}>
       <label className="reference-concept-search">기존 개념 검색<input value={search} onChange={e => setSearch(e.target.value)} placeholder="개념명 · 정의 · 별칭으로 찾기" maxLength={160} /></label>
       <fieldset disabled={!!pending}><legend>개념과 근거</legend>
@@ -100,7 +115,7 @@ export function ReferenceKnowledge({ note, onRegistered }: { note: ReferenceNote
         </article>)}
         <button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</button>
       </fieldset>
-      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>등록은 숙달이나 문제 통과를 의미하지 않습니다.</small></p><button className="primary" disabled={!!pending}>검토한 내용으로 개념 지도에 추가하기</button></div>
+      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>{proposal?.review ? '검토 후 직접 변경한 후보는 등록 전에 다시 확인해주세요.' : 'AI 검토 없이 직접 입력한 내용입니다. 정의와 근거를 확인해주세요.'}</small></p><button className="primary" disabled={!!pending || reviewBlocked}>검토한 내용으로 개념 지도에 추가하기</button></div>
     </form>}
   </section>;
 }

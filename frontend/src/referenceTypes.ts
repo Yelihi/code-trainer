@@ -6,7 +6,8 @@ export type Concept = { id: string; pref_label: string; definition: string; scop
 export type Candidate = { key: string; existing_id: string; pref_label: string; definition: string; scope: string; aliases: string[]; quote: string; basis: keyof typeof bases };
 export type Assertion = { subject: string; kind: keyof typeof relations; object: string; text: string; scope: string; quote: string; basis: keyof typeof bases; disposition: 'supports' | 'refutes' };
 export type ProposalData = { concepts: Candidate[]; assertions: Assertion[] };
-export type Proposal = { id: string; revision: number; state: string; data: ProposalData | null; error: string };
+export type NoteContentReview = { summary: string; issues: { kind: 'correction_needed' | 'needs_verification'; quote: string; explanation: string; suggestion: string }[] };
+export type Proposal = { id: string; revision: number; state: string; data: ProposalData | null; review: NoteContentReview | null; error: string };
 export type ReferenceNote = { id: string; title: string; body: string; metadata: ReferenceMetadata; revision: number; archived: number; updated_at: string;
   registration: { id: string; version: number; state: string; created_at: string } | null;
   versions: { revision: number; created_at: string }[]; reviews: { id: string; state: string; created_at: string }[];

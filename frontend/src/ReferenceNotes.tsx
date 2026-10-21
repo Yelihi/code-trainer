@@ -113,6 +113,7 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
   return <main className="page reference-page reference-detail">
     <div className="breadcrumb"><Link to="/references">레퍼런스 노트</Link><span>/</span>{note ? '나의 기록' : '새 노트'}</div>
     <header className="reference-detail-heading"><div><span className="eyebrow">REFERENCE NOTE</span><p className="reference-save-state" aria-live="polite">{dirty ? '저장하지 않은 변경사항' : note ? `v${note.revision} · ${timestamp(note.updated_at)} 저장` : '새로운 배움을 기록하세요'}</p></div><div className="reference-actions">
+      {note && !note.archived && <button disabled={busy || dirty} onClick={() => navigate(`/github/share?kind=note&id=${note.id}`)}>GitHub 이슈로 공유 ↗</button>}
       {note && <button disabled={busy || dirty || !!note.archived} onClick={() => void review()}>내 말로 설명해보기 ↗</button>}
       <button className="primary" disabled={busy || uploading || !!note?.archived || !title.trim() || !body.trim() || (!!note && !dirty)} onClick={() => void save()}>{busy ? '처리 중…' : '노트 저장'}</button>
     </div></header>

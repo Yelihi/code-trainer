@@ -23,7 +23,7 @@
 .graph-search > span[aria-hidden] { position: absolute; left: 12px; top: 6px; font-size: 23px; color: var(--muted); }
 .graph-search input { min-height: 40px; padding-left: 38px; font-size: var(--text-caption); }
 .graph-filter select { min-height: 40px; font-size: var(--text-caption); }
-.graph-search-results { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow: auto; padding: 14px 18px; border-inline: 1px solid var(--line); background: var(--panel); }
+.graph-search-results { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow: auto; scrollbar-gutter: stable; padding: 14px 18px; border-inline: 1px solid var(--line); background: var(--panel); }
 .graph-search-results small { color: var(--muted); margin-right: 8px; }
 .graph-search-results button { padding: 5px 10px; font-size: var(--text-caption); }
 .graph-body { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); border-top: 0; position: relative; overflow: hidden; min-height: 570px; height: min(72vh, 820px); }
@@ -58,7 +58,7 @@
 .graph-controls button:hover { background: #30233e; }
 .graph-controls button:last-child { border-left: 1px solid var(--line); border-radius: 0 5px 5px 0; font-size: 12px; margin-left: 4px; }
 .graph-controls output { width: 44px; text-align: center; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.graph-drawer { padding: 22px; background: #151122; border-left: 1px solid #44364e; overflow: auto; min-width: 0; height: 100%; outline: none; animation: graph-drawer-enter .24s ease-out; }
+.graph-drawer { padding: 22px; background: #151122; border-left: 1px solid #44364e; overflow: auto; scrollbar-gutter: stable; min-width: 0; height: 100%; outline: none; animation: graph-drawer-enter .24s ease-out; }
 .graph-drawer:focus-visible { box-shadow: inset 2px 0 #a986d7; }
 .graph-drawer > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .graph-kind { font-size: 11px; color: var(--graph-concept); background: #b998f70e; padding: 5px 8px; border: 1px solid #b998f730; border-radius: 5px; }
@@ -79,7 +79,7 @@
 .graph-exercises strong { display: block; font-size: 13px; margin-bottom: 10px; }
 .graph-exercises > li > div { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; }
 .graph-exercises > li > span { font-size: 12px; }
-.graph-relations { height: 100%; overflow: auto; padding: 28px; background: #100d1c; }
+.graph-relations { height: 100%; overflow: auto; scrollbar-gutter: stable; padding: 28px; background: #100d1c; }
 .graph-relations h2 { font-size: 20px; margin-top: 0; }
 .graph-relations article { padding: 20px 0; border-top: 1px solid var(--line); }
 .graph-relations article > div { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }

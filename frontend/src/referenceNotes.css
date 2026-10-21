@@ -46,7 +46,7 @@
 .reference-editor-modes button[aria-pressed="true"] { color: var(--green); background: #52d7b711; }
 .reference-editor-body { display: grid; grid-template-columns: 1fr 1fr; min-height: 460px; }
 .reference-editor-body textarea { border: 0; border-radius: 0; resize: vertical; padding: 28px; min-height: 460px; font-size: 15px; line-height: 1.9; word-break: normal; }
-.reference-preview { padding: 28px; overflow: auto; min-width: 0; max-height: 800px; border-left: 1px solid var(--line); }
+.reference-preview { padding: 28px; overflow: auto; scrollbar-gutter: stable; min-width: 0; max-height: 800px; border-left: 1px solid var(--line); }
 .reference-preview .markdown > :first-child { margin-top: 0; }
 .reference-editor.mode-write .reference-editor-body,.reference-editor.mode-preview .reference-editor-body { grid-template-columns: 1fr; }
 .reference-editor.mode-preview .reference-preview { border-left: 0; }

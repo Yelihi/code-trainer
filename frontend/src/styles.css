@@ -867,10 +867,6 @@ button.text-button,
   margin: 5px;
   font-size: var(--text-caption);
 }
-.loading {
-  padding: 60px;
-  color: var(--muted);
-}
 .icon-button {
   padding: 5px;
   border: 0;

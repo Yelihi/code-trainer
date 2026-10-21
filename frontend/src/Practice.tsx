@@ -1,4 +1,5 @@
 import { AnimatedDetails } from './AnimatedDetails';
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
@@ -47,8 +48,8 @@ export function Practice({ review = false }: { review?: boolean }) {
     );
   if (!data)
     return (
-      <main className="page" role="status">
-        연습을 불러오는 중…
+      <main className="page">
+        <LoadingSkeleton layout="editor" label="연습을 불러오는 중…" heading />
       </main>
     );
   return (

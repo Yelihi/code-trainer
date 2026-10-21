@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -61,7 +62,7 @@ function ReviewConversation({ id }: { id: string }) {
     <div className="breadcrumb"><Link to="/references">레퍼런스 노트</Link><span>/</span> 내 말로 설명해보기</div>
     <header className="reference-page-heading"><div><span className="eyebrow">THINK IT THROUGH</span><h1>설명에서, 다음 질문으로.</h1><p>내가 이해한 것을 말로 풀어보고, 연결된 기록을 따라 생각을 넓혀보세요.</p></div>{review && <Link className="button" to={'/references/' + review.note_id}>노트로 돌아가기</Link>}</header>
     <ErrorNotice error={error} />{error && <button onClick={() => setVersion(v => v + 1)}>기록 다시 불러오기</button>}
-    {!review && !error && <p role="status">복습을 불러오는 중…</p>}
+    {!review && !error && <LoadingSkeleton layout="conversation" label="복습을 불러오는 중…" />}
     {review && <div className="reference-review-layout"><section className="reference-conversation" aria-label="설명과 꼬리 질문">
       {review.turns.map((turn, i) => <article key={i} className={`reference-turn ${turn.role}`}>
         <span className="eyebrow">{turn.role === 'user' ? '나의 설명' : i === 0 ? '첫 번째 질문' : 'AI 피드백 · 꼬리 질문'}</span>

@@ -8,7 +8,8 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db
+from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
+from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
@@ -145,6 +146,48 @@ def logout(request: Request, current=Depends(user)):
 @app.get('/api/health')
 def health():
     return service.health()
+
+
+@app.get('/api/github/connection')
+def github_connection(current=Depends(user)):
+    return github_sharing.status(current['id'])
+
+
+@app.put('/api/github/connection')
+def github_connect(body: GitHubConnection, current=Depends(user)):
+    return github_sharing.connect(current['id'], body.token)
+
+
+@app.delete('/api/github/connection')
+def github_disconnect(current=Depends(user)):
+    return github_sharing.disconnect(current['id'])
+
+
+@app.post('/api/github/repository-check')
+def github_check(body: GitHubRepository, current=Depends(user)):
+    service.rate('github-check:' + current['id'], 30)
+    return github_sharing.check(current['id'], body.url)
+
+
+@app.post('/api/github/preview')
+def github_preview(body: GitHubSource, current=Depends(user)):
+    return github_sharing.preview(current['id'], body.kind, body.id)
+
+
+@app.get('/api/github/shares')
+def github_history(current=Depends(user)):
+    return github_sharing.history(current['id'])
+
+
+@app.post('/api/github/shares')
+def github_publish(body: GitHubPublish, current=Depends(user)):
+    return github_sharing.publish(current['id'], body)
+
+
+@app.post('/api/github/shares/{share_id}/recover')
+def github_recover(share_id: str, body: GitHubRecovery, current=Depends(user)):
+    service.rate('github-recover:' + current['id'], 15)
+    return github_sharing.recover(current['id'], share_id, body.url)
 
 
 @app.get('/api/feed-posts')

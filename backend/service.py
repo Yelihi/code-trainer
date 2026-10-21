@@ -52,6 +52,7 @@ def rate(key, limit, seconds=60):
 
 def initialize():
     db.initialize()
+    db.execute("UPDATE github_shares SET state='unknown',error='서버가 다시 시작되어 등록 결과를 확인하지 못했습니다. GitHub에서 먼저 확인해주세요.' WHERE state='sending'")
     from . import ontology
     ontology.migrate()
     db.execute("UPDATE knowledge_proposals SET state='failed',error='서버가 다시 시작되었습니다. 다시 분석해주세요.' WHERE state='running'")

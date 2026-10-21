@@ -11,6 +11,7 @@ import { Foundations, FoundationLesson } from './Foundations';
 import { LearningMap } from './LearningMap';
 import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
 import { ReferenceReview } from './ReferenceReview';
+import { GitHubSettings, GitHubShare } from './GitHubSharing';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
@@ -28,6 +29,8 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/foundations/:id/practice', element: <FoundationLesson key="practice" practice /> },
   { path: '/me', element: <Me /> },
   { path: '/knowledge', element: <LearningMap /> },
+  { path: '/settings/github', element: <GitHubSettings /> },
+  { path: '/github/share', element: <GitHubShare /> },
   { path: '/references', element: <ReferenceNotes /> },
   { path: '/references/new', element: <ReferenceNoteRoute /> },
   { path: '/references/:id', element: <ReferenceNoteRoute /> },

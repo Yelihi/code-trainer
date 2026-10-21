@@ -1,0 +1,71 @@
+.github-page { max-width: 1300px; }
+.github-settings-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, 1fr); gap: 28px; align-items: start; }
+.github-stack { display: grid; gap: 24px; }
+.github-card { padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); margin-bottom: 24px; }
+.github-stack .github-card { margin-bottom: 0; }
+.github-section-title { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 28px; }
+.github-section-title h2 { font-size: 19px; margin: 0 0 8px; }
+.github-section-title p, .github-guide p { color: var(--muted); margin: 0; line-height: 1.7; font-size: 14px; }
+.github-step { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 1px solid #52d7b733; border-radius: 10px; color: var(--green); background: #52d7b70a; font: 12px var(--font-mono); }
+.github-page label, .github-preview-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.github-page input:not([type=checkbox]), .github-page textarea { width: 100%; }
+.github-page input:not([type=checkbox]) { min-height: 48px; }
+.github-caption { font-size: 12px; color: var(--muted); line-height: 1.8; margin: 12px 0 20px; }
+.github-guide { padding: 28px 8px; }
+.github-guide h2 { font-size: 20px; margin: 16px 0 24px; }
+.github-guide ol { padding-left: 21px; margin-bottom: 26px; }
+.github-guide li { padding-left: 7px; margin-bottom: 22px; }
+.github-guide li::marker { color: var(--green); }
+.github-guide strong { font-size: 14px; }
+.github-guide li p { margin-top: 8px; }
+.github-guide > p { margin-top: 16px; }
+.github-guide-footer { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 20px; }
+.github-guide-footer .text-link { display: inline-block; margin-top: 16px; }
+.github-identity { display: flex; align-items: center; gap: 14px; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.github-identity small { display: block; color: var(--muted); font-size: 11px; margin-top: 7px; }
+.github-identity button { margin-left: auto; font-size: 12px; }
+.github-avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: #9868ff22; color: #cbb5ff; font-weight: 700; }
+.github-repo-input { display: flex; align-items: stretch; gap: 12px; }
+.github-repo-input input { min-width: 0; flex: 1; }
+.github-repo-input button { white-space: nowrap; }
+.github-repo-heading, .github-record-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.github-repo-heading { margin: 28px 0 18px; }
+.github-repo-heading a { color: var(--text); font-size: 14px; overflow-wrap: anywhere; }
+.github-badge { display: inline-block; border: 1px solid var(--line); border-radius: 20px; font-size: 11px; padding: 6px 10px; color: var(--muted); white-space: nowrap; }
+.github-badge.published { border-color: #52d7b755; color: var(--green); }
+.github-badge.public, .github-badge.unknown, .github-badge.failed { color: #edc185; border-color: #edc18540; }
+.github-checks { padding: 0; list-style: none; display: grid; gap: 12px; }
+.github-check { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; line-height: 1.6; }
+.github-check > span { display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; flex: 0 0 21px; background: #52d7b711; color: var(--green); }
+.github-check.warning > span { color: #edc185; background: #edc18514; }
+.github-check.error > span { color: #ff9fba; background: #ff9fba14; }
+.github-check small { display: block; color: var(--muted); margin-top: 5px; line-height: 1.8; }
+.github-checking { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); margin-top: 20px; }
+.github-checking span { width: 14px; height: 14px; border: 2px solid #9868ff33; border-top-color: #b895ff; border-radius: 50%; animation: github-spin .8s linear infinite; }
+@keyframes github-spin { to { transform: rotate(360deg); } }
+.github-share-top { display: flex; justify-content: space-between; gap: 16px; margin: 28px 0 24px; flex-wrap: wrap; }
+.github-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 26px; }
+.github-editor-grid > div { min-width: 0; }
+.github-editor-grid textarea, .github-markdown-preview { height: 490px; min-height: 300px; padding: 20px; line-height: 1.8; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #090817; }
+.github-editor-grid textarea { resize: vertical; font-family: var(--font-mono); font-size: 12px; }
+.github-markdown-preview { overflow-wrap: anywhere; }
+.github-markdown-preview h2 { font-size: 21px; margin: 0 0 24px; }
+.github-markdown-preview .markdown { font-size: 13px; }
+.github-publish { border: 1px solid #9868ff44; background: linear-gradient(120deg, #9868ff0e, #52d7b705); border-radius: 16px; padding: 28px; margin-top: 26px; }
+.github-publish h2 { font-size: 19px; margin-top: 0; }
+.github-publish p { font-size: 14px; line-height: 1.8; }
+.github-publish .github-consent { display: flex; align-items: flex-start; gap: 12px; margin: 20px 0; line-height: 1.7; font-weight: 400; }
+.github-consent input { margin-top: 4px; accent-color: #9868ff; width: 17px; height: 17px; flex: 0 0 17px; }
+.github-public-notice, .github-over-limit { color: #edc185; }
+.github-history { margin-top: 40px; }
+.github-history > h2 { font-size: 19px; margin-bottom: 20px; }
+.github-share-record { padding: 22px 24px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 16px; }
+.github-record-heading small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.github-record-heading h3 { font-size: 16px; margin: 10px 0 16px; }
+.github-share-record p { font-size: 13px; line-height: 1.8; }
+.github-share-record textarea { min-height: 160px; margin-bottom: 14px; }
+.github-share-record label { margin: 20px 0 12px; }
+.github-share-record label input { margin-top: 10px; }
+@media (max-width: 1050px) { .github-settings-grid { grid-template-columns: 1fr; } .github-guide { padding: 8px 4px; } }
+@media (max-width: 760px) { .github-editor-grid { grid-template-columns: 1fr; } .github-card, .github-publish { padding: 20px; } .github-repo-input { flex-direction: column; } .github-editor-grid textarea, .github-markdown-preview { height: 360px; } }
+@media (prefers-reduced-motion: reduce) { .github-checking span { animation: none; } }

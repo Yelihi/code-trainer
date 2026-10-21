@@ -79,6 +79,9 @@ export function App() {
       <div className="sidebar-divider" />
       <div className="sidebar-label">실험 기능</div>
       <nav aria-label="실험 기능" onClick={() => setMenu(false)}><NavLink to="/foundations">기초 구현 학습</NavLink></nav>
+      <div className="sidebar-divider" />
+      <div className="sidebar-label">설정</div>
+      <nav aria-label="설정" onClick={() => setMenu(false)}><NavLink to="/settings/github">GitHub 연동</NavLink></nav>
       <div className="sidebar-bottom"><span className={`status-dot ${health?.sandbox ? 'online' : ''}`} /><span>{health === null ? '실행 환경 확인 필요' : health.sandbox ? '샌드박스 연결됨' : '샌드박스 연결 필요'}</span><button className="icon-button" aria-label="실행 환경 다시 확인" onClick={refreshHealth}>↻</button></div>
     </aside>
     <div className="workspace" id="workspace">

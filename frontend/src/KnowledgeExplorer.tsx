@@ -151,6 +151,7 @@ export function KnowledgeExplorer({ data }: { data: KnowledgeGraph }) {
         <h2 id="graph-node-title">{node.label}</h2><p className="graph-node-meta">{languages[node.scope as Language] ?? node.scope} · 통과 문제 {node.exercise_ids.length}개</p>
         {node.added_at && <p>직접 추가한 학습 · {new Date(node.added_at).toLocaleDateString('ko-KR')}</p>}
         {node.note_id && <Link className="button" to={'/references/' + node.note_id}>레퍼런스 노트 · 설명 복습 열기 ↗</Link>}
+        {(node.note_id || node.ontology_status || node.added_at && node.source_available) && <Link className="button" to={`/github/share?kind=${node.note_id ? 'note' : node.ontology_status ? 'concept' : 'learning'}&id=${encodeURIComponent(node.note_id ?? node.id)}`}>GitHub 이슈로 공유 ↗</Link>}
         {node.needs_review && <p className="notice">등록 이후 노트가 변경되었습니다. 근거를 다시 검토해주세요.</p>}
         {!!node.aliases?.length && <p>별칭 · {node.aliases.join(', ')}</p>}
         {node.ontology_status === 'provisional' && <p className="muted">기존 단원에서 옮긴 개념입니다. 다른 노트와 연결할 때 정의와 적용 범위를 확인해주세요.</p>}

@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, errorMessage, isPending, languages, difficulties, safeSourceUrl, type Generation, type LearningContext } from './api';
@@ -65,13 +66,13 @@ function UnitPractice({ course, unitId, disabled = false }: { course: ReturnType
     {course.pending && course.pending.unit_id !== unitId && <p className="muted">다른 단원을 생성 중입니다. 개념 학습은 계속할 수 있습니다.</p>}
     {health && (!health.ai || !health.sandbox) && <p className="notice">문제를 생성하려면 AI와 실행 환경을 연결해주세요.</p>}
     {generation && (isPending(generation) || generation.state === 'failed') && <GenerationStatus generation={generation} />}
-    {generation?.state === 'failed' && <details className="generation-report"><summary>문제 생성 오류 제보</summary>
+    {generation?.state === 'failed' && <AnimatedDetails className="generation-report" summary="문제 생성 오류 제보">
       {reported === generation.id ? <p role="status">제보를 저장했습니다. 나의 기록에서 확인할 수 있습니다.</p> : <form onSubmit={event => { event.preventDefault(); void report(); }}>
         <label>어떤 문제가 있었나요?<textarea required minLength={5} maxLength={2000} value={message} onChange={event => setMessage(event.target.value)} /></label>
         <p className="muted">작업 ID와 진단 로그를 함께 저장합니다. 나의 기록에서 확인할 수 있습니다.</p>
         <button disabled={reporting}>{reporting ? '저장 중…' : '제보 보내기'}</button><ErrorNotice error={error} />
       </form>}
-    </details>}
+    </AnimatedDetails>}
   </section>;
 }
 
@@ -154,7 +155,7 @@ export function Lesson() {
         {section.walkthrough && <div className="lesson-walkthrough"><h3>차근차근 따라가기</h3><Markdown language={data.language}>{section.walkthrough}</Markdown></div>}
       </section>)}
       <section className="lesson-section"><h2>자주 헷갈리는 지점</h2><ul className="lesson-pitfalls">{unit.pitfalls.map(item => <li key={item}><Markdown language={data.language}>{item}</Markdown></li>)}</ul></section>
-      <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <details className="lesson-checkpoint" key={i}><summary><InlineMarkdown>{item.question}</InlineMarkdown></summary><Markdown language={data.language}>{item.answer}</Markdown></details>)}</section>
+      <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <AnimatedDetails className="lesson-checkpoint" key={i} summary={<><InlineMarkdown>{item.question}</InlineMarkdown></>}><Markdown language={data.language}>{item.answer}</Markdown></AnimatedDetails>)}</section>
       <section className="lesson-section"><span className="eyebrow">KEEP WHAT YOU LEARNED</span><h2>개념 학습 마무리</h2>
         <p>개념 학습으로 마쳐도 괜찮습니다. 기억할 내용을 지도에 직접 추가하세요.</p>
         <AddToKnowledge key={`${data.id}:${unit.id}`} path={`/contexts/${data.id}/units/${unit.id}/knowledge`} addedAt={data.knowledge_added_units?.[unit.id]} />

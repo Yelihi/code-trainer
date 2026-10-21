@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { FoundationRecords } from './Foundations';
 import { UsagePanel } from './Reviews';
@@ -153,8 +154,7 @@ export function GenerationStatus({ generation }: { generation: Generation }) {
       {!events.length && <p>이전 버전에서 생성된 기록이라 상세 원인이 남아 있지 않습니다. 다시 생성하면 단계별 진단 로그가 저장됩니다.</p>}
       <p>{generation.context_id ? '개념 학습과 준비된 문제는 그대로 이용할 수 있습니다. 해당 단원에서 문제 생성을 다시 시도해주세요.' : '학습 과정이 아직 저장되지 않았습니다. 위 안내를 확인한 뒤 자료를 다시 입력하여 생성해주세요.'}</p>
     </div>}
-    <details className="generation-log">
-      <summary>진단 로그 · {events.length}개</summary>
+    <AnimatedDetails className="generation-log" summary={<>진단 로그 · {events.length}개</>}>
       <p>작업 ID <code>{generation.id}</code></p>
       <p className="muted">서버 로그: data/generation.log · API 키, 원문, 정답 코드는 기록하지 않습니다.</p>
       <ol>{events.map((event, index) => <li key={index} data-level={event.level}>
@@ -164,7 +164,7 @@ export function GenerationStatus({ generation }: { generation: Generation }) {
         <small>{[event.code, event.model, event.check, event.status, event.elapsed_seconds != null && `${event.elapsed_seconds}초`].filter(Boolean).join(' · ')}</small>
         {event.issues?.map((issue, i) => <div key={i}><code>{issue.path}</code> · {issue.reason} ({issue.type})</div>)}
       </li>)}</ol>
-    </details>
+    </AnimatedDetails>
     {generation.context_id && !generation.unit_id && <Link className="button primary" to={`/learn/${generation.context_id}`}>학습 과정 보기</Link>}
   </div>;
 }
@@ -242,7 +242,7 @@ export function AdminReports() {
     catch (error) { setActionError(errorMessage(error)); } finally { setBusy(''); }
   }
   if (!data?.length && !error) return null;
-  return <section className="admin-reports"><h2 className="spaced-heading">제보 검토 · 로컬 관리자</h2><ErrorNotice error={error || actionError} /><div className="list">{data?.map(report => <div className="list-row" key={report.id}><div><small>{report.exercise_title} · {report.status}</small><p className="prose">{report.message}</p>{report.generation && <details><summary>생성 진단 보기</summary><GenerationStatus generation={report.generation} /></details>}</div><div className="review-actions"><button disabled={!!busy} onClick={() => void review(report.id, false)}>검토 완료</button>{report.set_id && <button disabled={!!busy} onClick={() => void review(report.id, true)}>문제 제공 중단</button>}</div></div>)}</div></section>;
+  return <section className="admin-reports"><h2 className="spaced-heading">제보 검토 · 로컬 관리자</h2><ErrorNotice error={error || actionError} /><div className="list">{data?.map(report => <div className="list-row" key={report.id}><div><small>{report.exercise_title} · {report.status}</small><p className="prose">{report.message}</p>{report.generation && <AnimatedDetails summary="생성 진단 보기"><GenerationStatus generation={report.generation} /></AnimatedDetails>}</div><div className="review-actions"><button disabled={!!busy} onClick={() => void review(report.id, false)}>검토 완료</button>{report.set_id && <button disabled={!!busy} onClick={() => void review(report.id, true)}>문제 제공 중단</button>}</div></div>)}</div></section>;
 }
 
 export function Me() {
@@ -254,7 +254,7 @@ export function Me() {
     <FoundationRecords />
     <UsagePanel />
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
-    {!!data?.reports.length && <details className="report-history"><summary>내 문제 제보 · {data.reports.length}개</summary>{data.reports.map(report => <div className="list-row" key={report.id}><div><small>{report.exercise_title}</small><p>{report.message}</p></div><span>{report.status}<small>{timestamp(report.created_at)}</small></span></div>)}</details>}
+    {!!data?.reports.length && <AnimatedDetails className="report-history" summary={<>내 문제 제보 · {data.reports.length}개</>}>{data.reports.map(report => <div className="list-row" key={report.id}><div><small>{report.exercise_title}</small><p>{report.message}</p></div><span>{report.status}<small>{timestamp(report.created_at)}</small></span></div>)}</AnimatedDetails>}
     {isAdmin && <AdminReports />}
   </main>;
 }

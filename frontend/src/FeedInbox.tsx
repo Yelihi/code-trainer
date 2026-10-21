@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorNotice, useApp, useResource } from './App';
@@ -46,7 +47,7 @@ export function FeedInbox() {
     <div className="breadcrumb">Workspace<span>/</span> 등록 대기 포스팅</div>
     <span className="eyebrow">READ. CHOOSE. LEARN.</span><h1>등록 대기 포스팅</h1>
     <p className="page-intro">등록한 사이트의 새 글을 한 시간마다 모읍니다.<br />읽어보고 선택한 글만 학습 자료로 만들어보세요.</p>
-    <details className="feed-settings"><summary>수집 출처 {data ? `· ${data.feeds.length}개` : ''}{isAdmin ? ' · 관리' : ''}</summary>
+    <AnimatedDetails className="feed-settings" summary={<>수집 출처 {data ? `· ${data.feeds.length}개` : ''}{isAdmin ? ' · 관리' : ''}</>}>
       <p className="muted">공개 RSS/Atom 주소를 사용합니다. 출처는 함께 사용하고 학습 자료 등록 여부는 사용자별로 기록합니다. 일시정지해도 수집된 글은 남습니다.</p>
       <div className="feed-source-list">{data?.feeds.map(feed => <div className="feed-source" key={feed.id}>
         <div><strong>{feed.name}</strong><span className="muted"> · {feed.enabled ? '수집 중' : '일시정지'}</span><a href={safeSourceUrl(feed.url)} target="_blank" rel="noreferrer">{feed.url}</a><small className="muted">{feed.succeeded ? `마지막 수집 ${timestamp(feed.succeeded)}` : '수집 기록 없음'}</small>{feed.error && <p className="notice error">{feed.error}</p>}</div>
@@ -58,7 +59,7 @@ export function FeedInbox() {
         <p className="muted">사이트 홈 주소가 아닌 피드 주소를 입력해주세요. 추가할 때 피드를 확인하고 최근 글을 가져옵니다. 최대 20개 출처를 등록할 수 있습니다.</p>
         <button className="primary" disabled={!!busy}>{busy === 'add' ? '피드 확인 중…' : '출처 추가'}</button>
       </form>}
-    </details>
+    </AnimatedDetails>
     <div className="feed-filter"><label htmlFor="feed-filter">출처별 보기</label><select id="feed-filter" value={feedId} onChange={event => { setFeedId(event.target.value); setPage(1); setNotice(''); }}><option value="">모든 출처</option>{data?.feeds.map(feed => <option key={feed.id} value={feed.id}>{feed.name}{!feed.enabled && ' · 일시정지'}</option>)}</select></div>
     <div className="feed-toolbar"><div><strong>{data ? `${data.total}개의 대기 포스팅` : '목록 불러오는 중…'}</strong>{selected && <p className="muted">{selected.succeeded ? `마지막 수집 ${timestamp(selected.succeeded)}` : '아직 수집 기록이 없습니다.'}</p>}</div><button onClick={reload} disabled={!!busy}>목록 새로고침</button></div>
     <p className="muted">수집에는 AI를 사용하지 않습니다. 학습 과정 생성이 완료되면 대기 목록에서 빠집니다. 소개 글에 원문 링크가 있다면, 다음 화면에서 원문 URL로 바꿀 수 있습니다.</p>

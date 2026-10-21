@@ -184,7 +184,7 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
         <p className="muted">동작과 테스트의 오류 감지 능력을 검사합니다. 시간 복잡도·내부 구현 방식은 자동 판정하지 않습니다.</p>
         <div className="foundation-actions"><button className="primary" disabled={!!busy || pending || oversized || !draft.test_code.trim() || !draft.code.trim()} onClick={() => void act('submit')}>{attempt?.state === 'running' ? '격리 환경에서 검증 중…' : '구현과 테스트 제출'}</button><button disabled={!!busy || pending || oversized} onClick={() => void act('solution')}>참고 풀이 보기</button></div>
         <small className="muted">참고 풀이를 열면 학습 기록에 ‘풀이 참고’로 남습니다.</small>
-        {solution && <details open><summary>참고 풀이</summary><CodeBlock language="typescript" code={solution} /></details>}
+        {solution && <AnimatedDetails initiallyOpen summary="참고 풀이"><CodeBlock language="typescript" code={solution} /></AnimatedDetails>}
         {attempt && <><p className="muted">{timestamp(attempt.created_at)} 제출 기준{(attempt.payload.code !== draft.code || attempt.payload.test_code !== draft.test_code.trim()) && ' · 현재 편집 내용과 다릅니다.'}</p><ResultView job={attempt} /></>}
       </>}
       {pending && <p className="notice" role="status">검토가 끝나면 이 화면에 표시됩니다. 다른 페이지로 이동해도 제출은 계속 처리됩니다.</p>}

@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
@@ -574,8 +575,7 @@ function PracticeEditor({
                       <p className="notice">풀이 코드와 테스트 코드에 같은 변수가 선언되어 있습니다. 문제에 필요한 구현은 유지하고, 예시 변수와 함수 호출은 테스트 코드 칸에만 두세요. 이전 단계의 변수가 남아 있는 것은 아닙니다.</p>
                     )}
                     {result.data.tests.map((test) => (
-                      <details className="test-result" key={test.id}>
-                        <summary>
+                      <AnimatedDetails className="test-result" key={test.id} summary={<>
                           <span
                             className={
                               test.passed ? "success-text" : "error-text"
@@ -585,7 +585,7 @@ function PracticeEditor({
                           </span>
                           {test.id}
                           <span>{test.passed ? "통과" : "미통과"}</span>
-                        </summary>
+                        </>}>
                         {test.stdin !== undefined ? (
                           <div>
                             <b>{test.code ? "테스트 코드" : "입력"}</b>
@@ -598,7 +598,7 @@ function PracticeEditor({
                         ) : (
                           <p>비공개 평가 데이터는 표시하지 않습니다.</p>
                         )}
-                      </details>
+                      </AnimatedDetails>
                     ))}
                     {result.action === "submit" && (
                       <small className="muted">
@@ -687,8 +687,7 @@ function PracticeEditor({
               </>}
             </div>}
           </section>
-          <details className="report-form">
-            <summary>문제 오류 제보</summary>
+          <AnimatedDetails className="report-form" summary="문제 오류 제보">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -728,7 +727,7 @@ function PracticeEditor({
                 </p>
               )}
             </form>
-          </details>
+          </AnimatedDetails>
           <div className="exercise-navigation">
             <button
               disabled={index === 0 || !!busy || saving || finishing}

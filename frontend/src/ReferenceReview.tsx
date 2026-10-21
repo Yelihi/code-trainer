@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, errorMessage } from './api';
@@ -75,7 +76,7 @@ function ReviewConversation({ id }: { id: string }) {
         catch { setError('브라우저 임시 저장에 실패했습니다. 작성한 설명을 복사해 보관해주세요.'); }
       }} disabled={busy || review.state !== 'ready'} maxLength={8000} rows={7} placeholder="이렇게 이해했습니다. 예를 들면…" required /><div><small>AI 피드백은 참고용입니다. 설명과 복습 이력은 그래프 등록과 별도로 저장됩니다.</small><button className="primary" disabled={busy || review.state !== 'ready' || !answer.trim()}>{busy ? '설명 저장 중…' : '설명 저장 · 다음 질문 받기'}</button></div></form>
     </section><aside className="reference-review-sources"><span className="eyebrow">CONNECTED REFERENCES</span><h2>함께 돌아볼 기록</h2><p>복습을 시작한 시점의 본문 발췌입니다. 먼저 설명한 뒤 펼쳐봐도 좋습니다. 첨부 이미지는 AI가 읽지 않습니다.</p>
-      {review.sources.map(source => <details id={'source-' + source.id} key={source.id}><summary>{source.title}<small>v{source.version} · {source.relationship}</small></summary>{source.metadata.locator && <p>{source.metadata.locator}</p>}<Markdown language="" images>{source.body}</Markdown>{source.note_id && <Link className="text-link" to={'/references/' + source.note_id}>현재 노트 열기 ↗</Link>}</details>)}
+      {review.sources.map(source => <AnimatedDetails id={'source-' + source.id} key={source.id} summary={<>{source.title}<small>v{source.version} · {source.relationship}</small></>}>{source.metadata.locator && <p>{source.metadata.locator}</p>}<Markdown language="" images>{source.body}</Markdown>{source.note_id && <Link className="text-link" to={'/references/' + source.note_id}>현재 노트 열기 ↗</Link>}</AnimatedDetails>)}
       {review.sources.length === 1 && <p className="reference-state">현재 연결된 다른 기록은 없습니다. 개념 지도에 노트를 연결하면 함께 복습할 수 있습니다.</p>}
     </aside></div>}
   </main>;

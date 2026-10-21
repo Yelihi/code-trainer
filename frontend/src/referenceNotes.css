@@ -33,7 +33,7 @@
 .reference-metadata fieldset { margin-top: 20px; }
 .reference-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
 .reference-detail label { display: block; font-size: 13px; color: var(--muted); }
-.reference-detail label input,.reference-detail label select,.reference-detail label textarea { margin-top: 7px; color: var(--text); }
+.reference-detail label input,.reference-detail label .select-field,.reference-detail label textarea { margin-top: 7px; color: var(--text); }
 .reference-detail fieldset { min-width: 0; padding: 0; border: 0; }
 .reference-detail fieldset label { margin-bottom: 16px; }
 .reference-editor { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--panel); transition: border-color 200ms ease, box-shadow 200ms ease; }
@@ -46,7 +46,7 @@
 .reference-editor-modes button[aria-pressed="true"] { color: var(--green); background: #52d7b711; }
 .reference-editor-body { display: grid; grid-template-columns: 1fr 1fr; min-height: 460px; }
 .reference-editor-body textarea { border: 0; border-radius: 0; resize: vertical; padding: 28px; min-height: 460px; font-size: 15px; line-height: 1.9; word-break: normal; }
-.reference-preview { padding: 28px; overflow: auto; min-width: 0; max-height: 800px; border-left: 1px solid var(--line); }
+.reference-preview { padding: 28px; overflow: auto; scrollbar-gutter: stable; min-width: 0; max-height: 800px; border-left: 1px solid var(--line); }
 .reference-preview .markdown > :first-child { margin-top: 0; }
 .reference-editor.mode-write .reference-editor-body,.reference-editor.mode-preview .reference-editor-body { grid-template-columns: 1fr; }
 .reference-editor.mode-preview .reference-preview { border-left: 0; }

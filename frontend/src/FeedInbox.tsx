@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import { AnimatedDetails } from './AnimatedDetails';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { useState, type FormEvent } from 'react';
@@ -61,7 +62,7 @@ export function FeedInbox() {
         <button className="primary" disabled={!!busy}>{busy === 'add' ? '피드 확인 중…' : '출처 추가'}</button>
       </form>}
     </AnimatedDetails>
-    <div className="feed-filter"><label htmlFor="feed-filter">출처별 보기</label><select id="feed-filter" value={feedId} onChange={event => { setFeedId(event.target.value); setPage(1); setNotice(''); }}><option value="">모든 출처</option>{data?.feeds.map(feed => <option key={feed.id} value={feed.id}>{feed.name}{!feed.enabled && ' · 일시정지'}</option>)}</select></div>
+    <div className="feed-filter"><label htmlFor="feed-filter">출처별 보기</label><Select id="feed-filter" value={feedId} onChange={event => { setFeedId(event.target.value); setPage(1); setNotice(''); }}><option value="">모든 출처</option>{data?.feeds.map(feed => <option key={feed.id} value={feed.id}>{feed.name}{!feed.enabled && ' · 일시정지'}</option>)}</Select></div>
     <div className="feed-toolbar"><div><strong>{data ? `${data.total}개의 대기 포스팅` : '대기 포스팅'}</strong>{selected && <p className="muted">{selected.succeeded ? `마지막 수집 ${timestamp(selected.succeeded)}` : '아직 수집 기록이 없습니다.'}</p>}</div><button onClick={reload} disabled={!!busy}>목록 새로고침</button></div>
     <p className="muted">수집에는 AI를 사용하지 않습니다. 학습 과정 생성이 완료되면 대기 목록에서 빠집니다. 소개 글에 원문 링크가 있다면, 다음 화면에서 원문 URL로 바꿀 수 있습니다.</p>
     <ErrorNotice error={error || actionError || data?.error || ''} />{notice && <p className="notice" role="status">{notice}</p>}

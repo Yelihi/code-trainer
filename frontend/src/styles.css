@@ -16,9 +16,23 @@
   --purple: #9868ff;
   --green: #52d7b7;
   --error: #ff9db2;
+  scrollbar-gutter: stable;
+  scrollbar-color: #75678e transparent;
 }
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+}
+textarea, dialog, .cm-scroller { scrollbar-gutter: stable; }
+@supports not (scrollbar-width: thin) {
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #75678e; border: 2px solid transparent; background-clip: padding-box; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background-color: #a291bb; }
+  ::-webkit-scrollbar-corner { background: transparent; }
+}
+@media (forced-colors: active) {
+  * { scrollbar-color: auto; scrollbar-width: auto; }
 }
 body {
   margin: 0;
@@ -215,7 +229,7 @@ button.text-button,
   color: #dfd2ee; line-height: var(--leading-body); margin: 1.6em 0 .65em; font-size: var(--text-subheading);
 }
 .markdown > :first-child { margin-top: 0; }
-.markdown strong { color: #dfd2ee; font-weight: var(--weight-semibold); }
+.markdown strong, .inline-markdown strong { color: #faf5ff; font-weight: var(--weight-bold); }
 .markdown em { color: #bca9d0; }
 .markdown :not(pre) > code {
   color: #c9b4ef; background: #241a33; border: 1px solid #3b2c4d;
@@ -326,6 +340,7 @@ button.text-button,
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   z-index: 9;
 }
 .sidebar-label {
@@ -722,7 +737,7 @@ button.text-button,
 .generation-help, .generation-log { overflow-wrap: anywhere; }
 .generation-help li { margin-bottom: 10px; }
 .generation-log { margin: 24px 0; border-top: 1px solid var(--line); padding-top: 16px; }
-.generation-log ol { padding-left: 24px; max-height: 360px; overflow-y: auto; }
+.generation-log ol { padding-left: 24px; max-height: 360px; overflow-y: auto; scrollbar-gutter: stable; }
 .generation-log li { padding: 10px 8px; }
 .generation-log time { margin-right: 12px; font-variant-numeric: tabular-nums; }
 .generation-log small { opacity: .75; }
@@ -1096,6 +1111,7 @@ button.text-button,
   min-height: 180px;
   max-height: 400px;
   overflow: auto;
+  scrollbar-gutter: stable;
   font-family: var(--font-mono);
   font-size: var(--text-code);
 }
@@ -1685,7 +1701,7 @@ button.text-button,
 .requirements {
   font-size: var(--text-body);
 }
-.attempt-detail{margin-top:9px;font-size: var(--text-caption);color:#b49cce}.attempt-detail summary{cursor:pointer}.attempt-detail pre{padding:13px;background:#0a0714;border:1px solid var(--line);border-radius:5px;max-height:300px;overflow:auto;font-size: var(--text-code)}.list-row:has(.attempt-detail){align-items:flex-start}.list-row:has(.attempt-detail)>div{min-width:0;flex:1}
+.attempt-detail{margin-top:9px;font-size: var(--text-caption);color:#b49cce}.attempt-detail summary{cursor:pointer}.attempt-detail pre{padding:13px;background:#0a0714;border:1px solid var(--line);border-radius:5px;max-height:300px;overflow:auto;scrollbar-gutter:stable;font-size: var(--text-code)}.list-row:has(.attempt-detail){align-items:flex-start}.list-row:has(.attempt-detail)>div{min-width:0;flex:1}
 
 /* Learning pages keep the workspace palette with a quieter, readable text column. */
 .course-page { max-width: 1120px; }
@@ -1825,10 +1841,6 @@ button.text-button,
 .learning-record-picker { min-width: 0; max-width: 500px; }
 .learning-record-picker label { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: var(--text-caption); font-weight: var(--weight-medium); }
 .learning-record-picker label span { color: var(--muted); font-weight: var(--weight-regular); }
-.learning-record-select { position: relative; }
-.learning-record-select select { display: block; appearance: none; min-height: 46px; padding: 12px 38px 12px 14px; font-size: var(--text-body); line-height: var(--leading-body); cursor: pointer; transition: border-color .15s; }
-.learning-record-select select:hover { border-color: #65517e; }
-.learning-record-select svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); }
 .learning-record-stats { display: flex; gap: 36px; margin: 0; padding-left: 32px; border-left: 1px solid var(--line); }
 .learning-record-stats dt { font-size: var(--text-caption); color: var(--muted); white-space: nowrap; }
 .learning-record-stats dd { margin: 5px 0 0; font-size: var(--text-page); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); font-variant-numeric: tabular-nums; font-weight: var(--weight-semibold); }
@@ -1848,7 +1860,6 @@ button.text-button,
 @media (max-width: 600px) {
   .learning-record-header { align-items: flex-start; flex-direction: column; gap: 14px; padding: 20px 18px 0; }
   .learning-record-body { padding: 22px 18px; }
-  .learning-record-select select { font-size: var(--text-caption); }
   .learning-record-footer { padding: 14px 18px; font-size: var(--text-caption); }
   .learning-record-footer time { display: block; margin-left: 0; }
 }
@@ -1948,7 +1959,7 @@ button.text-button,
 .foundation-check { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
 .foundation-check > div { min-width: 0; flex: 1; }
 .foundation-check small { display: block; color: var(--muted); margin-top: 3px; }
-.foundation-check pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-code); color: var(--error); }
+.foundation-check pre { overflow: auto; scrollbar-gutter: stable; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-code); color: var(--error); }
 .foundation-records { margin: 30px 0 45px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
 .foundation-records h2 { font-size: var(--text-subheading); }
 .foundation-record { padding: 16px 0; border-top: 1px solid var(--line); }
@@ -2125,7 +2136,7 @@ button.text-button,
 .visual-options button[aria-pressed='true'] { border-color: var(--green); background: #52d7b715; color: var(--green); }
 .visual-options p { color: var(--muted); margin: 12px 0 0; line-height: var(--leading-body); }
 .graph-options label { display: flex; gap: 15px; align-items: center; }
-.graph-options select { width: 85px; }
+.graph-options .select-field { width: 100px; }
 .graph-options .learning-disclosure { margin-top: 14px; }
 .graph-adjacency { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 .visual-legend { flex-wrap: wrap; }

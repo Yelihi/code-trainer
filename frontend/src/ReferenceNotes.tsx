@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -22,7 +23,7 @@ export function ReferenceNotes() {
     <header className="reference-page-heading"><div><span className="eyebrow">READ. REFLECT. CONNECT.</span><h1>내 언어로 쌓는 배움.</h1><p>책에서 읽은 문장, 강의에서 얻은 생각, 직접 발견한 답을 남겨보세요.</p></div><Link className="button primary" to="/references/new">+ 새 노트 작성</Link></header>
     <div className="reference-library-tools"><form role="search" onSubmit={e => { e.preventDefault(); setParams({ q: search, archived: String(archived) }); }}><label className="sr-only" htmlFor="reference-search">노트 검색</label><input id="reference-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="제목이나 본문에서 찾기" maxLength={160} /><button>검색</button></form><button aria-pressed={archived} onClick={() => setParams({ q: query, archived: String(!archived) })}>{archived ? '작성한 노트 보기' : '보관한 노트'}</button></div>
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
-    {!data && !error && <p role="status">노트를 불러오는 중…</p>}
+    {!data && !error && <LoadingSkeleton layout="list" label="노트를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '보관한 노트' : '나의 레퍼런스'}</span><span>{data.total}개의 기록</span></div>
       {data.items.length ? <div className="reference-list">{data.items.map(note => <Link className="reference-list-item" to={'/references/' + note.id} key={note.id}><div className="reference-list-mark" aria-hidden="true">↳</div><div><small>{referenceKinds[note.metadata.kind]}{note.metadata.title ? ' · ' + note.metadata.title : ''}</small><h2>{note.title}</h2><p>{note.excerpt.replace(/!\[[^\]]*\]\([^)]*\)/g, '[이미지]')}</p><footer><span>{note.metadata.locator || '자유롭게 남긴 기록'}</span><span>{timestamp(note.updated_at)} · v{note.revision}</span></footer></div><span aria-hidden="true">↗</span></Link>)}</div>
         : <section className="reference-empty"><span aria-hidden="true">Aa</span><h2>{query ? '검색한 내용을 찾지 못했습니다.' : archived ? '보관한 노트가 없습니다.' : '한 문장부터 시작해보세요.'}</h2><p>완성된 정리가 아니어도 괜찮습니다.<br />기록을 남기고, 준비됐을 때 개념 지도에 연결하세요.</p>{!archived && <Link className="button" to="/references/new">첫 노트 작성</Link>}</section>}
@@ -39,7 +40,7 @@ export function ReferenceNoteRoute() {
 
 function ExistingNote({ id }: { id: string }) {
   const { data, error, reload } = useResource<ReferenceNote>('/reference-notes/' + id);
-  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <p role="status">노트를 불러오는 중…</p>}</main>;
+  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <LoadingSkeleton layout="editor" label="노트를 불러오는 중…" heading />}</main>;
   return <NoteEditor initial={data} />;
 }
 

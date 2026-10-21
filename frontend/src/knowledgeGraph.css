@@ -94,15 +94,13 @@
 .graph-legend i.unit { border-color: var(--graph-unit); border-radius: 1px; }
 .graph-footer p, .graph-evidence-note { font-size: 11px; color: #aa9db9; margin: 0; }
 .graph-evidence-note { margin: 12px 2px 0; }
-.graph-loading, .graph-empty { min-height: 450px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 32px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); text-align: center; }
+.graph-empty { min-height: 450px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 32px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); text-align: center; }
 .graph-empty > div { color: #b79bda; font-size: 36px; letter-spacing: 8px; margin-bottom: 16px; }
 .graph-empty h2, .graph-empty p { margin: 0; }
 .graph-empty > .text-link { font-size: var(--text-caption); }
-.graph-loading > span { width: 24px; height: 24px; border: 2px solid var(--line); border-top-color: #b79bda; border-radius: 50%; animation: graph-loading-spin 1s linear infinite; }
 .graph-record-link { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 22px; margin-bottom: 24px; }
 .graph-record-link p { margin: 6px 0 0; font-size: var(--text-caption); }
 @keyframes graph-drawer-enter { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes graph-loading-spin { to { transform: rotate(360deg); } }
 @media (max-width: 1200px) { .graph-body.with-drawer { grid-template-columns: minmax(0, 1fr) 310px; } .graph-overview dl { gap: 24px; } }
 @media (max-width: 900px) {
   .graph-page { padding: 24px 20px 40px; }
@@ -134,7 +132,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .graph-node, .graph-edge, .node-core, .node-halo { transition: none; }
-  .graph-drawer, .graph-loading > span { animation: none; }
+  .graph-drawer { animation: none; }
 }
 
 .knowledge-save { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-block: 12px; font-size: var(--text-caption); }

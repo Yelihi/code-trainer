@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { FoundationRecords } from './Foundations';
@@ -83,7 +84,7 @@ export function App() {
     <div className="workspace" id="workspace">
       {error && <div className="page"><ErrorNotice error={error} /><button onClick={refreshSession}>다시 연결</button></div>}
       {opened && <Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} />}
-      {!session && !error && <div className="loading" role="status">학습 공간을 여는 중…</div>}
+      {!session && !error && <main className="page"><LoadingSkeleton layout="cards" label="학습 공간을 여는 중…" heading /></main>}
     </div>
     {session && !session.user && <Login access={session.auth_mode === 'access'} setup={session.setup_required} onSuccess={() => { refreshSession(); refreshHealth(); }} />}
   </div>;
@@ -126,7 +127,7 @@ export function Home() {
     <section className="hero"><div><span className="eyebrow">FROM KNOWING TO DOING</span><h1>읽은 개념을,<br /><em>내 코드로.</em></h1><p>배우고 싶은 자료 하나로 시작하세요.<br />읽고, 고치고, 바꾸고, 직접 만들어보는 네 번의 연습.</p><Link className="button primary" to="/create">자료로 연습 만들기</Link></div><div className="hero-code" aria-label="네 단계의 학습 흐름"><div><span /> practice.loop</div><pre><span className="code-purple">const</span> learning = {'{'}<br />  source: <span className="code-green">"오늘 읽은 좋은 글"</span>,<br />  steps: [<span className="code-orange">"read", "fix",<br />          "modify", "build"</span>],<br />  progress: <span className="code-purple">yourCode</span><br />{'}'};<br /><br /><span className="code-comment">// 이해했다면, 직접 해볼 차례.</span></pre></div></section>
     <div className="section-heading"><div><span className="eyebrow">YOUR COLLECTION</span><h2>나의 학습 자료 <span className="count">{data?.total ?? '—'}</span></h2></div><Link className="text-link" to="/me">학습 기록 보기</Link></div>
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
-    {!data && !error && <p className="muted" role="status">자료를 불러오는 중…</p>}
+    {!data && !error && <LoadingSkeleton layout="cards" label="자료를 불러오는 중…" />}
     {data?.total === 0 && <div className="empty-state"><h3>첫 번째 연습을 시작해보세요</h3><p>블로그 글이나 개념 문서를 넣으면 작은 코드 문제로 바뀝니다.<br />준비된 JavaScript 예제로 먼저 사용해볼 수도 있어요.</p><Link className="button" to="/create">첫 연습 만들기</Link></div>}
     <div className="context-grid">{data?.items.map(context => <Link className="context-card" key={context.id} to={`/learn/${context.id}`}><div className="card-top"><span className="language-tag">{languages[context.language]} · {difficulties[context.difficulty ?? 'beginner']}</span></div><h3>{context.title}</h3><p>{context.description}</p><div className="chips">{context.concepts.slice(0, 3).map(concept => <span key={concept}>{concept}</span>)}</div><div className="card-footer"><span>{context.completed} / {context.total} 완료</span><span>{timestamp(context.created_at)}</span></div></Link>)}</div>
     {data && data.total > 0 && <nav className="pagination" aria-label="학습 자료 페이지"><button disabled={data.page <= 1} onClick={() => setParams({ page: String(data.page - 1) })}>이전</button><span aria-live="polite">{data.page} / {data.pages} 페이지 · {data.total}개 자료</span><button disabled={data.page >= data.pages} onClick={() => setParams({ page: String(data.page + 1) })}>다음</button></nav>}

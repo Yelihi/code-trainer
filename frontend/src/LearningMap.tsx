@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from './api';
 import { KnowledgeExplorer } from './KnowledgeExplorer';
@@ -54,7 +55,7 @@ export function LearningMap() {
     {pending && <p className="notice" role="status">통과한 풀이에서 개념을 정리하고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
     {data?.state === 'stale' && <p className="graph-state-note">아직 정리하지 않은 통과 기록이 있습니다. AI 요약은 보관되며, 현재 지도에는 직접 추가한 단원과 연결된 풀이만 표시됩니다.</p>}
     {data && !data.ai_available && <p className="graph-state-note">AI 연결 후 새로운 개념을 정리할 수 있습니다. 저장된 기록과 학습 단원은 계속 탐색할 수 있습니다.</p>}
-    {!data && !error && <div className="graph-loading" role="status"><span />지식 지도를 불러오는 중…</div>}
+    {!data && !error && <LoadingSkeleton layout="graph" label="지식 지도를 불러오는 중…" />}
     {data && (data.nodes.length ? <KnowledgeExplorer key={`${recordId}:${data.record_id ?? 'live'}`} data={data} /> : <section className="graph-empty"><div aria-hidden="true">◌ — ◈ — ◌</div><span className="eyebrow">YOUR FIRST CONNECTION</span><h2>첫 배움이 지도의 시작입니다.</h2><p>학습 화면에서 ‘개념 지도에 추가하기’를 눌러주세요.<br />문제를 만들거나 풀지 않아도 괜찮습니다.</p><Link className="button primary" to="/foundations">기초 구현 학습하기</Link><Link className="text-link" to="/">내 학습 자료 보기 ↗</Link></section>)}
   </main>;
 }

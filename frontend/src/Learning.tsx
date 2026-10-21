@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -92,7 +93,7 @@ export function Context() {
     } catch (error) { setActionError(errorMessage(error)); }
     finally { setDeleting(false); }
   }
-  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <p role="status">학습 과정을 불러오는 중…</p>}</main>;
+  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <LoadingSkeleton layout="list" label="학습 과정을 불러오는 중…" heading />}</main>;
   const units = data.units ?? [];
   const sets = data.sets ?? [];
   const missing = units.filter(unit => !sets.some(set => set.unit_id === unit.id));
@@ -135,7 +136,7 @@ export function Lesson() {
   const course = useCourse(id);
   const { data, error, reload, actionError } = course;
   useEffect(() => { window.scrollTo(0, 0); }, [id, unitId]);
-  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <p role="status">개념을 불러오는 중…</p>}</main>;
+  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <LoadingSkeleton layout="article" label="개념을 불러오는 중…" heading />}</main>;
   const units = data.units ?? [];
   const index = units.findIndex(unit => unit.id === unitId);
   const unit = units[index];

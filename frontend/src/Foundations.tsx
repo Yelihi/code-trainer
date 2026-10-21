@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
@@ -38,10 +39,10 @@ export function Foundations() {
     finally { setStarting(''); }
   }
   return <main className="page foundations-page"><div className="breadcrumb">실험 기능 <span>/</span> 기초 구현 학습</div>
-    <header className="foundation-heading"><div><span className="eyebrow">FOUNDATIONS / TYPESCRIPT</span><h1>설명하고,<br /><em>직접 구현하세요.</em></h1><p>자료구조부터 익숙한 메서드까지.<br />움직임을 살펴보고, 내 말과 코드로 이해를 확인합니다.</p></div><div className="foundation-path"><span><b>01</b> 내 말로 설명 <small>AI 피드백</small></span><span><b>02</b> 구현과 테스트 <small>직접 실행 · 검증</small></span><small>{data ? `${data.items.filter(i => i.state === 'passed').length} / ${data.items.length}개 단원 완료` : '준비된 단원을 불러옵니다.'}</small></div></header>
+    <header className="foundation-heading"><div><span className="eyebrow">FOUNDATIONS / TYPESCRIPT</span><h1>설명하고,<br /><em>직접 구현하세요.</em></h1><p>자료구조부터 익숙한 메서드까지.<br />움직임을 살펴보고, 내 말과 코드로 이해를 확인합니다.</p></div><div className="foundation-path"><span><b>01</b> 내 말로 설명 <small>AI 피드백</small></span><span><b>02</b> 구현과 테스트 <small>직접 실행 · 검증</small></span><small>{data ? `${data.items.filter(i => i.state === 'passed').length} / ${data.items.length}개 단원 완료` : '—'}</small></div></header>
     <ErrorNotice error={error || startError} />{error && <button onClick={reload}>다시 불러오기</button>}
     <p className="muted foundation-start-note">새로 진행하면 작성 중인 답변·코드가 초기화됩니다. 제출·완료 기록은 그대로 보관됩니다.</p>
-    {!data && !error && <p role="status">단원을 불러오는 중…</p>}
+    {!data && !error && <LoadingSkeleton layout="catalog" label="단원을 불러오는 중…" />}
     {data && <div className="foundation-filters"><div className="foundation-filter-groups" role="group" aria-label="주제 선택">{['전체', '자료구조', '알고리즘', '메서드', '수학'].map(name => <button key={name} type="button" aria-pressed={group === name} onClick={() => setGroup(name)}>{name}</button>)}</div><label>단원 검색<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="개념이나 구현 주제" /></label></div>}
     {data && !visible.length && <p role="status" className="foundation-empty">일치하는 단원이 없습니다.</p>}
     {([1, 2, 3] as const).map(priority => {
@@ -61,7 +62,7 @@ export function Foundations() {
 export function FoundationLesson({ practice = false }: { practice?: boolean }) {
   const { id } = useParams();
   const { data, error, reload } = useResource<Lesson>(`/foundations/${id}`);
-  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <p role="status">단원을 불러오는 중…</p>}</main>;
+  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <LoadingSkeleton layout={practice ? "editor" : "article"} label="단원을 불러오는 중…" heading />}</main>;
   if (!practice) return <ConceptPage key={`${data.id}-${data.version}`} lesson={data} />;
   return <LessonWorkspace key={`${data.id}-${data.version}`} lesson={data} />;
 }
@@ -196,7 +197,7 @@ function LessonWorkspace({ lesson }: { lesson: Lesson }) {
 export function FoundationRecords() {
   const { data, error, reload } = useResource<{ items: { id: string; lesson_id: string; version: number; title: string; created_at: string; assistance: string; feedback: Job['result'] }[] }>('/me/foundations');
   return <section className="foundation-records"><div className="section-heading"><div><span className="eyebrow">FOUNDATIONS</span><h2>기초 구현 학습 기록</h2></div><Link className="text-link" to="/foundations">단원 보기</Link></div><p className="muted">구현과 테스트를 통과하면 자동으로 쌓입니다. 설명 피드백도 함께 보관합니다.</p><ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
-    {!data && !error && <p role="status">기록을 불러오는 중…</p>}
+    {!data && !error && <LoadingSkeleton layout="list" label="기록을 불러오는 중…" />}
     {data?.items.length === 0 && <p className="muted">완료한 기초 구현 단원이 아직 없습니다.</p>}
     {data?.items.map(item => <article className="foundation-record" key={item.id}><div><Link to={`/foundations/${item.lesson_id}`}>{item.title}</Link><small>{timestamp(item.created_at)} · v{item.version} · {item.assistance === 'solution' ? '풀이 참고' : '설명 피드백 참고'}</small></div><AnimatedDetails summary="설명에서 보완한 내용">{item.feedback.items?.map(f => <p key={f.question_id}><InlineMarkdown>{[f.missing, f.correction].filter(Boolean).join(' ') || '이 항목에서 추가로 지적된 내용이 없습니다.'}</InlineMarkdown></p>)}</AnimatedDetails></article>)}
   </section>;

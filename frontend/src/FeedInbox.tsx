@@ -1,4 +1,5 @@
 import { AnimatedDetails } from './AnimatedDetails';
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorNotice, useApp, useResource } from './App';
@@ -61,10 +62,11 @@ export function FeedInbox() {
       </form>}
     </AnimatedDetails>
     <div className="feed-filter"><label htmlFor="feed-filter">출처별 보기</label><select id="feed-filter" value={feedId} onChange={event => { setFeedId(event.target.value); setPage(1); setNotice(''); }}><option value="">모든 출처</option>{data?.feeds.map(feed => <option key={feed.id} value={feed.id}>{feed.name}{!feed.enabled && ' · 일시정지'}</option>)}</select></div>
-    <div className="feed-toolbar"><div><strong>{data ? `${data.total}개의 대기 포스팅` : '목록 불러오는 중…'}</strong>{selected && <p className="muted">{selected.succeeded ? `마지막 수집 ${timestamp(selected.succeeded)}` : '아직 수집 기록이 없습니다.'}</p>}</div><button onClick={reload} disabled={!!busy}>목록 새로고침</button></div>
+    <div className="feed-toolbar"><div><strong>{data ? `${data.total}개의 대기 포스팅` : '대기 포스팅'}</strong>{selected && <p className="muted">{selected.succeeded ? `마지막 수집 ${timestamp(selected.succeeded)}` : '아직 수집 기록이 없습니다.'}</p>}</div><button onClick={reload} disabled={!!busy}>목록 새로고침</button></div>
     <p className="muted">수집에는 AI를 사용하지 않습니다. 학습 과정 생성이 완료되면 대기 목록에서 빠집니다. 소개 글에 원문 링크가 있다면, 다음 화면에서 원문 URL로 바꿀 수 있습니다.</p>
     <ErrorNotice error={error || actionError || data?.error || ''} />{notice && <p className="notice" role="status">{notice}</p>}
     {error && <button onClick={reload}>다시 불러오기</button>}
+    {!data && !error && <LoadingSkeleton layout="list" label="포스팅을 불러오는 중…" />}
     {data && !data.items.length && <div className="empty-state"><h2>대기 중인 글이 없습니다</h2><p>새 글이 수집되면 이곳에 표시됩니다. ‘수집 출처’에서 새 글을 직접 확인할 수도 있습니다.</p></div>}
     <div className="feed-list">{data?.items.map(post => {
       const pending = post.generation_state === 'generating' || post.generation_state === 'validating';

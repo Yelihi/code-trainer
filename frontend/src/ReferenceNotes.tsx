@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
@@ -123,15 +124,15 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
       {dirty && <small>노트를 저장한 후 연결·복습할 수 있습니다.</small>}
     </div>
     {tab === 'write' && <><label className="reference-title"><span className="sr-only">노트 제목</span><input placeholder="어떤 배움을 남길까요?" value={title} maxLength={160} disabled={busy || !!note?.archived} onChange={e => setTitle(e.target.value)} /></label>
-      <details className="reference-metadata"><summary>출처 기록 <span>{referenceKinds[metadata.kind]}{metadata.title ? ' · ' + metadata.title : ' · 선택 사항'}</span></summary><fieldset disabled={busy || !!note?.archived}><legend className="sr-only">출처 정보</legend>
+      <AnimatedDetails className="reference-metadata" summary={<>출처 기록 <span>{referenceKinds[metadata.kind]}{metadata.title ? ' · ' + metadata.title : ' · 선택 사항'}</span></>}><fieldset disabled={busy || !!note?.archived}><legend className="sr-only">출처 정보</legend>
         <div className="reference-fields"><label>자료 종류<select value={metadata.kind} onChange={e => updateMetadata({ kind: e.target.value as ReferenceMetadata['kind'] })}>{Object.entries(referenceKinds).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label><label>책 · 강의 · 자료 이름<input value={metadata.title} maxLength={300} onChange={e => updateMetadata({ title: e.target.value })} /></label><label>저자 · 강사<input value={metadata.author} maxLength={200} onChange={e => updateMetadata({ author: e.target.value })} /></label><label>페이지 · 회차 · 시간<input value={metadata.locator} maxLength={300} placeholder="예: 3장, 42–48쪽 / 4강 12:30" onChange={e => updateMetadata({ locator: e.target.value })} /></label></div><label>출처 URL<input type="url" value={metadata.url} maxLength={2000} placeholder="https://" onChange={e => updateMetadata({ url: e.target.value })} /></label>
-      </fieldset></details>
+      </fieldset></AnimatedDetails>
       <ReferenceEditor value={body} onChange={setBody} disabled={busy || !!note?.archived} onUploading={setUploading} />
       <p className="reference-state">작성 중인 글은 이 브라우저에 임시 보관됩니다. ‘노트 저장’을 눌러 계정에 저장하세요.</p>
     </>}
     {tab === 'read' && <article className="reference-reading"><span className="eyebrow">{referenceKinds[metadata.kind]}</span><h1>{title || '제목 없는 노트'}</h1>{metadata.title && <p className="reference-attribution">{metadata.title}{metadata.author ? ' · ' + metadata.author : ''}{metadata.locator ? ' · ' + metadata.locator : ''}</p>}<Markdown language="" images>{body || '아직 작성한 내용이 없습니다.'}</Markdown></article>}
     {tab === 'connect' && note && !dirty && <ReferenceKnowledge key={note.revision + ':' + note.registration?.id} note={note} onRegistered={setNote} />}
-    {note && <footer className="reference-note-footer"><details><summary>노트 버전 · {note.versions.length}</summary><div className="reference-version-list">{note.versions.map(v => <button key={v.revision} onClick={() => { void api<{ revision: number; body: string; title: string }>(`/reference-notes/${note.id}/versions/${v.revision}`).then(setOldVersion).catch(e => setError(errorMessage(e))); }}>v{v.revision} · {timestamp(v.created_at)}</button>)}</div></details>
+    {note && <footer className="reference-note-footer"><AnimatedDetails summary={<>노트 버전 · {note.versions.length}</>}><div className="reference-version-list">{note.versions.map(v => <button key={v.revision} onClick={() => { void api<{ revision: number; body: string; title: string }>(`/reference-notes/${note.id}/versions/${v.revision}`).then(setOldVersion).catch(e => setError(errorMessage(e))); }}>v{v.revision} · {timestamp(v.created_at)}</button>)}</div></AnimatedDetails>
       <div className="reference-actions"><a className="button" href={`/api/reference-notes/${note.id}/export`} download>Markdown · 이미지 내보내기</a><button disabled={busy || dirty} onClick={() => void archive()}>{note.archived ? '노트 복원' : '노트 보관'}</button></div>
     </footer>}
     {oldVersion && <section className="reference-old-version"><header><h2>이전 버전 v{oldVersion.revision} · {oldVersion.title}</h2><button onClick={() => setOldVersion(null)}>닫기</button></header><Markdown language="" images>{oldVersion.body}</Markdown></section>}

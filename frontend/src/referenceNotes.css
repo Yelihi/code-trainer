@@ -27,9 +27,9 @@
 .reference-tabs small { margin-left: auto; color: var(--muted); }
 .reference-title { display: block; margin: 0 0 20px; }
 .reference-title input { border: 0; border-radius: 0; background: transparent; padding: 12px 0; font-size: clamp(24px,3vw,36px); font-weight: 650; }
-.reference-metadata { margin: 0 0 24px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 8px; }
+.reference-metadata { margin: 0 0 24px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; }
 .reference-metadata summary { cursor: pointer; }
-.reference-metadata summary span { color: var(--muted); font-size: 13px; margin-left: 16px; }
+.reference-metadata .disclosure-label > span { color: var(--muted); font-size: 13px; margin-left: 16px; }
 .reference-metadata fieldset { margin-top: 20px; }
 .reference-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
 .reference-detail label { display: block; font-size: 13px; color: var(--muted); }
@@ -106,7 +106,7 @@
 .reference-answer { margin: 32px 0; }
 .reference-answer label { display: block; margin-bottom: 14px; }
 .reference-answer textarea { line-height: 1.8; }
-.reference-answer > div { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 16px; }
+form.reference-answer > div { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 16px; }
 .reference-answer small { color: var(--muted); font-size: 12px; }
 .reference-answer button { flex-shrink: 0; }
 @media(max-width:1100px) { .reference-review-layout { grid-template-columns: minmax(0,1fr) 260px; gap: 24px; } }
@@ -120,12 +120,12 @@
   .reference-preview { border-left: 0; border-top: 1px solid var(--line); max-height: 500px; }
   .reference-editor-body textarea,.reference-preview { padding: 20px; }
   .reference-preview-empty { padding: 24px 0; }
-  .reference-note-footer,.reference-register,.reference-answer > div { align-items: stretch; flex-direction: column; }
+  .reference-note-footer,.reference-register,form.reference-answer > div { align-items: stretch; flex-direction: column; }
   .reference-review-layout { grid-template-columns: 1fr; }
   .reference-review-sources { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0; }
   .reference-tabs small { margin-left: 0; width: 100%; }
   .reference-list-item footer,.reference-editor > footer { flex-wrap: wrap; gap: 8px; }
   .reference-candidate { padding: 18px; }
-  .reference-metadata summary span { display: block; margin: 8px 0 0; }
+  .reference-metadata .disclosure-label > span { display: block; margin: 8px 0 0; }
   .reference-actions > button { min-height: 44px; }
 }

@@ -55,6 +55,34 @@ class KnowledgeProposal(Model):
     assertions: list[AssertionCandidate] = Field(max_length=24)
 
 
+class NoteIssue(Model):
+    kind: Literal['correction_needed', 'needs_verification']
+    quote: Description
+    explanation: Description
+    suggestion: Description
+
+
+class NoteContentReview(Model):
+    summary: Description
+    issues: list[NoteIssue] = Field(max_length=12)
+
+
+class ConceptMatch(Model):
+    key: Label
+    existing_id: Annotated[str, Field(min_length=1, max_length=100)]
+    reason: Description
+
+
+class ConceptLookup(Model):
+    pref_label: str = Field(default='', max_length=160)
+    aliases: list[Label] = Field(default_factory=list, max_length=12)
+
+
+class ReviewedKnowledgeProposal(KnowledgeProposal):
+    review: NoteContentReview
+    matches: list[ConceptMatch] = Field(default_factory=list, max_length=48)
+
+
 class RevisionInput(Model):
     revision: int = Field(ge=1)
 

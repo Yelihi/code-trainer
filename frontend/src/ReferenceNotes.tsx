@@ -134,7 +134,7 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
       <p className="reference-state">작성 중인 글은 이 브라우저에 임시 보관됩니다. ‘노트 저장’을 눌러 계정에 저장하세요.</p>
     </>}
     {tab === 'read' && <article className="reference-reading"><span className="eyebrow">{referenceKinds[metadata.kind]}</span><h1>{title || '제목 없는 노트'}</h1>{metadata.title && <p className="reference-attribution">{metadata.title}{metadata.author ? ' · ' + metadata.author : ''}{metadata.locator ? ' · ' + metadata.locator : ''}</p>}<Markdown language="" images>{body || '아직 작성한 내용이 없습니다.'}</Markdown></article>}
-    {tab === 'connect' && note && !dirty && <ReferenceKnowledge key={note.revision + ':' + note.registration?.id} note={note} onRegistered={setNote} />}
+    {tab === 'connect' && note && !dirty && <ReferenceKnowledge key={note.revision + ':' + note.registration?.id} note={note} onNoteChange={setNote} onEdit={() => setTab('write')} />}
     {note && <footer className="reference-note-footer"><AnimatedDetails summary={<>노트 버전 · {note.versions.length}</>}><div className="reference-version-list">{note.versions.map(v => <button key={v.revision} onClick={() => { void api<{ revision: number; body: string; title: string }>(`/reference-notes/${note.id}/versions/${v.revision}`).then(setOldVersion).catch(e => setError(errorMessage(e))); }}>v{v.revision} · {timestamp(v.created_at)}</button>)}</div></AnimatedDetails>
       <div className="reference-actions"><a className="button" href={`/api/reference-notes/${note.id}/export`} download>Markdown · 이미지 내보내기</a><button disabled={busy || dirty} onClick={() => void archive()}>{note.archived ? '노트 복원' : '노트 보관'}</button></div>
     </footer>}

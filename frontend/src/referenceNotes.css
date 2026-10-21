@@ -84,6 +84,17 @@
 .reference-candidate header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
 .reference-candidate header strong { color: var(--green); }
 .reference-candidate textarea { min-height: 80px; }
+.reference-content-review { margin: 32px 0; padding: 28px; border: 1px solid #56436e; border-radius: 12px; background: #151122; }
+.reference-content-review h3 { margin: 12px 0 20px; font-size: 20px; line-height: 1.5; }
+.reference-content-review > .muted { margin: 20px 0; font-size: 13px; }
+.reference-review-issue { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+.reference-review-issue h4 { display: flex; align-items: center; gap: 12px; color: #f3d49d; margin: 0 0 20px; }
+.reference-review-issue h4 span { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #f3d49d40; border-radius: 50%; font-size: 13px; }
+.reference-review-issue blockquote { margin: 0 0 24px; padding: 16px 20px; border-left: 3px solid #a78bce; background: var(--bg); color: var(--text); white-space: pre-wrap; }
+.reference-review-issue dt { font-size: 13px; color: var(--muted); margin: 20px 0 8px; }
+.reference-review-issue dd { margin: 0; }
+.reference-content-review footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.reference-content-review footer p { color: var(--muted); margin: 0 0 20px; }
 .reference-register { display: flex; justify-content: space-between; gap: 24px; align-items: center; border-top: 1px solid var(--line); padding-top: 20px; }
 .reference-register small { color: var(--muted); }
 .reference-connected { padding: 48px 0; text-align: center; }
@@ -131,3 +142,19 @@ form.reference-answer > div { display: flex; align-items: center; justify-conten
   .reference-metadata .disclosure-label > span { display: block; margin: 8px 0 0; }
   .reference-actions > button { min-height: 44px; }
 }
+
+.concept-connection { margin: 0 0 28px; padding: 24px; border: 1px solid #4d3c64; border-radius: 10px; background: #151122; }
+.concept-connection h4 { margin: 0 0 12px; font-size: 18px; }
+.concept-connection > p { margin: 0 0 24px; }
+.concept-original { padding: 20px; margin-bottom: 24px; border-left: 3px solid var(--purple); background: var(--bg); }
+.concept-connection small { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.concept-original > strong, .concept-match > strong { display: block; color: var(--text); font-size: 17px; margin-bottom: 14px; }
+.concept-original > span, .concept-match-scope { color: var(--muted); font-size: 13px; }
+.concept-match-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+.concept-match { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.concept-match-reason { margin: 20px 0; padding-top: 16px; border-top: 1px solid var(--line); color: #d4c0f6; }
+.concept-match button { width: 100%; white-space: normal; }
+.concept-connection button[aria-pressed="true"] { border-color: var(--green); color: var(--green); background: #52d7b710; }
+.concept-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.concept-choice p { color: var(--muted); font-size: 13px; margin: 0; }
+@media (max-width: 600px) { .concept-connection { padding: 16px; } }

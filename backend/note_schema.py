@@ -83,6 +83,10 @@ class ReviewedKnowledgeProposal(KnowledgeProposal):
     matches: list[ConceptMatch] = Field(default_factory=list, max_length=48)
 
 
+class NoteQuoteRepair(Model):
+    quotes: list[Description] = Field(min_length=1, max_length=52)
+
+
 class RevisionInput(Model):
     revision: int = Field(ge=1)
 

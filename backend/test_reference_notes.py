@@ -2,12 +2,14 @@ import base64
 import copy
 import io
 import json
+import os
 import zipfile
 import unittest
 from unittest.mock import patch
+import httpx
 from PIL import Image
 from . import ai, db, ontology, reference_notes, service, test_app
-from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup
+from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup, NoteQuoteRepair
 from .sample import sample
 
 
@@ -177,11 +179,11 @@ class ReferenceNotesTest(unittest.TestCase):
         self.assertEqual(db.all('SELECT * FROM knowledge_concepts'), [])
         self.assertEqual(self.register(note, proposal['data'], proposal_id=proposal['id'])[0].status_code, 200)
         provenance = json.loads(db.one('SELECT provenance FROM knowledge_registrations')['provenance'])
-        self.assertEqual(provenance['prompt_version'], 'reference-ontology-v2')
+        self.assertEqual(provenance['prompt_version'], 'reference-ontology-v4')
         self.assertEqual(provenance['review']['issues'], [])
         second, _ = self.note()
         data.concepts[0].quote = '만들어 낸 문장'
-        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', return_value=data):
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[data, ai.AIError('인용 보정 실패')]):
             result = self.client.post(f"/api/reference-notes/{second['id']}/proposals", json={'revision': 1})
         self.assertEqual(self.client.get('/api/reference-proposals/' + result.json()['id']).json()['state'], 'failed')
         with self.assertRaises(service.Error):
@@ -191,15 +193,90 @@ class ReferenceNotesTest(unittest.TestCase):
         data = KnowledgeProposal.model_validate(data or self.graph_data(note))
         reviewed = ReviewedKnowledgeProposal(**data.model_dump(), review={
             'summary': '본문의 정의를 확인해주세요.' if issues else '수정할 오류를 발견하지 못했습니다.', 'issues': issues or []})
-        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[data, reviewed]):
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[data, reviewed, ai.AIError('인용 보정 실패')]):
             result = self.client.post(f"/api/reference-notes/{note['id']}/proposals", json={'revision': note['revision']})
         self.assertEqual(result.status_code, 202, result.text)
         return self.client.get('/api/reference-proposals/' + result.json()['id']).json()
 
+    def test_markdown_quotes_repaired_before_review_and_exact_evidence_saved(self):
+        note, _ = self.note(body='간격을 두고 **기억**을 떠올리는 인출 연습은\n복습에 활용된다.')
+        data = KnowledgeProposal.model_validate(self.graph_data(note))
+        expected = data.model_dump()
+        data.concepts[0].quote = note['body'].replace('**', '').replace('\n', ' ')
+        data.assertions[0].quote = data.concepts[0].quote
+        reviewed = ReviewedKnowledgeProposal(**expected, review={'summary': '검토 완료', 'issues': []})
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[
+                data, NoteQuoteRepair(quotes=[note['body'], note['body']]), reviewed]) as generate:
+            result = self.client.post(f"/api/reference-notes/{note['id']}/proposals", json={'revision': 1})
+        self.assertEqual(generate.call_count, 3)
+        self.assertIs(generate.call_args_list[1].args[0], NoteQuoteRepair)
+        self.assertEqual(generate.call_args_list[2].args[2]['candidate_graph'], expected)
+        proposal = reference_notes.proposal_view(self.owner, result.json()['id'])
+        self.assertEqual(proposal['state'], 'ready')
+        self.assertEqual(self.register(note, proposal['data'], proposal_id=proposal['id'])[0].status_code, 200)
+        for evidence in db.all('SELECT quote,location FROM knowledge_evidence'):
+            location = json.loads(evidence['location'])
+            self.assertEqual(note['body'][location['start']:location['end']], evidence['quote'])
+        self.assertEqual(reference_notes.owned(self.owner, note['id'])['body'], note['body'])
+
+    def test_review_quote_repair_preserves_content_issues_and_registration_block(self):
+        note, _ = self.note(body='스택은 **먼저** 들어간 항목을 꺼낸다.')
+        data = KnowledgeProposal.model_validate(self.graph_data(note))
+        reviewed = ReviewedKnowledgeProposal(**data.model_dump(), review={'summary': '정의 수정 필요', 'issues': [{
+            'kind': 'correction_needed', 'quote': note['body'].replace('**', ''),
+            'explanation': '스택의 순서가 잘못되었습니다.', 'suggestion': '스택은 마지막에 들어간 항목을 꺼낸다.'}]})
+        expected = reviewed.model_dump()
+        reviewed.concepts[0].quote = note['body'].replace('**', '')
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[
+                data, reviewed, NoteQuoteRepair(quotes=[note['body'], note['body']])]) as generate:
+            result = self.client.post(f"/api/reference-notes/{note['id']}/proposals", json={'revision': 1})
+        self.assertEqual(generate.call_count, 3)
+        proposal = reference_notes.proposal_view(self.owner, result.json()['id'])
+        self.assertEqual(proposal['state'], 'ready')
+        expected['review']['issues'][0]['quote'] = note['body']
+        self.assertEqual(reviewed.model_dump(), expected)
+        self.assertEqual(self.register(note, proposal['data'], proposal_id=proposal['id'])[0].status_code, 409)
+        self.assertEqual(db.all('SELECT * FROM knowledge_concepts'), [])
+        self.assertEqual(reference_notes.owned(self.owner, note['id'])['body'], note['body'])
+
+    def test_quote_repair_is_bounded_and_invalid_or_incomplete_repairs_fail_closed(self):
+        note, _ = self.note()
+        for repair in (NoteQuoteRepair(quotes=['없는 인용', note['body']]),
+                       NoteQuoteRepair(quotes=[note['body']]), ai.AIError('근거 없음')):
+            with self.subTest(repair=repair):
+                data = KnowledgeProposal.model_validate(self.graph_data(note))
+                data.concepts[0].quote = data.assertions[0].quote = '노트에 없는 인용'
+                before = data.model_dump()
+                with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', side_effect=[data, repair]) as generate:
+                    result = self.client.post(f"/api/reference-notes/{note['id']}/proposals", json={'revision': 1})
+                self.assertEqual(generate.call_count, 2)
+                self.assertEqual(data.model_dump(), before)
+                proposal = reference_notes.proposal_view(self.owner, result.json()['id'])
+                self.assertEqual(proposal['state'], 'failed')
+                self.assertIsNone(proposal['data'])
+                self.assertEqual(self.register(note)[0].status_code, 409)
+        self.assertEqual(db.all('SELECT * FROM knowledge_concepts'), [])
+        with patch.object(ai, 'generate') as generate:
+            self.assertEqual(self.register(note, data.model_dump())[0].status_code, 422)
+            generate.assert_not_called()
+
+    def test_quote_repair_provider_refusal_has_note_specific_error(self):
+        client = httpx.Client
+        def handle(request):
+            payload = json.loads(request.content)
+            self.assertIn('about any subject', payload['messages'][0]['content'])
+            self.assertEqual(payload['response_format']['json_schema']['name'], 'NoteQuoteRepair')
+            return httpx.Response(200, json={'choices': [{'message': {'content': json.dumps({
+                'data': None, 'error': 'unsupported quotation'})}}]})
+        with patch.dict(os.environ, {'AI_API_KEY': 'test', 'AI_MODEL': 'test'}), \
+                patch.object(ai.httpx, 'Client', side_effect=lambda **kwargs: client(transport=httpx.MockTransport(handle), **kwargs)):
+            with self.assertRaisesRegex(ai.AIError, '저장된 노트는 유지됩니다'):
+                ai.generate(NoteQuoteRepair, 'test', {'body': '내용', 'validation_failures': ['quote_not_in_body']})
+
     def test_review_requires_note_correction_and_new_review_before_registration(self):
         note, payload = self.note(body='스택은 먼저 들어간 항목을 먼저 꺼내는 FIFO 구조다.')
         issue = {'kind': 'correction_needed', 'quote': note['body'],
-                 'explanation': '스택과 큐의 순서가 뒤바뀌었습니다.', 'suggestion': '스택은 마지막에 들어간 항목을 먼저 꺼내는 LIFO 구조다.'}
+                 'explanation': '스택과 큐의 순서가 뒤바뀌었습니다.', 'suggestion': '스택은 마지막에 들어간 항목을 먼저 꺼내는 LIFO 구조다.', 'replacement': ''}
         proposal = self.reviewed_proposal(note, [issue])
         self.assertEqual(proposal['state'], 'ready')
         self.assertEqual(proposal['review']['issues'], [issue])
@@ -220,12 +297,95 @@ class ReferenceNotesTest(unittest.TestCase):
         self.assertEqual(provenance['review'], clean['review'])
         self.assertEqual(self.client.get('/api/reference-proposals/' + proposal['id']).json()['review']['issues'], [issue])
 
+    def test_apply_selected_suggestions_versions_note_and_retries_without_overwriting(self):
+        original = '스택은 **먼저** 들어간 항목을 꺼낸다.\n\n큐는 마지막 항목을 꺼낸다.\n\n내 생각은 그대로 둔다.'
+        note, _ = self.note(body=original)
+        self.assertEqual(self.register(note)[0].status_code, 200)
+        issues = [
+            {'kind': 'correction_needed', 'quote': '스택은 **먼저** 들어간 항목을 꺼낸다.', 'explanation': '순서가 반대입니다.',
+             'suggestion': '후입선출로 수정합니다.', 'replacement': '스택은 **마지막에** 들어간 항목을 꺼낸다.'},
+            {'kind': 'correction_needed', 'quote': '큐는 마지막 항목을 꺼낸다.', 'explanation': '순서가 반대입니다.',
+             'suggestion': '선입선출로 수정합니다.', 'replacement': '큐는 먼저 들어간 항목을 꺼낸다.'}]
+        proposal = self.reviewed_proposal(note, issues)
+        endpoint = '/api/reference-proposals/' + proposal['id'] + '/apply'
+        with patch.object(ai, 'generate') as generate:
+            response = self.client.post(endpoint, json={'revision': 1, 'issues': [1]})
+            generate.assert_not_called()
+        self.assertEqual(response.status_code, 200, response.text)
+        next_note = response.json()
+        self.assertEqual(next_note['body'], original.replace(issues[1]['quote'], issues[1]['replacement']))
+        self.assertEqual(next_note['revision'], 2)
+        self.assertEqual(next_note['registration']['state'], 'stale')
+        self.assertEqual(self.client.get(f"/api/reference-notes/{note['id']}/versions/1").json()['body'], original)
+        replay = self.client.post(endpoint, json={'revision': 1, 'issues': [1]})
+        self.assertEqual(replay.json()['revision'], 2)
+        self.assertEqual(len(replay.json()['versions']), 2)
+        self.assertEqual(self.register(next_note)[0].status_code, 409)
+        self.assertEqual(self.client.post(endpoint, json={'revision': 1, 'issues': [0]}).status_code, 409)
+        self.assertEqual(self.client.post(endpoint, json={'revision': 2, 'issues': [1]}).status_code, 409)
+        self.client.post('/api/reference-notes', json={k: next_note[k] for k in ('id','title','body','metadata','revision')} | {'body': next_note['body'] + '\n직접 편집'})
+        self.assertEqual(self.client.post(endpoint, json={'revision': 1, 'issues': [1]}).status_code, 409)
+        self.client.post('/api/logout', json={})
+        self.assertEqual(self.client.post(endpoint, json={'revision': 1, 'issues': [1]}).status_code, 401)
+        db.execute('INSERT INTO users SELECT ?,?,password,0 FROM users WHERE id=?', (service.uid(), 'other', self.owner))
+        self.assertEqual(self.client.post('/api/auth', json={'username': 'other', 'password': 'test-password-only'}).status_code, 200)
+        self.assertEqual(self.client.post(endpoint, json={'revision': 1, 'issues': [1]}).status_code, 404)
+        with self.assertRaises(service.Error) as error:
+            reference_notes.proposal_view('other-owner', proposal['id'])
+        self.assertEqual(error.exception.status, 404)
+
+    def test_apply_suggestions_rejects_ambiguous_overlapping_or_missing_replacements_atomically(self):
+        cases = [
+            ('반복 반복', [('반복', '변경')]),
+            ('abcdef', [('abcd', '첫 변경'), ('cdef', '둘째 변경')]),
+            ('첫 문장. 둘째 문장.', [('첫 문장.', '바뀐 문장.'), ('둘째 문장.', '')]),
+            ('원문', [('원문', '원문')]),
+        ]
+        for body, edits in cases:
+            with self.subTest(body=body):
+                note, _ = self.note(body=body)
+                issues = [{'kind': 'correction_needed', 'quote': quote, 'replacement': replacement,
+                           'explanation': '검토 이유', 'suggestion': '확인 후 수정'} for quote, replacement in edits]
+                proposal = self.reviewed_proposal(note, issues)
+                response = self.client.post('/api/reference-proposals/' + proposal['id'] + '/apply',
+                                            json={'revision': 1, 'issues': list(range(len(issues)))})
+                self.assertEqual(response.status_code, 422, response.text)
+                current = reference_notes.view(self.owner, note['id'])
+                self.assertEqual(current['body'], body)
+                self.assertEqual(len(current['versions']), 1)
+
+    def test_apply_multiple_suggestions_uses_original_positions_and_validates_indices(self):
+        note, _ = self.note(body='첫 문장.\n둘째 문장.')
+        issues = [{'kind': 'correction_needed', 'quote': quote, 'replacement': replacement,
+                   'explanation': '검토 이유', 'suggestion': '확인 후 수정'} for quote, replacement in
+                  [('첫 문장.', '**새로운 첫 문장**입니다.'), ('둘째 문장.', '두 번째.')]]
+        proposal = self.reviewed_proposal(note, issues)
+        endpoint = '/api/reference-proposals/' + proposal['id'] + '/apply'
+        for indices in ([], [0, 0], [-1], [2], ['0']):
+            self.assertEqual(self.client.post(endpoint, json={'revision': 1, 'issues': indices}).status_code, 422)
+        response = self.client.post(endpoint, json={'revision': 1, 'issues': [1, 0]})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['body'], '**새로운 첫 문장**입니다.\n두 번째.')
+
+    def test_legacy_review_can_regenerate_replacement_sentences(self):
+        note, _ = self.note()
+        proposal = self.reviewed_proposal(note, [{'kind': 'needs_verification', 'quote': note['body'],
+            'explanation': '범위 확인 필요', 'suggestion': '출처를 확인하세요.'}])
+        stored = json.loads(db.one('SELECT data FROM knowledge_proposals WHERE id=?', (proposal['id'],))['data'])
+        del stored['review']['issues'][0]['replacement']
+        db.execute('UPDATE knowledge_proposals SET data=? WHERE id=?', (service.dump(stored), proposal['id']))
+        self.assertEqual(self.client.post('/api/reference-proposals/' + proposal['id'] + '/apply', json={'revision': 1, 'issues': [0]}).status_code, 422)
+        with patch.object(ai, 'available', return_value=True):
+            key, fresh = reference_notes.begin_proposal(self.owner, note['id'], 1)
+        self.assertTrue(fresh)
+        self.assertNotEqual(key, proposal['id'])
+
     def test_uncertain_and_fabricated_review_quotes_do_not_pass(self):
         for quote in ('알 수 없는 최신 연구 주장이다.', '노트에 없는 인용'):
             with self.subTest(quote=quote):
                 note, _ = self.note(body='알 수 없는 최신 연구 주장이다.')
                 issue = {'kind': 'needs_verification', 'quote': quote,
-                         'explanation': '주장의 조건과 근거를 확인해야 합니다.', 'suggestion': '원문의 실험 조건과 출처를 확인해 보완하세요.'}
+                         'explanation': '주장의 조건과 근거를 확인해야 합니다.', 'suggestion': '원문의 실험 조건과 출처를 확인해 보완하세요.', 'replacement': ''}
                 proposal = self.reviewed_proposal(note, [issue])
                 self.assertEqual(proposal['state'], 'ready' if quote == note['body'] else 'failed')
                 self.assertEqual(self.register(note)[0].status_code, 409)

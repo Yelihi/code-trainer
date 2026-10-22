@@ -60,6 +60,7 @@ class NoteIssue(Model):
     quote: Description
     explanation: Description
     suggestion: Description
+    replacement: str = Field(default='', max_length=3000)
 
 
 class NoteContentReview(Model):
@@ -83,8 +84,16 @@ class ReviewedKnowledgeProposal(KnowledgeProposal):
     matches: list[ConceptMatch] = Field(default_factory=list, max_length=48)
 
 
+class NoteQuoteRepair(Model):
+    quotes: list[Description] = Field(min_length=1, max_length=52)
+
+
 class RevisionInput(Model):
     revision: int = Field(ge=1)
+
+
+class ApplyNoteSuggestions(RevisionInput):
+    issues: list[Annotated[int, Field(ge=0, le=11)]] = Field(min_length=1, max_length=12)
 
 
 class ArchiveInput(Model):

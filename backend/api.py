@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
-from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup
+from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
 
@@ -378,6 +378,11 @@ def reference_propose(note_id: str, body: RevisionInput, tasks: BackgroundTasks,
 @app.get('/api/reference-proposals/{proposal_id}')
 def reference_proposal_get(proposal_id: str, current=Depends(user)):
     return reference_notes.proposal_view(current['id'], proposal_id)
+
+
+@app.post('/api/reference-proposals/{proposal_id}/apply')
+def reference_apply_suggestions(proposal_id: str, body: ApplyNoteSuggestions, current=Depends(user)):
+    return reference_notes.apply_suggestions(current['id'], proposal_id, body)
 
 
 @app.post('/api/reference-notes/{note_id}/knowledge')

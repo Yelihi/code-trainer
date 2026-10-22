@@ -9,7 +9,7 @@ import traceback
 import uuid
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-from . import ai, db, diagnostics, runner, source, practice, usage, prediction
+from . import ai, db, diagnostics, runner, source, practice, usage, prediction, resources
 from .sample import sample
 from .schema import ContextDraft, ExerciseDraft, SetDraft
 
@@ -188,6 +188,7 @@ def delete_context(owner, context_id):
         exercises = 'SELECT e.id FROM exercises e JOIN sets s ON e.set_id=s.id WHERE s.context_id=?'
         if c.execute(f"SELECT id FROM attempts WHERE status='running' AND exercise_id IN ({exercises})", (context_id,)).fetchone():
             raise Error('풀이를 채점 중입니다. 완료된 뒤 삭제해주세요.', 409)
+        resources.migrate(c, context_id)
         for table in ('reports', 'progress', 'attempts'):
             c.execute(f'DELETE FROM {table} WHERE exercise_id IN ({exercises})', (context_id,))
         c.execute('DELETE FROM exercises WHERE set_id IN (SELECT id FROM sets WHERE context_id=?)', (context_id,))

@@ -2,16 +2,16 @@ import { ConceptConnection } from './ConceptConnection';
 import { Select } from './Select';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Markdown } from './Markdown';
+import { ReferenceContentReview } from './ReferenceContentReview';
 import { api, errorMessage } from './api';
 import { ErrorNotice, useApp } from './App';
-import { clearReferenceDraft, bases, relations, type Assertion, type Candidate, type Concept, type Proposal, type ProposalData, type ReferenceNote } from './referenceTypes';
+import { clearReferenceDraft, registrationBlock, bases, relations, type Assertion, type Candidate, type Concept, type Proposal, type ProposalData, type ReferenceNote } from './referenceTypes';
 
 type ConnectionDraft = { data: ProposalData; requestId: string; decisions?: Record<string, boolean>; originals?: Record<string, Candidate>; selected?: Record<string, Concept> };
 const unlinked = (data: ProposalData): ProposalData => ({ ...data, concepts: data.concepts.map(c => ({ ...c, existing_id: '' })) });
 const blankConcept = (key: string): Candidate => ({ key, existing_id: '', pref_label: '', definition: '', scope: '', aliases: [], quote: '', basis: 'source' });
 
-export function ReferenceKnowledge({ note, onNoteChange, onEdit }: { note: ReferenceNote; onNoteChange: (note: ReferenceNote) => void; onEdit: () => void }) {
+export function ReferenceKnowledge({ note, onNoteChange, onNoteApplied, onEdit }: { note: ReferenceNote; onNoteChange: (note: ReferenceNote) => void; onNoteApplied: (note: ReferenceNote) => void; onEdit: () => void }) {
   const { userId } = useApp();
   const [draftKey] = useState(`reference-graph-draft:${userId}:${note.id}:${note.revision}`);
   const [restored] = useState(() => {
@@ -74,14 +74,24 @@ export function ReferenceKnowledge({ note, onNoteChange, onEdit }: { note: Refer
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   async function register() {
+    const blocked = registrationBlock(proposalId, proposal, note.revision);
+    if (blocked) { setError(blocked); return; }
     if (data?.concepts.some(c => !decisions[c.key])) { setError('각 개념의 등록 방식을 먼저 선택해주세요.'); return; }
     setBusy(true); setError('');
     try { const result = await api<ReferenceNote>(`/reference-notes/${note.id}/knowledge`, 'POST', { revision: note.revision, request_id: requestId, proposal_id: proposal?.state === 'ready' ? proposal.id : null, data }); clearReferenceDraft(draftKey); onNoteChange(result); }
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
+  async function applySuggestions(issues: number[]) {
+    if (!proposal) return;
+    setBusy(true); setError('');
+    try {
+      const next = await api<ReferenceNote>(`/reference-proposals/${proposal.id}/apply`, 'POST', { revision: note.revision, issues });
+      onNoteApplied(next);
+    } finally { setBusy(false); }
+  }
   const pending = busy || proposal?.state === 'running';
   const undecided = data?.concepts.filter(c => !decisions[c.key]).length ?? 0;
-  const reviewBlocked = !!proposalId && (!proposal?.review || proposal.state !== 'ready' || proposal.revision !== note.revision || proposal.review.issues.length > 0);
+  const reviewBlocked = registrationBlock(proposalId, proposal, note.revision);
   if (note.registration?.version === note.revision && note.registration.state === 'active') return <section className="reference-connected"><span className="eyebrow">CONNECTED</span><h2>개념 지도에 등록했습니다.</h2><p>이 노트 v{note.revision}의 근거와 연결을 보관하고 있습니다.</p><Link className="button" to="/knowledge">지식 그래프 열기 ↗</Link></section>;
   return <section className="reference-knowledge">
     <div className="section-heading"><div><span className="eyebrow">CONNECT WITH INTENTION</span><h2>개념 지도에 연결하기</h2></div><span className="reference-version">노트 v{note.revision}</span></div>
@@ -90,18 +100,7 @@ export function ReferenceKnowledge({ note, onNoteChange, onEdit }: { note: Refer
     <div className="reference-actions"><button disabled={pending} onClick={() => void analyze()}>{pending ? '개념 추출·검토 중…' : 'AI로 후보 생성·내용 검토'}</button><button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] }, {}, {}, {})}>직접 개념 입력</button></div>
     <ErrorNotice error={error || proposal?.error || ''} />
     {proposal?.state === 'running' && <p role="status" className="notice">개념과 근거를 추출한 뒤, 별도 검토로 본문과 후보의 정확성을 살피고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
-    {proposal?.review && <section className="reference-content-review" aria-label="AI 내용 검토" aria-live="polite">
-      <header><span className="eyebrow">CONTENT REVIEW · v{proposal.revision}</span><h3>{proposal.review.issues.length ? '본문에서 먼저 확인할 내용이 있습니다.' : '검토 범위에서 수정할 오류를 발견하지 못했습니다.'}</h3></header>
-      <Markdown language="">{proposal.review.summary}</Markdown>
-      <p className="muted">AI의 지식에 기반한 검토입니다. 원문 자료나 최신 정보를 외부에서 확인한 결과는 아니며, 정확성을 보장하지 않습니다.</p>
-      {proposal.revision !== note.revision && <p className="notice">이전 v{proposal.revision}의 검토입니다. 저장한 v{note.revision}에서 AI 후보 생성·내용 검토를 다시 진행해주세요.</p>}
-      {proposal.review.issues.map((issue, i) => <article className="reference-review-issue" key={i}>
-        <h4><span>{i + 1}</span>{issue.kind === 'correction_needed' ? '수정 필요' : '추가 확인 필요'}</h4>
-        <blockquote>{issue.quote}</blockquote>
-        <dl><dt>검토 이유</dt><dd><Markdown language="">{issue.explanation}</Markdown></dd><dt>수정·확인 제안</dt><dd><Markdown language="">{issue.suggestion}</Markdown></dd></dl>
-      </article>)}
-      {proposal.review.issues.length > 0 && <footer><p>제안을 검토해 본문을 수정하고 저장한 뒤 다시 검토해주세요. 수정한 내용을 근거로 개념 지도에 등록합니다.</p><button type="button" onClick={onEdit}>본문 수정하러 가기</button></footer>}
-    </section>}
+    {proposal?.review && <ReferenceContentReview key={proposal.id + ':' + note.revision} note={note} proposal={proposal} pending={!!pending} onApply={applySuggestions} onEdit={onEdit} />}
     {proposal?.state === 'ready' && !proposal.review && <p className="notice">내용 검토 기능 적용 전의 후보입니다. AI 후보를 다시 생성해 검토해주세요.</p>}
     {data && <form onSubmit={e => { e.preventDefault(); void register(); }}>
       <label className="reference-concept-search">기존 개념 검색<input value={search} onChange={e => setSearch(e.target.value)} placeholder="개념명 · 정의 · 별칭으로 찾기" maxLength={160} /></label>
@@ -141,7 +140,8 @@ export function ReferenceKnowledge({ note, onNoteChange, onEdit }: { note: Refer
         <button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</button>
       </fieldset>
       {undecided > 0 && <p className="notice" role="status">개념 {undecided}개의 등록 방식을 선택해주세요. 기존 개념 연결 또는 별개 개념 추가를 선택하면 등록할 수 있습니다.</p>}
-      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>{proposal?.review ? '검토 후 직접 변경한 후보는 등록 전에 다시 확인해주세요.' : 'AI 검토 없이 직접 입력한 내용입니다. 정의와 근거를 확인해주세요.'}</small></p><button className="primary" disabled={!!pending || reviewBlocked || undecided > 0}>검토한 내용으로 개념 지도에 추가하기</button></div>
+      {reviewBlocked && <div className="notice reference-registration-block" id="reference-registration-block" role="status"><strong>{undecided === 0 ? '개념 선택은 완료됐지만 본문 검토가 남아 있습니다.' : '본문 검토도 완료해야 등록할 수 있습니다.'}</strong><p>{reviewBlocked}</p>{proposal?.review && <button type="button" onClick={() => document.getElementById('reference-content-review')?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>본문 검토 확인하기 ↑</button>}</div>}
+      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>{proposal?.review ? '검토 후 직접 변경한 후보는 등록 전에 다시 확인해주세요.' : 'AI 검토 없이 직접 입력한 내용입니다. 정의와 근거를 확인해주세요.'}</small></p><button className="primary" aria-describedby={reviewBlocked ? "reference-registration-block" : undefined} disabled={!!pending || !!reviewBlocked || undecided > 0}>검토한 내용으로 개념 지도에 추가하기</button></div>
     </form>}
   </section>;
 }

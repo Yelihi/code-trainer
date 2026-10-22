@@ -95,6 +95,25 @@
 .reference-review-issue dd { margin: 0; }
 .reference-content-review footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
 .reference-content-review footer p { color: var(--muted); margin: 0 0 20px; }
+.reference-content-review { scroll-margin-top: 96px; }
+.reference-review-issue { transition: border-color 180ms ease; }
+.reference-review-issue[data-selected="true"] { border-top-color: var(--green); }
+.reference-replacement-comparison { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.reference-replacement-comparison > div { min-width: 0; }
+.reference-replacement-comparison h5 { margin: 0 0 12px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.reference-replacement-comparison blockquote { margin-bottom: 0; height: auto; overflow-wrap: anywhere; line-height: 1.8; }
+.reference-replacement-comparison .markdown > :first-child { margin-top: 0; }
+.reference-replacement-comparison .markdown > :last-child { margin-bottom: 0; }
+.reference-replacement h5 { color: var(--green); }
+.reference-replacement blockquote { border-left-color: var(--green); background: #52d7b708; }
+.reference-detail .reference-replacement-choice { display: flex; align-items: center; gap: 12px; margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); cursor: pointer; }
+.reference-replacement-choice:has(:checked) { border-color: var(--green); background: #52d7b708; }
+.reference-detail .reference-replacement-choice input { width: 18px; height: 18px; min-height: 18px; margin: 0; padding: 0; flex-shrink: 0; accent-color: var(--green); }
+.reference-replacement-choice:has(:disabled) { cursor: default; opacity: .65; }
+.reference-registration-block { margin: 24px 0; }
+.reference-registration-block p { margin: 12px 0; }
+@media (max-width: 650px) { .reference-replacement-comparison { grid-template-columns: 1fr; gap: 24px; } .reference-content-review { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .reference-review-issue { transition: none; } }
 .reference-register { display: flex; justify-content: space-between; gap: 24px; align-items: center; border-top: 1px solid var(--line); padding-top: 20px; }
 .reference-register small { color: var(--muted); }
 .reference-connected { padding: 48px 0; text-align: center; }

@@ -87,6 +87,9 @@ function RegistrationForm({ initial, feed }: { initial: Resource | null; feed?: 
   async function save() {
     if (busy || !userId) return;
     setBusy(true); setError('');
+    // Prefilled RSA inputs can be unchanged; retain their replay identity before sending.
+    try { localStorage.setItem(storageKey, JSON.stringify(draft)); }
+    catch { setMessage('브라우저 임시 저장을 사용할 수 없습니다. 이동하기 전에 본문을 복사해주세요.'); }
     try {
       const result = await api<Resource>('/resources', 'POST', { ...draft, url: draft.kind === 'url' ? draft.url : '', content: draft.kind === 'text' ? draft.content : '' });
       if (!alive.current) return;

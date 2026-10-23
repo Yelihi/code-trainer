@@ -68,3 +68,63 @@ if name == 'docker':
     result, calls = run('--unknown')
     assert result.returncode != 0 and not calls
 print('PASS: first-run image build, repeat launch, forced rebuild, prerequisite failures and help.')
+
+with tempfile.TemporaryDirectory() as directory:
+    project = Path(directory)
+    (project / 'backend').mkdir()
+    shutil.copy(root / 'backend/dev.sh', project / 'backend/dev.sh')
+    (project / '.env').write_text('AI_API_KEY=\nAI_MODEL=\n')
+    binaries = project / '.venv/bin'
+    binaries.mkdir(parents=True)
+    log = project / 'calls.jsonl'
+    stub = f'#!{sys.executable}\n' + '''import json, os, pathlib, sys
+name = pathlib.Path(sys.argv[0]).name
+with open(os.environ['START_CHECK_LOG'], 'a') as log:
+    log.write(json.dumps({'tool': name, 'args': sys.argv[1:], 'cwd': os.getcwd(),
+        'db': os.environ.get('TRAINER_DB'), 'env': os.environ.get('UV_ENV_FILE'),
+        'docker': os.environ.get('DOCKER_CONTEXT')}) + '\\n')
+if name == 'python':
+    sys.exit(int(os.environ.get('BUSY_PORT', '0')))
+'''
+    for tool in ('python', 'uv', 'docker'):
+        target = binaries / tool
+        target.write_text(stub)
+        target.chmod(0o700)
+
+    def run_dev(*args, cwd=None, **settings):
+        log.write_text('')
+        env = {**os.environ, 'PATH': str(binaries) + ':/usr/bin:/bin', 'START_CHECK_LOG': str(log)}
+        for key in ('TRAINER_DB', 'UV_ENV_FILE', 'DOCKER_CONTEXT', 'BUSY_PORT'):
+            env.pop(key, None)
+        env.update(settings)
+        result = subprocess.run(['/bin/bash', str(project / 'backend/dev.sh'), *args],
+                                cwd=cwd or project / 'backend', env=env, capture_output=True, text=True)
+        return result, [json.loads(line) for line in log.read_text().splitlines()]
+
+    result, calls = run_dev()
+    assert result.returncode == 0, result.stderr
+    launch = calls[-1]
+    assert launch['tool'] == 'uv'
+    assert launch['cwd'] == str(project.resolve())
+    assert Path(launch['env']).resolve() == project.resolve() / '.env'
+    assert Path(launch['db']).resolve() == project.resolve() / 'data/dev.sqlite3'
+    assert launch['docker'] == 'colima-code-trainer'
+    assert launch['args'] == ['run', '--no-project', '.venv/bin/python', '-m', 'uvicorn', 'backend.api:app',
+                             '--host', '127.0.0.1', '--port', '8010', '--no-access-log', '--reload', '--reload-dir', 'backend']
+    result, calls = run_dev(cwd=project, TRAINER_DB='/tmp/explicit-dev.sqlite3', DOCKER_CONTEXT='explicit-context')
+    assert result.returncode == 0
+    assert calls[-1]['db'] == '/tmp/explicit-dev.sqlite3' and calls[-1]['docker'] == 'explicit-context'
+    assert not any(c['tool'] == 'docker' for c in calls)
+    result, calls = run_dev(BUSY_PORT='1')
+    assert result.returncode != 0 and not any(c['tool'] == 'uv' for c in calls)
+    (project / '.env').unlink()
+    result, calls = run_dev()
+    assert result.returncode != 0 and 'cp .env.example .env' in result.stderr and not calls
+    (binaries / 'python').unlink()
+    result, calls = run_dev()
+    assert result.returncode != 0 and 'uv venv' in result.stderr and not calls
+    result, calls = run_dev('--help')
+    assert result.returncode == 0 and not calls
+    result, calls = run_dev('--unknown')
+    assert result.returncode != 0 and not calls
+print('PASS: backend dev entrypoint, root paths, isolated DB, overrides, port guard and prerequisite failures.')

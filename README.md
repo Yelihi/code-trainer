@@ -195,7 +195,29 @@ npm run build
 ```
 
 API 계약 검사는 임시 DB·가짜 실행 결과를 사용하는 검사이고, `check-sandbox.py`는 실제 컨테이너 검사입니다.
-프런트 개발 서버는 `cd frontend && npm run dev`; API는 8010 포트로 별도 실행합니다.
+개발할 때는 두 터미널에서 각각 실행합니다.
+
+```sh
+# 터미널 1: 프런트엔드 (http://127.0.0.1:5173)
+cd frontend
+npm run dev
+```
+
+```sh
+# 터미널 2: 백엔드 API (http://127.0.0.1:8010)
+cd backend
+./dev.sh
+```
+
+백엔드는 프로젝트 루트의 `.env`와 `.venv`를 사용합니다. 최초 Python 환경 준비는 루트에서
+`uv venv --python 3.12 .venv && uv pip sync --python .venv/bin/python requirements.txt`로 진행합니다.
+`.env`가 없다면 루트에서 `cp .env.example .env`로 준비하세요.
+기본 DB는 `data/dev.sqlite3`이므로 기존 계정·자료와 분리됩니다.
+다른 DB를 쓰려면 `TRAINER_DB=/절대/경로.sqlite3 ./dev.sh`로 지정하세요.
+백엔드 Python 파일을 저장하면 자동 재시작하며, 진행 중인 생성·채점 작업은 중단될 수 있습니다.
+코드 실행·채점에는 실행 중인 Docker 엔진과 실행 이미지가 필요합니다. 최초 이미지 준비는 루트의 `./start.sh`를 사용하고, 개발 서버를 켜기 전에 종료하세요.
+`colima-code-trainer` Docker 컨텍스트가 있으면 자동 선택하며, 명시한 `DOCKER_CONTEXT`가 우선합니다.
+프런트엔드의 `/api` 요청은 8010 포트로 전달됩니다.
 실행 이미지의 도구 버전은 `sandbox/Dockerfile`, Python·웹 의존성은 `requirements.txt`와 `frontend/package-lock.json`에 고정합니다.
 기존 문제는 검증 당시의 이미지 ID를 사용합니다. `code-trainer-runtime:*` 이미지를 삭제하면 해당 버전 문제는 실행할 수 없으므로 보존하세요.
 자원 제한은 [Docker 실행 옵션](https://docs.docker.com/reference/cli/docker/container/run/)을 사용합니다.

@@ -9,7 +9,7 @@ import re
 import zipfile
 from urllib.parse import urlsplit
 from PIL import Image, ImageOps, UnidentifiedImageError
-from . import ai, db, ontology, service, usage
+from . import ai, db, ontology, service, usage, resources
 from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup, NoteQuoteRepair, ReferenceInput
 
 IMAGE_PATH = re.compile(r'/api/reference-images/([a-f0-9]{32})')
@@ -79,6 +79,7 @@ def save(owner, data):
         else:
             c.execute('INSERT INTO reference_notes VALUES (?,?,?,?,?,?,0,?,?)',
                       (data.id, owner, data.title, data.body, metadata, revision, now, now))
+        resources.link_note(c, owner, data.id, previous['created_at'] if previous else now)
         snapshot = {**data.model_dump(), 'revision': revision}
         c.execute('INSERT INTO reference_note_versions VALUES (?,?,?,?,?)', (owner, data.id, revision, service.dump(snapshot), now))
     return view(owner, data.id)

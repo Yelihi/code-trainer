@@ -173,3 +173,146 @@ class ResourcesTest(unittest.TestCase):
         db.initialize()
         self.assertEqual(db.all('SELECT * FROM resources'), [])
         self.assertEqual(db.all('SELECT * FROM resource_versions'), [])
+
+
+class ResourceRegistrationTest(unittest.TestCase):
+    setUp = test_app.AppTest.setUp
+    tearDown = test_app.AppTest.tearDown
+
+    def register(self, **changes):
+        payload = {'request_id': service.uid(), 'kind': 'text', 'name': '원문', 'content': '# 원문\r\n  그대로\n'}
+        payload.update(changes)
+        response = self.client.post('/api/resources', json=payload)
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def test_text_registration_replay_metadata_and_stale_edit(self):
+        from unittest.mock import patch
+        with patch.object(service.runner, 'available', side_effect=AssertionError('runner called')), patch('backend.ai.generate', side_effect=AssertionError('AI called')):
+            first = self.register(request_id='text-request')
+            self.assertEqual(first['content'], '# 원문\r\n  그대로\n')
+            self.assertEqual(self.register(request_id='text-request'), first)
+        resource_id = first['id']
+        same = self.register(resource_id=resource_id, revision=1, name='제목 변경')
+        self.assertEqual((same['name'], same['revision']), ('제목 변경', 1))
+        changed = self.register(resource_id=resource_id, revision=1, content='변경 본문')
+        self.assertEqual(changed['revision'], 2)
+        old = self.client.get(f'/api/resources/{resource_id}/versions/1').json()
+        self.assertEqual((old['name'], old['content']), ('원문', first['content']))
+        payload = {'request_id': 'stale-request', 'kind': 'text', 'name': '원문', 'content': '덮어쓰기', 'resource_id': resource_id, 'revision': 1}
+        self.assertEqual(self.client.post('/api/resources', json=payload).status_code, 409)
+        self.assertEqual(self.client.post('/api/resources', json={**payload, 'request_id': 'text-request'}).status_code, 409)
+
+    def test_url_versions_failed_retry_and_no_refetch_on_replay(self):
+        from unittest.mock import patch
+        from . import source
+        payload = {'kind': 'url', 'url': 'https://example.com/article', 'content': ''}
+        with patch.object(source, 'fetch', return_value='첫 본문') as fetch:
+            first = self.register(request_id='url-request', **payload)
+            self.assertEqual(self.register(request_id='url-request', **payload), first)
+            self.assertEqual(fetch.call_count, 1)
+            same = self.register(name='제목만 변경', **payload)
+        self.assertEqual((same['id'], same['revision']), (first['id'], 1))
+        with patch.object(source, 'fetch', side_effect=source.SourceError('수집 실패')):
+            failed = self.register(**payload)
+        self.assertEqual((failed['state'], failed['content'], failed['revision']), ('failed', '첫 본문', 1))
+        with patch.object(source, 'fetch', return_value='바뀐 본문'):
+            changed = self.register(**payload)
+        self.assertEqual((changed['id'], changed['revision']), (first['id'], 2))
+        self.assertEqual([v['revision'] for v in changed['versions']], [2, 1])
+        self.assertEqual(len(db.all('SELECT * FROM resources')), 1)
+
+    def test_initial_url_failure_and_ssrf_keep_retryable_record(self):
+        failed = self.register(kind='url', url='http://127.0.0.1/private', content='')
+        self.assertEqual((failed['state'], failed['revision'], failed['content']), ('failed', 0, None))
+        self.assertTrue(failed['error'])
+        detail = self.client.get('/api/resources/' + failed['id']).json()
+        self.assertEqual(detail['url'], 'http://127.0.0.1/private')
+
+    def test_owned_listing_note_save_and_versions(self):
+        from . import resources
+        own = self.register()
+        note_id = service.uid()
+        response = self.client.post('/api/reference-notes', json={'id': note_id, 'revision': 0, 'title': '내 노트', 'body': '새 노트', 'metadata': {}})
+        self.assertEqual(response.status_code, 200)
+        listing = self.client.get('/api/resources?page=99').json()
+        self.assertEqual((listing['total'], listing['page']), (2, 1))
+        self.assertEqual(self.client.get('/api/resources?kind=note&q=새').json()['items'][0]['note_id'], note_id)
+        self.client.post(f'/api/reference-notes/{note_id}/archive', json={'archived': True})
+        self.assertEqual(self.client.get('/api/resources?kind=note').json()['total'], 0)
+        self.assertEqual(resources.listing('other', '', 1, 'all')['total'], 0)
+        db.execute('INSERT INTO users VALUES (?,?,?,0)', ('other', 'other', 'unused'))
+        db.execute('UPDATE sessions SET user_id=?', ('other',))
+        for endpoint in ('/api/resources/' + own['id'], '/api/resources/' + own['id'] + '/versions/1'):
+            self.assertEqual(self.client.get(endpoint).status_code, 404)
+        self.assertEqual(self.client.post('/api/resources', json={'request_id': 'other-request', 'resource_id': own['id'], 'revision': 1, 'kind': 'text', 'name': 'bad', 'content': 'bad'}).status_code, 404)
+
+    def test_concurrent_fetch_is_reserved_without_holding_database_lock(self):
+        from unittest.mock import patch
+        from . import resources, source
+        from .resource_schema import ResourceInput
+        payload = {'request_id': 'first-request', 'kind': 'url', 'name': 'URL', 'url': 'https://example.com/concurrent'}
+        def fetch(_):
+            # A separate connection can write during network IO; a second request cannot overwrite it.
+            db.execute("UPDATE users SET username=username WHERE id=?", (self.owner,))
+            with self.assertRaises(service.Error) as busy:
+                resources.register(self.owner, ResourceInput(**{**payload, 'request_id': 'second-request'}))
+            self.assertEqual(busy.exception.status, 409)
+            return '원문'
+        with patch.object(source, 'fetch', side_effect=fetch):
+            result = resources.register(self.owner, ResourceInput(**payload))
+        self.assertEqual(result['revision'], 1)
+
+    def test_expired_fetch_can_retry_and_late_result_cannot_overwrite(self):
+        from unittest.mock import patch
+        from . import resources, source
+        from .resource_schema import ResourceInput
+        payload = {'request_id': 'first-request', 'kind': 'url', 'name': 'URL', 'url': 'https://example.com/expired'}
+        def fetch(_):
+            db.execute('UPDATE resource_registrations SET lease_until=0')
+            with patch.object(source, 'fetch', return_value='재시도 본문'):
+                resources.register(self.owner, ResourceInput(**{**payload, 'request_id': 'retry-request'}))
+            return '늦은 이전 응답'
+        with patch.object(source, 'fetch', side_effect=fetch):
+            with self.assertRaises(service.Error) as stale:
+                resources.register(self.owner, ResourceInput(**payload))
+        self.assertEqual(stale.exception.status, 409)
+        self.assertEqual(db.one('SELECT content FROM resource_versions')['content'], '재시도 본문')
+
+    def test_adopted_legacy_url_survives_restart_without_reverting_body(self):
+        from unittest.mock import patch
+        from . import source
+        for key in ('legacy-one', 'legacy-two'):
+            db.execute("INSERT INTO generations(id,owner,request_id,state,stage,created_at) VALUES (?,?,?,'failed','old','old')", (key, self.owner, key))
+            db.execute('INSERT INTO source_documents VALUES (?,NULL,?,?,?,?)', (key, 'url', key, 'https://example.com/legacy', '이전 본문'))
+        db.initialize()
+        with patch.object(source, 'fetch', return_value='변경 본문'):
+            result = self.register(kind='url', url='https://example.com/legacy', content='')
+        db.initialize()
+        self.assertEqual(self.client.get('/api/resources/' + result['id']).json()['content'], '변경 본문')
+        self.assertEqual(len(db.all('SELECT * FROM resources')), 2)
+        other = db.one('SELECT id FROM resources WHERE id<>?', (result['id'],))['id']
+        response = self.client.post('/api/resources', json={'request_id': 'legacy-other', 'resource_id': other, 'kind': 'url', 'name': 'other', 'url': result['url']})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.client.get('/api/resources/' + other).json()['content'], '이전 본문')
+
+    def test_snapshot_failure_rolls_back_completion_and_preserves_last_good_body(self):
+        first = self.register()
+        db.execute("CREATE TRIGGER block_new_snapshot BEFORE INSERT ON resource_versions BEGIN SELECT RAISE(ABORT, 'snapshot failure'); END")
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.register(resource_id=first['id'], revision=1, content='저장 실패 본문')
+        self.assertEqual(self.client.get('/api/resources/' + first['id']).json()['content'], first['content'])
+        self.assertEqual(len(db.all('SELECT * FROM resource_versions')), 1)
+        self.assertEqual(db.one('SELECT COUNT(*) AS n FROM resource_requests WHERE response IS NULL')['n'], 1)
+
+    def test_registration_validation_and_note_version_shape(self):
+        for patch_data in ({'content': ' '}, {'content': 'x' * 60001}, {'kind': 'sample'}, {'name': ' '}, {'kind': 'url', 'url': ''}):
+            response = self.client.post('/api/resources', json={'request_id': service.uid(), 'kind': 'text', 'name': '검증', 'content': '본문', **patch_data})
+            self.assertEqual(response.status_code, 422)
+        note_id = service.uid()
+        self.client.post('/api/reference-notes', json={'id': note_id, 'revision': 0, 'title': '노트', 'body': '본문', 'metadata': {}})
+        resource_id = db.one('SELECT id FROM resources WHERE note_id=?', (note_id,))['id']
+        self.assertEqual(self.client.get(f'/api/resources/{resource_id}/versions/1').json(), {'revision': 1, 'name': '노트', 'content': '본문'})
+        self.client.post('/api/logout', json={})
+        self.assertEqual(self.client.get('/api/resources').status_code, 401)
+        self.assertEqual(self.client.post('/api/resources', json={'request_id': service.uid(), 'kind': 'text', 'name': '검증', 'content': '본문'}).status_code, 401)

@@ -1,0 +1,22 @@
+.library-page .reference-page-heading { align-items: center; }
+.library-filter { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.library-filter .select-control { min-width: 180px; }
+.library-register { max-width: 980px; }
+.library-register > p { color: var(--muted); }
+.library-register fieldset { border: 0; padding: 0; margin: 32px 0 0; display: grid; gap: 22px; min-width: 0; }
+.library-register label { display: grid; gap: 10px; font-size: 14px; }
+.library-register input, .library-register textarea { width: 100%; min-width: 0; }
+.library-register textarea { resize: vertical; line-height: 1.8; font-family: var(--font-mono, monospace); }
+.library-register .reference-actions { justify-content: flex-end; }
+.library-source { overflow-wrap: anywhere; font-size: 14px; }
+.library-detail h1 { overflow-wrap: anywhere; }
+.library-versions { padding-top: 28px; margin-top: 32px; border-top: 1px solid var(--border); }
+.library-versions h2 { font-size: 18px; }
+.library-versions > p { color: var(--muted); font-size: 13px; }
+@media (max-width: 760px) {
+  .library-page .reference-page-heading, .library-detail .reference-page-heading { align-items: stretch; }
+  .library-page .reference-library-tools { align-items: stretch; flex-direction: column; }
+  .library-filter { justify-content: space-between; }
+  .library-page .reference-actions, .library-detail .reference-actions { flex-wrap: wrap; }
+  .library-page .reference-actions .button { flex: 1; text-align: center; }
+}

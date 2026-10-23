@@ -9,6 +9,7 @@ import { Reviews, Operations } from './Reviews';
 import { FeedInbox } from './FeedInbox';
 import { Foundations, FoundationLesson } from './Foundations';
 import { LearningMap } from './LearningMap';
+import { Library, ResourceRegister, ResourceDetail } from './Library';
 import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
 import { ReferenceReview } from './ReferenceReview';
 import { GitHubSettings, GitHubShare } from './GitHubSharing';
@@ -31,6 +32,10 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/knowledge', element: <LearningMap /> },
   { path: '/settings/github', element: <GitHubSettings /> },
   { path: '/github/share', element: <GitHubShare /> },
+  { path: '/library', element: <Library /> },
+  { path: '/library/new/reference', element: <ResourceRegister /> },
+  { path: '/library/:id', element: <ResourceDetail /> },
+  { path: '/library/:id/edit', element: <ResourceRegister /> },
   { path: '/references', element: <ReferenceNotes /> },
   { path: '/references/new', element: <ReferenceNoteRoute /> },
   { path: '/references/:id', element: <ReferenceNoteRoute /> },

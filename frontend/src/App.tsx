@@ -68,6 +68,7 @@ export function App() {
         <NavLink to="/" end>학습 공간</NavLink>
         <NavLink to="/create">연습 만들기</NavLink>
         <NavLink to="/inbox">등록 대기 포스팅</NavLink>
+        <NavLink to="/library">자료 보관함</NavLink>
         <NavLink to="/references">레퍼런스 노트</NavLink>
         <NavLink to="/reviews">오늘의 복습</NavLink>
         <NavLink to="/me">나의 기록</NavLink>

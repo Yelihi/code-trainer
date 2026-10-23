@@ -9,6 +9,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
+from typing import Literal
+from . import resources
+from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
@@ -318,6 +321,27 @@ def knowledge_concepts(current=Depends(user), q: str = Query(default='', max_len
 @app.post('/api/knowledge/concept-matches')
 def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
     return ontology.concept_matches(current['id'], body)
+
+
+@app.get('/api/resources')
+def resource_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1),
+                  kind: Literal['all', 'text', 'url', 'note'] = 'all', current=Depends(user)):
+    return resources.listing(current['id'], q, page, kind)
+
+
+@app.post('/api/resources')
+def resource_register(body: ResourceInput, current=Depends(user)):
+    return resources.register(current['id'], body)
+
+
+@app.get('/api/resources/{resource_id}')
+def resource_view(resource_id: str, current=Depends(user)):
+    return resources.view(current['id'], resource_id)
+
+
+@app.get('/api/resources/{resource_id}/versions/{revision}')
+def resource_version(resource_id: str, revision: int, current=Depends(user)):
+    return resources.version(current['id'], resource_id, revision)
 
 
 @app.get('/api/reference-notes')

@@ -79,3 +79,12 @@ Re-registering the same URL reuses its resource and appends a version only when
 the fetched body differs. Identical content adds no version; old versions and
 their interpretation provenance remain intact. This does not change legacy P1
 import identities or silently merge multiple historical learning sources.
+
+
+## P2 release delivery and P5 navigation (2026-10-23)
+
+P2 원문 등록·보관함은 PR #23으로 `release/second-brain-redesign`에 병합했다 (merge `4c798f5`). 백엔드 102개 테스트, 프론트엔드 검사와 GitHub CI가 통과했다. CI 첫 실행의 Docker Hub 502 오류는 코드 변경 없이 실패 작업을 재실행하여 해소했다. main 병합과 배포는 하지 않았다.
+
+사용자의 다섯 영역 메뉴 누락 지적과 후속 작업 요청에 따라 P5를 `feat/second-brain-navigation`에서 먼저 진행한다. 기존 URL과 `/create`의 피드 쿼리는 유지하고, `/explore`(기존 해석 학습 목록), `/explore/practice`(실습 진입점)를 추가한다. 첫 화면은 원문 등록을 주 행동으로 안내한다. 추출 가능 자료·Deep Inside·사용자 AI 연결은 준비 상태 및 기존 기능 안내만 제공하며 생성/저장 기능을 구현한 것으로 표시하지 않는다.
+
+P3 RSA 원문 저장 완료 전환, P4 보관함에서 독립 해석 시작은 아직 미구현이다. 이후 후보 추출·망각 곡선 일정·Deep Inside·사용자별 API 키도 별도 작업이다. P5 메뉴 적용을 전체 제품 전환 완료로 간주하지 않는다.

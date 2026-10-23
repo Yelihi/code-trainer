@@ -427,7 +427,9 @@ def generate(owner, generation_id, request):
         if request.source_kind != 'sample' and not request.unit_id:
             with db.connect(write=True) as c:
                 c.execute("UPDATE generations SET state='ready',stage='개념 학습 준비 완료' WHERE id=?", (generation_id,))
-                c.execute('UPDATE feed_choices SET registered=1 WHERE owner=? AND generation_id=?', (owner, generation_id))
+                c.execute('''UPDATE feed_choices SET registered=1 WHERE owner=? AND generation_id=?
+                    AND NOT EXISTS (SELECT 1 FROM resource_feed_posts f
+                        WHERE f.owner=feed_choices.owner AND f.post_id=feed_choices.post_id)''', (owner, generation_id))
             diagnostics.event('개념 학습 준비 완료 · 단원별로 문제를 생성할 수 있습니다.')
             return
         image_id = runner.pin_runtime()

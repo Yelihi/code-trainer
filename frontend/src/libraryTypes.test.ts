@@ -22,3 +22,13 @@ test('file import preserves UTF-8 text and rejects malformed, unsupported, empty
     new File([new Uint8Array([0xff, 0xfe])], 'invalid.txt'), new File(['x'.repeat(60001)], 'long.md'),
     new File(['x'.repeat(240001)], 'huge.txt')]) await assert.rejects(readResourceFile(file));
 });
+
+
+test('RSA drafts cannot cross posts or leak into manual registration', () => {
+  const draft = { request_id: 'rsa-response-request', feed_post_id: 'post-one', kind: 'url', name: '원문', content: '', url: 'https://example.com/original', revision: 0 };
+  assert.deepEqual(restoreResourceDraft(JSON.stringify(draft), undefined, 'post-one'), draft);
+  assert.equal(restoreResourceDraft(JSON.stringify(draft), undefined, 'post-two'), null);
+  assert.equal(restoreResourceDraft(JSON.stringify(draft)), null);
+  assert.equal(restoreResourceDraft(JSON.stringify({ ...draft, kind: 'text' }), undefined, 'post-one'), null);
+  assert.equal(restoreResourceDraft(JSON.stringify({ ...draft, feed_post_id: undefined }), undefined, 'post-one'), null);
+});

@@ -33,6 +33,12 @@ def initialize(c):
         payload_hash TEXT NOT NULL, response TEXT,
         PRIMARY KEY(owner,request_id),
         FOREIGN KEY(owner,resource_id) REFERENCES resources(owner,id))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS resource_feed_posts (
+        owner TEXT NOT NULL, post_id TEXT NOT NULL REFERENCES feed_posts(id),
+        resource_id TEXT NOT NULL, request_id TEXT NOT NULL,
+        PRIMARY KEY(owner,post_id),
+        FOREIGN KEY(owner,resource_id) REFERENCES resources(owner,id),
+        FOREIGN KEY(owner,request_id) REFERENCES resource_requests(owner,request_id))''')
 
 
 def migrate(c, context_id=None):
@@ -107,6 +113,10 @@ def view(owner, resource_id, c=None):
     else:
         versions = c.execute('SELECT revision,created_at FROM resource_versions WHERE owner=? AND resource_id=? ORDER BY revision DESC', (owner, resource_id))
     result['versions'] = [dict(v) for v in versions]
+    result['feed_pending'] = bool(c.execute('''SELECT 1 FROM resource_feed_posts f
+        LEFT JOIN feed_choices choice ON choice.owner=f.owner AND choice.post_id=f.post_id
+        WHERE f.owner=? AND f.resource_id=? AND COALESCE(choice.registered,0)=0''',
+        (owner, resource_id)).fetchone())
     return result
 
 
@@ -141,7 +151,8 @@ def listing(owner, query, page, kind):
 
 def register(owner, data):
     from . import service
-    payload_hash = hashlib.sha256(data.model_dump_json().encode()).hexdigest()
+    # Keep persisted pre-RSA request hashes replayable when no post was supplied.
+    payload_hash = hashlib.sha256(data.model_dump_json(exclude={'feed_post_id'} if data.feed_post_id is None else set()).encode()).hexdigest()
     now = service.now()
     with db.connect(write=True) as c:
         request = c.execute('SELECT * FROM resource_requests WHERE owner=? AND request_id=?', (owner, data.request_id)).fetchone()
@@ -151,6 +162,17 @@ def register(owner, data):
             if request['response']:
                 return json.loads(request['response'])
             raise service.Error('이 수집 요청은 처리 중이거나 중단되었습니다. 자료 목록에서 확인 후 다시 가져와주세요.', 409)
+        if data.feed_post_id:
+            if not c.execute('SELECT 1 FROM feed_posts WHERE id=?', (data.feed_post_id,)).fetchone():
+                raise service.Error('등록 대기 글을 찾을 수 없습니다.', 404)
+            choice = c.execute('SELECT registered FROM feed_choices WHERE owner=? AND post_id=?', (owner, data.feed_post_id)).fetchone()
+            if choice and choice['registered']:
+                raise service.Error('이미 등록한 글입니다. 자료 보관함에서 원문을 확인해주세요.', 409)
+            pending = c.execute('''SELECT g.active_request,g.lease_until FROM resource_feed_posts f
+                JOIN resource_registrations g ON g.owner=f.owner AND g.resource_id=f.resource_id
+                WHERE f.owner=? AND f.post_id=?''', (owner, data.feed_post_id)).fetchone()
+            if pending and pending['active_request'] and pending['lease_until'] > time.time():
+                raise service.Error('이미 이 글의 원문을 가져오고 있습니다. 잠시 후 확인해주세요.', 409)
         resource_id = data.resource_id
         existing = view(owner, resource_id, c) if resource_id else None
         if existing and (existing['kind'] != data.kind or existing['note_id'] or (data.kind == 'url' and existing['url'] != data.url)):
@@ -185,6 +207,10 @@ def register(owner, data):
                      lease_until=excluded.lease_until,updated_at=excluded.updated_at''',
                   (owner, resource_id, data.kind, data.name, data.url or None, data.request_id, time.time() + 120, now))
         c.execute('INSERT INTO resource_requests VALUES (?,?,?,?,NULL)', (owner, data.request_id, resource_id, payload_hash))
+        if data.feed_post_id:
+            c.execute('''INSERT INTO resource_feed_posts VALUES (?,?,?,?)
+                ON CONFLICT(owner,post_id) DO UPDATE SET resource_id=excluded.resource_id,request_id=excluded.request_id''',
+                (owner, data.feed_post_id, resource_id, data.request_id))
     # Network IO must not hold the SQLite writer lock. The request token fences late results.
     content, error = data.content, ''
     if data.kind == 'url':
@@ -198,12 +224,20 @@ def register(owner, data):
         active = c.execute('SELECT active_request FROM resource_registrations WHERE owner=? AND resource_id=?', (owner, resource_id)).fetchone()
         if active['active_request'] != data.request_id:
             raise service.Error('더 최근의 수집 요청이 있습니다. 최신 자료를 확인해주세요.', 409)
+        if data.feed_post_id and not c.execute('''SELECT 1 FROM resource_feed_posts
+            WHERE owner=? AND post_id=? AND resource_id=? AND request_id=?''',
+            (owner, data.feed_post_id, resource_id, data.request_id)).fetchone():
+            raise service.Error('이 글에 더 최근의 등록 요청이 있습니다. 대기 목록에서 확인해주세요.', 409)
         previous = c.execute('SELECT * FROM resource_versions WHERE owner=? AND resource_id=? ORDER BY revision DESC LIMIT 1', (owner, resource_id)).fetchone()
         if not error and (not previous or previous['content'] != content):
             c.execute('INSERT INTO resource_versions VALUES (?,?,?,?,?,?,?,?)',
                       (owner, resource_id, previous['revision'] + 1 if previous else 1, data.kind, data.name, data.url or None, content, service.now()))
         c.execute('''UPDATE resource_registrations SET state=?,error=?,active_request=NULL,lease_until=0,updated_at=?
                      WHERE owner=? AND resource_id=?''', ('failed' if error else 'ready', error, service.now(), owner, resource_id))
+        if not error:
+            c.execute('''INSERT INTO feed_choices(owner,post_id,registered)
+                SELECT owner,post_id,1 FROM resource_feed_posts WHERE owner=? AND resource_id=?
+                ON CONFLICT(owner,post_id) DO UPDATE SET registered=1''', (owner, resource_id))
         result = view(owner, resource_id, c)
         c.execute('UPDATE resource_requests SET response=? WHERE owner=? AND request_id=?', (json.dumps(result, ensure_ascii=False), owner, data.request_id))
         return result

@@ -1,10 +1,12 @@
 """RSS safety, persisted collection, ownership and generation lifecycle."""
 import asyncio
+import sqlite3
 from unittest.mock import patch, MagicMock
 import unittest
-from . import db, feeds, service, source, test_app
+from . import db, feeds, resources, service, source, test_app
 from .sample import sample
 from .schema import GenerationInput
+from .resource_schema import ResourceInput
 
 RSS = b'''<?xml version="1.0"?><rss version="2.0"><channel>
 <item><guid>one</guid><title>One &amp; two</title><link>https://example.com/post?utm_source=email&amp;x=1#comments</link>
@@ -247,3 +249,108 @@ class FeedTest(unittest.TestCase):
         with patch.object(source, 'fetch_bytes') as fetch:
             self.assertEqual(self.client.post('/api/feed-sources', json={'name': 'Over limit', 'url': 'https://another.example/feed'}).status_code, 409)
             fetch.assert_not_called()
+
+    def raw_request(self, post, request_id='raw-feed-001', **changes):
+        return dict(request_id=request_id, kind='url', name=post['title'], url=post['url'],
+                    feed_post_id=post['id'], **changes)
+
+    def test_raw_success_replay_owner_and_body_versions_without_ai(self):
+        post = self.collect()
+        body = self.raw_request(post)
+        with patch.object(service.ai, 'available', side_effect=AssertionError('AI called')), patch.object(service.ai, 'analyze', side_effect=AssertionError('AI called')), patch.object(service.runner, 'available', side_effect=AssertionError('runner called')), patch.object(source, 'fetch', return_value='Original raw body') as fetch:
+            response = self.client.post('/api/resources', json=body)
+            self.assertEqual(response.status_code, 200, response.text)
+            raw = response.json()
+            self.assertEqual(self.client.post('/api/resources', json=body).json(), raw)
+            self.assertEqual(self.client.post('/api/resources', json={**body, 'request_id': 'another-raw-request'}).status_code, 409)
+            fetch.assert_called_once()
+        self.assertFalse(raw['feed_pending'])
+        self.assertEqual(feeds.inbox(self.owner)['total'], 0)
+        self.assertEqual(feeds.inbox('another-owner')['total'], 1)
+        self.assertIsNone(feeds.inbox('another-owner')['items'][0]['resource_id'])
+        for index, content in enumerate(['Original raw body', 'Changed raw body']):
+            with patch.object(source, 'fetch', return_value=content):
+                refreshed = self.client.post('/api/resources', json={k: v for k, v in {**body, 'resource_id': raw['id'], 'request_id': f'refresh-body-{index}'}.items() if k != 'feed_post_id'}).json()
+            self.assertEqual(refreshed['revision'], index + 1)
+        db.initialize()
+        self.assertEqual(feeds.inbox(self.owner)['total'], 0)
+        self.assertEqual(len(db.all('SELECT * FROM resources')), 1)
+
+    def test_raw_failure_pending_then_detail_retry_completes(self):
+        post = self.collect()
+        body = self.raw_request(post)
+        with patch.object(source, 'fetch', side_effect=source.SourceError('unavailable')):
+            raw = self.client.post('/api/resources', json=body).json()
+        self.assertEqual(raw['state'], 'failed')
+        self.assertTrue(raw['feed_pending'])
+        self.assertEqual(feeds.inbox(self.owner)['items'][0]['resource_id'], raw['id'])
+        with patch.object(source, 'fetch', return_value='Recovered raw body'):
+            result = self.client.post('/api/resources', json={k: v for k, v in {**body, 'resource_id': raw['id'], 'request_id': 'retry-via-detail'}.items() if k != 'feed_post_id'}).json()
+        self.assertEqual(result['revision'], 1)
+        self.assertFalse(result['feed_pending'])
+        self.assertEqual(feeds.inbox(self.owner)['total'], 0)
+        self.assertEqual(len(db.all('SELECT * FROM resources')), 1)
+
+    def test_raw_post_lease_fences_different_urls_and_late_results(self):
+        post = self.collect()
+        body = self.raw_request(post)
+        corrected = {**body, 'request_id': 'corrected-request', 'url': 'https://example.com/original'}
+        def during_fetch(_):
+            with self.assertRaises(service.Error) as error:
+                resources.register(self.owner, ResourceInput(**corrected))
+            self.assertEqual(error.exception.status, 409)
+            self.assertEqual(len(db.all('SELECT * FROM resources')), 1)
+            db.execute('UPDATE resource_registrations SET lease_until=0')
+            with patch.object(source, 'fetch', side_effect=source.SourceError('corrected URL unavailable')):
+                self.corrected = resources.register(self.owner, ResourceInput(**corrected))
+            return 'Stale first request must not complete the post'
+        with patch.object(source, 'fetch', side_effect=during_fetch):
+            with self.assertRaises(service.Error) as error:
+                resources.register(self.owner, ResourceInput(**body))
+        self.assertEqual(error.exception.status, 409)
+        pending = feeds.inbox(self.owner)['items'][0]
+        self.assertEqual(pending['resource_id'], self.corrected['id'])
+        self.assertEqual(pending['raw_url'], corrected['url'])
+        self.assertEqual(db.all('SELECT * FROM resource_versions'), [])
+        # Retry the abandoned old raw independently; it cannot complete the moved post.
+        old = next(r for r in db.all('SELECT * FROM resources') if r['id'] != self.corrected['id'])
+        with patch.object(source, 'fetch', return_value='Old raw recovered'):
+            resources.register(self.owner, ResourceInput(**{k:v for k,v in {**body, 'resource_id':old['id'], 'request_id':'old-raw-retry'}.items() if k!='feed_post_id'}))
+        self.assertEqual(feeds.inbox(self.owner)['total'], 1)
+        with patch.object(source, 'fetch', return_value='Corrected raw recovered'):
+            result = resources.register(self.owner, ResourceInput(**{**corrected, 'request_id':'corrected-retry'}))
+        self.assertEqual(result['id'], self.corrected['id'])
+        self.assertEqual(feeds.inbox(self.owner)['total'], 0)
+        self.assertEqual(len(db.all('SELECT * FROM resources')), 2)
+
+    def test_raw_completion_rolls_back_and_old_ai_cannot_complete_failed_raw(self):
+        post = self.collect()
+        body = self.raw_request(post)
+        db.execute("CREATE TRIGGER fail_feed_choice BEFORE INSERT ON feed_choices BEGIN SELECT RAISE(ABORT, 'choice failure'); END")
+        with patch.object(source, 'fetch', return_value='Must roll back'):
+            with self.assertRaises(sqlite3.IntegrityError):
+                resources.register(self.owner, ResourceInput(**body))
+        self.assertEqual(db.all('SELECT * FROM resource_versions'), [])
+        self.assertEqual(feeds.inbox(self.owner)['total'], 1)
+        db.execute('DROP TRIGGER fail_feed_choice')
+        db.execute('UPDATE resource_registrations SET lease_until=0')
+        with patch.object(service.ai, 'available', return_value=True):
+            job, _ = service.begin_generation(self.owner, GenerationInput(**self.request(post)))
+        with patch.object(source, 'fetch', side_effect=source.SourceError('raw failed')):
+            resources.register(self.owner, ResourceInput(**{**body, 'request_id':'raw-failure-after-rollback'}))
+        context, _ = sample()
+        with patch.object(source, 'fetch', return_value='Legacy article with enough source content'), patch.object(service.ai, 'analyze', return_value=context):
+            service.generate(self.owner, job['id'], GenerationInput(**self.request(post)))
+        self.assertEqual(service.generation(self.owner, job['id'])['state'], 'ready')
+        self.assertEqual(feeds.inbox(self.owner)['total'], 1)
+
+    def test_raw_invalid_post_kind_owner_and_auth(self):
+        post = self.collect()
+        body = self.raw_request(post)
+        with patch.object(source, 'fetch') as fetch:
+            self.assertEqual(self.client.post('/api/resources', json={**body, 'feed_post_id':'missing'}).status_code, 404)
+            self.assertEqual(self.client.post('/api/resources', json={**body, 'kind':'text','content':'body','url':''}).status_code, 422)
+            self.assertEqual(self.client.post('/api/resources', json={**body, 'resource_id':'a'*32}).status_code, 404)
+            fetch.assert_not_called()
+        self.client.cookies.clear()
+        self.assertEqual(self.client.post('/api/resources', json=body).status_code, 401)

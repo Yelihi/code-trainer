@@ -336,7 +336,7 @@ button.text-button,
   width: 240px;
   background: #0d0b1b;
   border-right: 1px solid var(--line);
-  padding: 29px 16px;
+  padding: 20px 14px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -355,8 +355,8 @@ button.text-button,
   gap: 6px;
 }
 .sidebar nav a {
-  padding: 11px 12px;
-  color: #a8a0b9;
+  padding: 8px 12px;
+  color: #b6adc8;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -371,10 +371,24 @@ button.text-button,
 .sidebar nav a:hover:not(.active) {
   background: #1b152c;
 }
-.sidebar-divider {
-  border-bottom: 1px solid var(--line);
-  margin: 28px 7px;
-}
+.navigation-groups { display: grid; gap: 22px; padding-bottom: 20px; }
+.navigation-group .sidebar-label { display: flex; gap: 10px; color: #d1c4e7; margin: 0 0 7px; font-weight: var(--weight-semibold); }
+.navigation-group .sidebar-label > span { color: #9385aa; font-family: var(--font-mono); font-weight: var(--weight-regular); }
+.navigation-group nav { gap: 2px; }
+.navigation-badge { margin-left: auto; font-size: 11px; color: #bcb2cd; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+.sidebar nav a.active .navigation-badge { color: inherit; }
+.brain-hero { gap: 32px; }
+.brain-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.brain-journey { list-style: none; margin: 0; padding: 24px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(140deg, #211536, var(--panel)); }
+.brain-journey li { display: flex; gap: 18px; align-items: baseline; padding: 14px 0; }
+.brain-journey li + li { border-top: 1px solid var(--line); }
+.brain-journey li > span { color: #b187fa; font-family: var(--font-mono); }
+.brain-journey p { color: var(--muted); font-size: var(--text-caption); margin: 4px 0 0; }
+.journey-page > p { max-width: 760px; color: var(--muted); line-height: var(--leading-reading); }
+.journey-page h1 { margin-top: 12px; }
+.journey-page h2 { font-size: var(--text-subheading); }
+.journey-available { margin-top: 32px; padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.journey-available p { margin-top: 0; }
 .sidebar-bottom {
   margin-top: auto;
   font-size: var(--text-caption);

@@ -204,7 +204,7 @@ npm run dev
 ```
 
 ```sh
-# 터미널 2: 백엔드 API (http://127.0.0.1:8010)
+# 터미널 2: 개발 백엔드 API (http://127.0.0.1:8011)
 cd backend
 ./dev.sh
 ```
@@ -212,12 +212,16 @@ cd backend
 백엔드는 프로젝트 루트의 `.env`와 `.venv`를 사용합니다. 최초 Python 환경 준비는 루트에서
 `uv venv --python 3.12 .venv && uv pip sync --python .venv/bin/python requirements.txt`로 진행합니다.
 `.env`가 없다면 루트에서 `cp .env.example .env`로 준비하세요.
-기본 DB는 `data/dev.sqlite3`이므로 기존 계정·자료와 분리됩니다.
-다른 DB를 쓰려면 `TRAINER_DB=/절대/경로.sqlite3 ./dev.sh`로 지정하세요.
+AI API 키·모델·제공자 설정은 현재 `.env`를 공유합니다. 개발에서도 실제 AI 호출 비용이 발생합니다.
+개발 DB는 `data/dev/trainer.sqlite3`, 로그는 `data/dev/`에 저장합니다. 기존 계정·자료는 복사하지 않습니다.
+`dev.sh`는 셸이나 `.env`의 운영 DB·실행 서버·Docker 설정을 개발 전용 값으로 덮어씁니다.
 백엔드 Python 파일을 저장하면 자동 재시작하며, 진행 중인 생성·채점 작업은 중단될 수 있습니다.
-코드 실행·채점에는 실행 중인 Docker 엔진과 실행 이미지가 필요합니다. 최초 이미지 준비는 루트의 `./start.sh`를 사용하고, 개발 서버를 켜기 전에 종료하세요.
-`colima-code-trainer` Docker 컨텍스트가 있으면 자동 선택하며, 명시한 `DOCKER_CONTEXT`가 우선합니다.
-프런트엔드의 `/api` 요청은 8010 포트로 전달됩니다.
+Docker CLI와 Colima가 필요하며, `dev.sh`가 전용 VM `code-trainer-dev`와 `code-trainer-runner:dev` 이미지를 준비합니다.
+최초 실행에는 이미지 다운로드·빌드 시간이 필요합니다. 이 VM은 2 CPU·2 GiB 메모리를 사용하며 호스트 폴더나 SSH agent를 공유하지 않습니다.
+제출 코드 컨테이너는 기존처럼 네트워크 없이 실행됩니다. 개발 VM은 운영 실행 VM의 브로커·mTLS·호스트 네트워크 차단 구성을 재현하지 않습니다.
+개발은 전용 Docker 소켓을 직접 사용하므로 운영의 `18443`/`8443` 포트를 사용하지 않습니다.
+프런트엔드의 `/api` 요청은 개발 API `8011`로 전달됩니다. 운영 API `8010`과 운영 VM은 변경하지 않습니다.
+코드 실행 환경까지 종료하려면 개발 API를 먼저 종료한 뒤 `COLIMA_HOME="$HOME/.colima" colima stop code-trainer-dev`를 실행하세요.
 실행 이미지의 도구 버전은 `sandbox/Dockerfile`, Python·웹 의존성은 `requirements.txt`와 `frontend/package-lock.json`에 고정합니다.
 기존 문제는 검증 당시의 이미지 ID를 사용합니다. `code-trainer-runtime:*` 이미지를 삭제하면 해당 버전 문제는 실행할 수 없으므로 보존하세요.
 자원 제한은 [Docker 실행 옵션](https://docs.docker.com/reference/cli/docker/container/run/)을 사용합니다.

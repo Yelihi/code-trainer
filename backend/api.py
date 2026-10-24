@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources
+from . import resources, interpretations
+from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
@@ -327,6 +328,24 @@ def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
 def resource_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1),
                   kind: Literal['all', 'text', 'url', 'note'] = 'all', current=Depends(user)):
     return resources.listing(current['id'], q, page, kind)
+
+
+@app.get('/api/interpretations')
+def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
+    return interpretations.listing(current['id'], page, resource_id)
+
+
+@app.post('/api/interpretations', status_code=202)
+def interpretation_start(body: InterpretationInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = interpretations.begin(current['id'], body)
+    if fresh:
+        tasks.add_task(interpretations.generate, result['id'])
+    return result
+
+
+@app.get('/api/interpretations/{identifier}')
+def interpretation_view(identifier: str, current=Depends(user)):
+    return interpretations.view(current['id'], identifier)
 
 
 @app.post('/api/resources')

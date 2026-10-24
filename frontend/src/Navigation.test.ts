@@ -17,6 +17,7 @@ test('five navigation areas preserve destination identity, current page and admi
     assert.match(render('/admin/sources/source-id', true), /href="\/admin\/sources"/);
     const cases = [
       ['/', '/explore'], ['/explore?page=2', '/explore'], ['/learn/context/units/unit', '/explore'],
+      ['/interpretations/document-id', '/explore'],
       ['/create?post=123&url=https%3A%2F%2Fexample.com&title=test', '/explore'],
       ['/library/source-id/edit', '/library'], ['/library/new/reference', '/library/new/reference'],
       ['/references/new', '/references/new'], ['/references/note-id', '/library'],
@@ -39,6 +40,6 @@ test('five navigation areas preserve destination identity, current page and admi
     }
     const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(PracticeEntry)));
     assert.match(practice, /href="\/foundations"/);
-    assert.match(practice, /href="\/explore"/);
+    assert.match(practice, /href="\/"/);
   } finally { await server.close(); }
 });

@@ -127,10 +127,10 @@ export function Home() {
         <li><span>04</span><div><strong>응용하기</strong><p>연결에서 새로운 질문 찾기 · 준비 중</p></div></li>
       </ol>
     </section>
-    <div className="section-heading"><div><span className="eyebrow">YOUR COLLECTION</span><h2>해석한 학습 자료 <span className="count">{data?.total ?? '—'}</span></h2></div><div className="brain-actions"><Link className="text-link" to="/create">기존 자료 분석</Link><Link className="text-link" to="/me">학습 기록 보기</Link></div></div>
+    <div className="section-heading"><div><span className="eyebrow">CODING COURSES</span><h2>기존 코딩 학습 과정 <span className="count">{data?.total ?? '—'}</span></h2></div><div className="brain-actions"><Link className="text-link" to="/explore">일반 해석 문서</Link><Link className="text-link" to="/create">기존 자료 분석</Link><Link className="text-link" to="/me">학습 기록 보기</Link></div></div>
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
     {!data && !error && <LoadingSkeleton layout="cards" label="자료를 불러오는 중…" />}
-    {data?.total === 0 && <div className="empty-state"><h3>아직 해석한 학습 자료가 없습니다.</h3><p>자료 보관함에 원문을 먼저 모아보세요.<br />보관함에서 해석을 시작하는 연결은 준비 중이며, 기존 자료 분석은 계속 사용할 수 있습니다.</p><Link className="button" to="/create">기존 자료 분석 열기</Link></div>}
+    {data?.total === 0 && <div className="empty-state"><h3>아직 생성한 코딩 과정이 없습니다.</h3><p>일반 자료는 보관함에서 원문을 열어 해석할 수 있습니다.<br />실행 언어에 맞춘 기존 코딩 과정은 자료 분석에서 시작하세요.</p><Link className="button" to="/create">기존 자료 분석 열기</Link></div>}
     <div className="context-grid">{data?.items.map(context => <Link className="context-card" key={context.id} to={`/learn/${context.id}`}><div className="card-top"><span className="language-tag">{languages[context.language]} · {difficulties[context.difficulty ?? 'beginner']}</span></div><h3>{context.title}</h3><p>{context.description}</p><div className="chips">{context.concepts.slice(0, 3).map(concept => <span key={concept}>{concept}</span>)}</div><div className="card-footer"><span>{context.completed} / {context.total} 완료</span><span>{timestamp(context.created_at)}</span></div></Link>)}</div>
     {data && data.total > 0 && <nav className="pagination" aria-label="학습 자료 페이지"><button disabled={data.page <= 1} onClick={() => setParams({ page: String(data.page - 1) })}>이전</button><span aria-live="polite">{data.page} / {data.pages} 페이지 · {data.total}개 자료</span><button disabled={data.page >= data.pages} onClick={() => setParams({ page: String(data.page + 1) })}>다음</button></nav>}
     {health && !health.sandbox && <p className="notice">실행 환경이 아직 연결되지 않았습니다. 문제 생성 검증과 코드 실행에는 샌드박스가 필요합니다.</p>}

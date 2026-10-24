@@ -5,6 +5,7 @@ import { ErrorNotice, useApp, useResource } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { Markdown } from './Markdown';
 import { Select } from './Select';
+import { ResourceInterpretations } from './Interpretations';
 import { libraryPage, readResourceFile, resourceKinds, restoreResourceDraft, type Resource, type ResourceDraft, type ResourceList, type ResourceVersion } from './libraryTypes';
 import './referenceNotes.css';
 import './library.css';
@@ -149,6 +150,7 @@ function Detail({ id }: { id: string }) {
       {current.state === 'failed' && <p className="notice error" role="alert">{current.error || '아직 가져온 본문이 없습니다.'}{current.revision > 0 && ' 마지막으로 저장한 본문을 표시합니다.'}</p>}
       {current.state === 'fetching' && <p role="status" className="notice">원문 수집 중입니다. <button onClick={() => { setResult(null); reload(); }}>상태 확인</button></p>}
       {message && <p className="reference-state" role="status">{message}</p>}
+      <ResourceInterpretations resourceId={id} revision={old?.revision ?? current.revision} content={old ? old.content : current.content} />
       {current.content !== null ? <article className="reference-reading"><Markdown language="" images={!!current.note_id}>{current.content}</Markdown></article> : <section className="reference-empty"><h2>아직 수집된 본문이 없습니다.</h2><p>원문 주소는 저장되어 있습니다. 다시 가져오기를 눌러 재시도하세요.</p></section>}
       <section className="library-versions"><h2>본문 버전 · {current.versions.length}</h2>{current.kind !== 'note' && <p>본문이 변경된 경우에만 새 버전이 추가됩니다. 이전 원문은 그대로 보존됩니다.</p>}<div className="reference-version-list">{current.versions.map(v => <button key={v.revision} onClick={() => void showVersion(v.revision)}>v{v.revision} · {timestamp(v.created_at)}</button>)}</div></section>
       {old && <section className="reference-old-version"><header><h2>저장된 원문 v{old.revision} · {old.name}</h2><button onClick={() => { versionRequest.current++; setOld(null); }}>닫기</button></header><Markdown language="" images={!!current.note_id}>{old.content ?? '이 버전에는 수집된 본문이 없습니다.'}</Markdown></section>}

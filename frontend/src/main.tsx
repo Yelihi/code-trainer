@@ -1,4 +1,5 @@
 import { PlannedFeature, PracticeEntry } from './Navigation';
+import { Interpretations, InterpretationDetail } from './Interpretations';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -18,7 +19,8 @@ import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/', element: <Home /> },
-  { path: '/explore', element: <Home /> },
+  { path: '/explore', element: <Interpretations /> },
+  { path: '/interpretations/:id', element: <InterpretationDetail /> },
   { path: '/explore/practice', element: <PracticeEntry /> },
   { path: '/knowledge/candidates', element: <PlannedFeature feature="candidates" /> },
   { path: '/apply', element: <PlannedFeature feature="inside" /> },

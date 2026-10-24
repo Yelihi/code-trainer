@@ -173,10 +173,11 @@ def initialize():
                 ORDER BY CAST(e.key AS INTEGER) DESC LIMIT 1) WHERE state='failed' ''')
         c.execute('CREATE UNIQUE INDEX IF NOT EXISTS sets_unit ON sets(context_id, unit_id) WHERE unit_id IS NOT NULL')
     path().chmod(0o600)
-    from . import resources
+    from . import resources, interpretations
     with connect(write=True) as c:
         resources.initialize(c)
         resources.migrate(c)
+        interpretations.initialize(c)
 
 
 def one(sql, params=()):

@@ -13,7 +13,35 @@
 .library-versions { padding-top: 28px; margin-top: 32px; border-top: 1px solid var(--border); }
 .library-versions h2 { font-size: 18px; }
 .library-versions > p { color: var(--muted); font-size: 13px; }
+.interpretation-entry { margin: 32px 0; padding: 28px; border: 1px solid var(--line); background: var(--panel); display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.interpretation-entry h2 { margin: 8px 0; font-size: 24px; }
+.interpretation-entry p, .interpretation-provenance p, .interpretation-questions > p { color: var(--muted); }
+.interpretation-entry-actions { display: grid; gap: 16px; flex-shrink: 0; max-width: 340px; }
+.interpretation-list-links { display: flex; justify-content: flex-end; gap: 24px; margin-bottom: 28px; }
+.interpretation-page { max-width: 1050px; }
+.interpretation-provenance { border-left: 3px solid var(--purple); padding: 16px 24px; background: var(--panel); margin: 28px 0; }
+.interpretation-provenance p { margin-bottom: 0; font-size: 14px; }
+.interpretation-summary { padding: 24px 0; }
+.interpretation-concepts { display: flex; gap: 10px; flex-wrap: wrap; list-style: none; padding: 0; }
+.interpretation-concepts li { border: 1px solid var(--line); padding: 6px 12px; font-size: 13px; border-radius: 4px; }
+.interpretation-outline { border-block: 1px solid var(--line); display: grid; padding: 20px 0; gap: 12px; }
+.interpretation-outline a { display: flex; gap: 16px; }
+.interpretation-outline span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.interpretation-section { scroll-margin-top: 32px; padding: 40px 0; border-bottom: 1px solid var(--line); }
+.interpretation-section h2 { font-size: 26px; margin: 8px 0 24px; }
+.interpretation-section h3 { font-size: 16px; }
+.interpretation-quotes { margin-top: 28px; }
+.interpretation-quotes blockquote { margin: 12px 0; padding: 12px 20px; border-left: 2px solid var(--green); background: var(--panel); white-space: pre-wrap; }
+.interpretation-quotes p { margin: 0; }
+.interpretation-addition { padding-top: 12px; }
+.interpretation-addition h3 { color: var(--muted); }
+.interpretation-questions, .interpretation-recovery { padding: 24px; margin-top: 24px; border: 1px solid var(--line); background: var(--panel); }
+.interpretation-questions li { margin: 12px 0; }
 @media (max-width: 760px) {
+  .interpretation-entry { flex-direction: column; align-items: stretch; padding: 20px; }
+  .interpretation-entry-actions { max-width: none; }
+  .interpretation-page .reference-page-heading { align-items: stretch; }
+  .interpretation-list-links { flex-wrap: wrap; }
   .library-page .reference-page-heading, .library-detail .reference-page-heading { align-items: stretch; }
   .library-page .reference-library-tools { align-items: stretch; flex-direction: column; }
   .library-filter { justify-content: space-between; }

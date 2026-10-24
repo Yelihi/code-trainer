@@ -9,7 +9,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
     { label: '자동 등록 대기 (RSA)', to: '/inbox', paths: ['/inbox'] },
   ] },
   { label: '탐구하기', items: [
-    { label: '해석하기', to: '/explore', paths: ['/', '/explore', '/learn/*', '/create'] },
+    { label: '해석하기', to: '/explore', paths: ['/', '/explore', '/interpretations/*', '/learn/*', '/create'] },
     { label: '실습하기', to: '/explore/practice', paths: ['/explore/practice', '/foundations/*', '/practice/*'] },
     { label: '다시 검토', to: '/reviews', paths: ['/reviews/*', '/reference-reviews/*'] },
     { label: '나의 기록', to: '/me', paths: ['/me'] },
@@ -62,7 +62,7 @@ export function PracticeEntry() {
     <span className="eyebrow">LEARN BY DOING</span><h1>이해한 내용을 직접 다뤄보세요.</h1>
     <p>학습 자료의 단원에서 코드 문제를 풀거나, 준비된 자료구조·알고리즘 실습을 시작하세요.</p>
     <div className="context-grid">
-      <Link className="context-card" to="/explore"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택 →</span></Link>
+      <Link className="context-card" to="/"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택 →</span></Link>
       <Link className="context-card" to="/foundations"><h2>자료구조 · 알고리즘</h2><p>준비된 기초 구현 과정을 선택하고 직접 코드를 작성합니다.</p><span className="text-link">기초 구현 학습 →</span></Link>
     </div>
     <p className="notice">해석 자료 기반 질문지와 직접 요약 작성 기능은 준비 중입니다.</p>

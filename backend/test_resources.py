@@ -316,3 +316,22 @@ class ResourceRegistrationTest(unittest.TestCase):
         self.client.post('/api/logout', json={})
         self.assertEqual(self.client.get('/api/resources').status_code, 401)
         self.assertEqual(self.client.post('/api/resources', json={'request_id': service.uid(), 'kind': 'text', 'name': '검증', 'content': '본문'}).status_code, 401)
+
+    def test_pre_rsa_request_hash_still_replays_without_fetch(self):
+        import hashlib
+        import json
+        from unittest.mock import patch
+        from . import source
+        body = {'request_id': 'pre-rsa-request', 'kind': 'url', 'name': 'Original', 'url': 'https://example.com/original'}
+        with patch.object(source, 'fetch', return_value='Original source'):
+            response = self.client.post('/api/resources', json=body)
+        self.assertEqual(response.status_code, 200)
+        # Exact pre-RSA model field order/defaults, independent of the new schema.
+        old = dict(request_id=body['request_id'], resource_id=None, revision=0, kind='url', name=body['name'], url=body['url'], content='')
+        digest = hashlib.sha256(json.dumps(old, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
+        db.execute('UPDATE resource_requests SET payload_hash=? WHERE owner=? AND request_id=?', (digest, self.owner, body['request_id']))
+        with patch.object(source, 'fetch') as fetch:
+            replay = self.client.post('/api/resources', json=body)
+        self.assertEqual(replay.status_code, 200, replay.text)
+        self.assertEqual(replay.json(), response.json())
+        fetch.assert_not_called()

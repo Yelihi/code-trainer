@@ -149,8 +149,11 @@ def refresh(manual=False, feed_id=DEFAULT_FEED):
 
 def inbox(owner, page=1, feed_id=None):
     where = '''FROM feed_posts p JOIN feed_sources f ON f.id=p.feed_id
-        LEFT JOIN feed_choices c ON c.post_id=p.id AND c.owner=? WHERE COALESCE(c.registered,0)=0'''
-    params = [owner]
+        LEFT JOIN feed_choices c ON c.post_id=p.id AND c.owner=?
+        LEFT JOIN resource_feed_posts raw ON raw.post_id=p.id AND raw.owner=?
+        LEFT JOIN resource_registrations r ON r.owner=raw.owner AND r.resource_id=raw.resource_id
+        WHERE COALESCE(c.registered,0)=0'''
+    params = [owner, owner]
     if feed_id:
         where += ' AND p.feed_id=?'
         params.append(feed_id)
@@ -158,7 +161,7 @@ def inbox(owner, page=1, feed_id=None):
         total = c.execute('SELECT COUNT(*) ' + where, params).fetchone()[0]
         pages = max(1, (total + 19) // 20)
         page = min(page, pages)
-        items = [dict(row) for row in c.execute('''SELECT p.*, f.name AS feed_name, c.generation_id,
+        items = [dict(row) for row in c.execute('''SELECT p.*, f.name AS feed_name, c.generation_id, raw.resource_id, r.url AS raw_url,
             (SELECT state FROM generations WHERE id=c.generation_id AND owner=?) AS generation_state ''' + where +
             " ORDER BY COALESCE(NULLIF(p.published,''),p.collected) DESC,p.id LIMIT 20 OFFSET ?", [owner, *params, (page-1)*20])]
     feeds = sources()

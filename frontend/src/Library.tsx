@@ -36,7 +36,10 @@ function LibraryList() {
 export function ResourceRegister() {
   const { id } = useParams();
   const { userId } = useApp();
-  return id ? <EditResource key={userId + ':' + id} id={id} /> : <RegistrationForm key={userId} initial={null} />;
+  const [params] = useSearchParams();
+  const post = params.get('post');
+  const feed = post ? { id: post, name: (params.get('title') ?? '').slice(0, 160), url: (params.get('url') ?? '').slice(0, 2000) } : undefined;
+  return id ? <EditResource key={userId + ':' + id} id={id} /> : <RegistrationForm key={userId + ':' + (post ?? 'new')} initial={null} feed={feed} />;
 }
 function EditResource({ id }: { id: string }) {
   const { data, error, reload } = useResource<Resource>('/resources/' + id);
@@ -44,18 +47,18 @@ function EditResource({ id }: { id: string }) {
   if (data.kind !== 'text') return <main className="page"><p>텍스트 자료만 이 화면에서 수정할 수 있습니다.</p><Link to={'/library/' + id}>자료로 돌아가기</Link></main>;
   return <RegistrationForm initial={data} />;
 }
-function RegistrationForm({ initial }: { initial: Resource | null }) {
+function RegistrationForm({ initial, feed }: { initial: Resource | null; feed?: { id: string; name: string; url: string } }) {
   const navigate = useNavigate();
   const { userId } = useApp();
-  const storageKey = `resource-draft:${userId}:${initial?.id ?? 'new'}`;
+  const storageKey = `resource-draft:${userId}:${initial?.id ?? (feed ? 'feed:' + feed.id : 'new')}`;
   const [draft, setDraft] = useState<ResourceDraft>(() => {
     let restored = null;
-    try { restored = restoreResourceDraft(localStorage.getItem(storageKey), initial?.id); } catch { /* Storage can be unavailable. */ }
-    return restored ?? { request_id: crypto.randomUUID(), kind: 'text', name: initial?.name ?? '', url: '', content: initial?.content ?? '', revision: initial?.revision ?? 0, ...(initial ? { resource_id: initial.id } : {}) };
+    try { restored = restoreResourceDraft(localStorage.getItem(storageKey), initial?.id, feed?.id); } catch { /* Storage can be unavailable. */ }
+    return restored ?? { request_id: crypto.randomUUID(), kind: feed ? 'url' : 'text', name: initial?.name ?? feed?.name ?? '', url: feed?.url ?? '', content: initial?.content ?? '', revision: initial?.revision ?? 0, ...(initial ? { resource_id: initial.id } : {}), ...(feed ? { feed_post_id: feed.id } : {}) };
   });
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState('');
   const alive = useRef(true), allowNavigation = useRef(false), dialog = useRef<HTMLDialogElement>(null);
-  const dirty = draft.name !== (initial?.name ?? '') || draft.content !== (initial?.content ?? '') || !!draft.url;
+  const dirty = draft.name !== (initial?.name ?? feed?.name ?? '') || draft.content !== (initial?.content ?? '') || draft.url !== (feed?.url ?? '');
   const blocker = useBlocker(() => dirty && !allowNavigation.current);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => {
@@ -85,6 +88,9 @@ function RegistrationForm({ initial }: { initial: Resource | null }) {
   async function save() {
     if (busy || !userId) return;
     setBusy(true); setError('');
+    // Prefilled RSA inputs can be unchanged; retain their replay identity before sending.
+    try { localStorage.setItem(storageKey, JSON.stringify(draft)); }
+    catch { setMessage('브라우저 임시 저장을 사용할 수 없습니다. 이동하기 전에 본문을 복사해주세요.'); }
     try {
       const result = await api<Resource>('/resources', 'POST', { ...draft, url: draft.kind === 'url' ? draft.url : '', content: draft.kind === 'text' ? draft.content : '' });
       if (!alive.current) return;
@@ -97,13 +103,14 @@ function RegistrationForm({ initial }: { initial: Resource | null }) {
   return <main className="page reference-page library-register">
     <div className="breadcrumb"><Link to="/library">자료 보관함</Link><span>/</span>{initial ? '본문 수정' : '레퍼런스 등록'}</div>
     <span className="eyebrow">KEEP THE ORIGINAL</span><h1>{initial ? '원문을 업데이트하세요.' : '배우고 싶은 자료를 담으세요.'}</h1><p>원문을 먼저 저장합니다. AI 해석이나 문제 생성은 실행하지 않습니다.</p>
+    {feed && <p className="notice">RSA에서 선택한 글입니다. 소개 글이라면 원문 URL로 바꿔주세요. 원문 수집에 성공하면 대기 목록에서 빠집니다.</p>}
     <ErrorNotice error={error} />{message && <p role="status" className="notice">{message}</p>}
     {initial && initial.revision !== draft.revision && <p className="notice">임시 글은 v{draft.revision}에서 작성됐습니다. 서버의 v{initial.revision}과 다르므로 본문을 복사해 비교해주세요. <Link to={'/library/' + initial.id}>최신 자료 확인</Link></p>}
     <form onSubmit={e => { e.preventDefault(); void save(); }}><fieldset disabled={busy}><legend className="sr-only">레퍼런스 입력</legend>
-      {!initial && <label>등록 방법<Select value={draft.kind} onChange={e => update({ kind: e.target.value as ResourceDraft['kind'] })}><option value="text">텍스트 · Markdown · 파일</option><option value="url">URL에서 가져오기</option></Select></label>}
+      {!initial && !feed && <label>등록 방법<Select value={draft.kind} onChange={e => update({ kind: e.target.value as ResourceDraft['kind'] })}><option value="text">텍스트 · Markdown · 파일</option><option value="url">URL에서 가져오기</option></Select></label>}
       <label>자료 제목<input required value={draft.name} maxLength={160} onChange={e => update({ name: e.target.value })} placeholder="나중에 다시 찾을 수 있는 이름" /></label>
       {draft.kind === 'url' ? <><label>원문 URL<input required type="url" value={draft.url} maxLength={2000} onChange={e => update({ url: e.target.value })} placeholder="https://" /></label><p className="reference-state">같은 URL은 하나의 자료로 관리합니다. 가져온 본문이 달라졌을 때만 새 버전을 추가합니다. 수집에 실패해도 주소와 마지막 정상 본문은 남습니다.</p></> : <><label>파일에서 불러오기 <input type="file" accept=".md,.txt,text/plain,text/markdown" onChange={e => { void readFile(e.target.files?.[0]); e.target.value = ''; }} /></label><label>원문 본문<textarea required rows={16} maxLength={60000} value={draft.content} onChange={e => update({ content: e.target.value })} placeholder="텍스트 또는 Markdown을 붙여넣으세요." /></label><p className="reference-state">{draft.content.length.toLocaleString()} / 60,000자 · 원문 서식과 공백을 보존합니다.</p></>}
-      <div className="reference-actions"><Link className="button" to={initial ? '/library/' + initial.id : '/library'}>돌아가기</Link><button className="primary" disabled={!userId || !draft.name.trim() || !(draft.kind === 'url' ? draft.url.trim() : draft.content.trim())}>{busy ? '저장 중…' : initial ? '본문 저장' : '자료 등록'}</button></div>
+      <div className="reference-actions"><Link className="button" to={initial ? '/library/' + initial.id : feed ? '/inbox' : '/library'}>돌아가기</Link><button className="primary" disabled={!userId || !draft.name.trim() || !(draft.kind === 'url' ? draft.url.trim() : draft.content.trim())}>{busy ? '저장 중…' : initial ? '본문 저장' : '자료 등록'}</button></div>
     </fieldset></form><p className="reference-state" role="status">{busy ? '원문을 저장하고 있습니다. URL 수집에는 잠시 시간이 걸릴 수 있습니다.' : '작성 중인 내용은 이 브라우저에 임시 보관됩니다.'}</p>
     <dialog ref={dialog} aria-labelledby="resource-leave-title" className="reference-leave-dialog" onCancel={e => { e.preventDefault(); if (blocker.state === 'blocked') blocker.reset(); }}><h2 id="resource-leave-title">저장하지 않은 내용이 있습니다.</h2><p>계정에 저장하려면 작성 화면에서 저장해주세요.</p><div className="reference-actions"><button className="primary" onClick={() => { if (blocker.state === 'blocked') blocker.reset(); }}>계속 작성</button><button onClick={() => { if (blocker.state === 'blocked') blocker.proceed(); }}>임시 글을 남기고 이동</button></div></dialog>
   </main>;
@@ -148,6 +155,7 @@ function Detail({ id }: { id: string }) {
     {current && <><header className="reference-page-heading"><div><span className="eyebrow">{resourceKinds[current.kind]}</span><h1>{current.name}</h1><p>본문 {current.revision ? `v${current.revision}` : '수집 대기'} · {timestamp(current.updated_at)}</p></div><div className="reference-actions">{current.note_id ? <Link className="button primary" to={'/references/' + current.note_id}>노트 열기 · 편집</Link> : current.kind === 'url' ? <button className="primary" disabled={busy} onClick={() => void refresh()}>{busy ? '가져오는 중…' : '다시 가져오기'}</button> : <Link className="button primary" to={'/library/' + id + '/edit'}>본문 수정</Link>}</div></header>
       {url && <p className="library-source"><a href={url} target="_blank" rel="noreferrer">{current.url} ↗</a></p>}
       {current.state === 'failed' && <p className="notice error" role="alert">{current.error || '아직 가져온 본문이 없습니다.'}{current.revision > 0 && ' 마지막으로 저장한 본문을 표시합니다.'}</p>}
+      {current.feed_pending && <p className="notice">RSA 등록 대기 상태입니다. 원문 수집에 성공하면 등록이 완료됩니다. <Link to="/inbox">대기 목록에서 URL 확인·수정하기 →</Link></p>}
       {current.state === 'fetching' && <p role="status" className="notice">원문 수집 중입니다. <button onClick={() => { setResult(null); reload(); }}>상태 확인</button></p>}
       {message && <p className="reference-state" role="status">{message}</p>}
       <ResourceInterpretations resourceId={id} revision={old?.revision ?? current.revision} content={old ? old.content : current.content} />

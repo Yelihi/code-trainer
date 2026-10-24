@@ -13,10 +13,13 @@ class ResourceInput(Model):
     name: Label
     url: str = Field(default='', max_length=2000)
     content: str = Field(default='', max_length=60000)
+    feed_post_id: str | None = Field(default=None, min_length=1, max_length=80)
 
     @model_validator(mode='after')
     def source_fields(self):
         self.url = self.url.strip()
+        if self.feed_post_id and self.kind != 'url':
+            raise ValueError('RSA 글은 URL로 등록해주세요.')
         if self.kind == 'text' and (not self.content.strip() or self.url):
             raise ValueError('텍스트 본문을 입력해주세요. URL은 URL 등록에서 사용해주세요.')
         if self.kind == 'url' and (not self.url or self.content):

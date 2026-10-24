@@ -4,18 +4,21 @@ export type Resource = ResourceVersion & {
   id: string; note_id: string | null; kind: RawKind | 'note'; url: string | null;
   state: 'ready' | 'fetching' | 'failed'; error: string; updated_at: string; archived: number;
   versions: { revision: number; created_at: string }[];
+  feed_pending?: boolean;
 };
 export type ResourceList = { items: (Omit<Resource, 'content' | 'versions'> & { excerpt: string | null })[]; total: number; page: number; pages: number };
-export type ResourceDraft = { request_id: string; kind: RawKind; name: string; url: string; content: string; revision: number; resource_id?: string };
+export type ResourceDraft = { request_id: string; kind: RawKind; name: string; url: string; content: string; revision: number; resource_id?: string; feed_post_id?: string };
 export const resourceKinds = { text: '텍스트 · Markdown', url: '웹 레퍼런스', note: '직접 작성한 노트' };
 export function libraryPage(value: string | null) {
   const page = Number(value);
   return Number.isSafeInteger(page) && page > 0 ? page : 1;
 }
-export function restoreResourceDraft(value: string | null, resourceId?: string): ResourceDraft | null {
+export function restoreResourceDraft(value: string | null, resourceId?: string, feedPostId?: string): ResourceDraft | null {
   try {
     const draft = JSON.parse(value ?? 'null');
-    if (!draft || draft.resource_id !== resourceId || !['text', 'url'].includes(draft.kind)
+    if (!draft || draft.resource_id !== resourceId || draft.feed_post_id !== feedPostId
+      || (feedPostId !== undefined && (draft.kind !== 'url' || !feedPostId || feedPostId.length > 80))
+      || !['text', 'url'].includes(draft.kind)
       || typeof draft.request_id !== 'string' || draft.request_id.length < 8 || draft.request_id.length > 80
       || !Number.isSafeInteger(draft.revision) || draft.revision < 0
       || !['name', 'url', 'content'].every(k => typeof draft[k] === 'string')

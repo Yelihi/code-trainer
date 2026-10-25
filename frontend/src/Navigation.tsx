@@ -67,7 +67,7 @@ export function PracticeEntry() {
       <Link className="context-card" to="/"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택 →</span></Link>
       <Link className="context-card" to="/foundations"><h2>자료구조 · 알고리즘</h2><p>준비된 기초 구현 과정을 선택하고 직접 코드를 작성합니다.</p><span className="text-link">기초 구현 학습 →</span></Link>
     </div>
-    <p className="notice">질문지에 답변과 직접 쓴 요약을 저장하는 기능은 준비 중입니다.</p>
+    <p className="notice">질문지를 열어 내 답변과 요약을 남겨보세요. 일부만 작성해도 저장하고 이어서 수정할 수 있습니다.</p>
     <Link className="text-link" to="/me">나의 실습 기록 보기 →</Link>
   </main>;
 }

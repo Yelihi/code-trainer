@@ -10,8 +10,9 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources, interpretations, worksheets
+from . import resources, interpretations, worksheets, practice_records
 from .worksheet_schema import WorksheetInput
+from .practice_record_schema import PracticeRecordInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
@@ -342,6 +343,21 @@ def worksheet_start(body: WorksheetInput, tasks: BackgroundTasks, current=Depend
     if fresh:
         tasks.add_task(worksheets.generate, result['id'])
     return result
+
+
+@app.get('/api/worksheets/{identifier}/practice')
+def practice_record_view(identifier: str, current=Depends(user)):
+    return practice_records.view(current['id'], identifier)
+
+
+@app.post('/api/worksheets/{identifier}/practice')
+def practice_record_save(identifier: str, body: PracticeRecordInput, current=Depends(user)):
+    return practice_records.save(current['id'], identifier, body)
+
+
+@app.get('/api/worksheets/{identifier}/practice/versions/{revision}')
+def practice_record_version(identifier: str, revision: int, current=Depends(user)):
+    return practice_records.version(current['id'], identifier, revision)
 
 
 @app.get('/api/worksheets/{identifier}')

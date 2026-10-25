@@ -9,7 +9,7 @@ import { libraryPage } from './libraryTypes';
 import './library.css';
 
 type WorksheetDocumentData = { title: string; questions: { id: string; section_id: string; prompt: string }[] };
-type Worksheet = { id: string; interpretation_id: string; interpretation_title: string; resource_id: string; revision: number;
+export type Worksheet = { id: string; interpretation_id: string; interpretation_title: string; resource_id: string; revision: number;
   current_revision: number; source_name: string; state: 'queued' | 'running' | 'ready' | 'failed' | 'interrupted';
   document: WorksheetDocumentData | null; error: string; created_at: string };
 type History = { items: (Pick<Worksheet, 'id' | 'interpretation_id' | 'revision' | 'source_name' | 'state' | 'created_at'> & { title: string })[]; total: number; page: number; pages: number };
@@ -29,7 +29,7 @@ function List() {
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
     {!data && !error && <LoadingSkeleton layout="list" label="질문지 기록을 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{interpretation ? '선택한 해석의 질문지' : '나의 질문지'}</span><span>{data.total}개의 기록</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/worksheets/' + item.id}><span className="reference-list-mark" aria-hidden="true">?</span><div><small>{states[item.state]} · 원문 v{item.revision}</small><h3>{item.title}</h3><p>{item.source_name}</p><footer><span>AI 실습 질문</span><span>{timestamp(item.created_at)}</span></footer></div><span aria-hidden="true">→</span></Link>)}</div> : <div className="reference-empty"><h3>아직 질문지가 없습니다.</h3><p>완료된 해석에서 ‘실습용 질문지 만들기’를 눌러 시작하세요.</p></div>}
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/worksheets/' + item.id + (item.state === 'ready' ? '/practice' : '')}><span className="reference-list-mark" aria-hidden="true">?</span><div><small>{states[item.state]} · 원문 v{item.revision}</small><h3>{item.title}</h3><p>{item.source_name}</p><footer><span>{item.state === 'ready' ? '질문과 내 작성분 열기' : 'AI 실습 질문'}</span><span>{timestamp(item.created_at)}</span></footer></div><span aria-hidden="true">→</span></Link>)}</div> : <div className="reference-empty"><h3>아직 질문지가 없습니다.</h3><p>완료된 해석에서 ‘실습용 질문지 만들기’를 눌러 시작하세요.</p></div>}
       {data.items.some(item => item.state === 'queued' || item.state === 'running') && <button onClick={reload}>생성 상태 새로 확인</button>}
       {data.pages > 1 && <nav className="pagination" aria-label="질문지 기록 페이지"><button disabled={data.page <= 1} onClick={() => setParams({ ...(interpretation ? { interpretation } : {}), page: String(data.page - 1) })}>이전</button><span>{data.page} / {data.pages}</span><button disabled={data.page >= data.pages} onClick={() => setParams({ ...(interpretation ? { interpretation } : {}), page: String(data.page + 1) })}>다음</button></nav>}</>}
   </section>;
@@ -62,7 +62,7 @@ function Detail({ id }: { id: string }) {
       <aside className="interpretation-provenance"><strong>{data.source_name} · 원문 v{data.revision}</strong><p>이 질문지는 「{data.interpretation_title}」 해석을 바탕으로 AI가 만들었습니다.{data.current_revision !== data.revision && ` 원문에는 최신 v${data.current_revision}가 있지만, 이 질문지는 원래 해석에 연결되어 있습니다.`}</p><Link to={'/library/' + data.resource_id}>원문과 버전 보기 →</Link></aside>
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>다른 화면으로 이동해도 실습하기에서 다시 확인할 수 있습니다.</p></section>}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고 같은 해석에서 새 질문지를 만듭니다.</p><StartWorksheet interpretationId={data.interpretation_id} retryId={data.id} /></section>}
-      {data.document && <><WorksheetDocument document={data.document} interpretationId={data.interpretation_id} /><p className="notice">답변과 직접 쓴 요약을 저장하는 기능은 다음 단계에서 연결됩니다.</p></>}
+      {data.document && <><WorksheetDocument document={data.document} interpretationId={data.interpretation_id} /><Link className="button primary" to={'/worksheets/' + data.id + '/practice'}>내 답변·요약 작성하기</Link></>}
       <Link className="text-link" to={'/explore/practice?interpretation=' + data.interpretation_id}>이 해석의 질문지 기록 →</Link>
     </>}
   </main>;

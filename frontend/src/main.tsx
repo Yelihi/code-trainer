@@ -17,6 +17,7 @@ import { Library, ResourceRegister, ResourceDetail } from './Library';
 import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
 import { ReferenceReview } from './ReferenceReview';
 import { GitHubSettings, GitHubShare } from './GitHubSharing';
+import { AISettings } from './AISettings';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
@@ -28,7 +29,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },
   { path: '/knowledge/candidates', element: <PlannedFeature feature="candidates" /> },
   { path: '/apply', element: <PlannedFeature feature="inside" /> },
-  { path: '/settings/ai', element: <PlannedFeature feature="ai" /> },
+  { path: '/settings/ai', element: <AISettings /> },
   { path: '/inbox', element: <FeedInbox /> },
   { path: '/create', element: <Create /> },
   { path: '/learn/:id', element: <Context /> },

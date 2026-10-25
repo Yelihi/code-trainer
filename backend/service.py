@@ -73,8 +73,8 @@ def initialize():
         pass
 
 
-def health():
-    return {'sandbox': runner.available(), 'ai': ai.available(), 'languages': list(runner.RUNTIMES)}
+def health(owner=None):
+    return {'sandbox': runner.available(), 'ai': ai.available(owner), 'languages': list(runner.RUNTIMES)}
 
 
 def session(token):
@@ -256,7 +256,7 @@ def begin_generation(owner, request):
                 raise Error('이 단원의 문제 세트는 이미 준비되어 있습니다.', 409)
         elif context.get('units'):
             raise Error('문제를 생성할 단원을 선택해주세요.', 409)
-    if request.source_kind != 'sample' and not ai.available():
+    if request.source_kind != 'sample' and not ai.available(owner):
         raise Error('AI 연결을 설정하거나 준비된 예제를 사용해주세요.', 503)
     if (request.unit_id or request.source_kind == 'sample') and not runner.available():
         raise Error('Docker 실행 환경을 준비해주세요. ./start.sh --setup', 503)

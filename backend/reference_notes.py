@@ -4,12 +4,11 @@ import binascii
 import hashlib
 import io
 import json
-import os
 import re
 import zipfile
 from urllib.parse import urlsplit
 from PIL import Image, ImageOps, UnidentifiedImageError
-from . import ai, db, ontology, service, usage, resources
+from . import ai_settings, ai, db, ontology, service, usage, resources
 from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup, NoteQuoteRepair, ReferenceInput
 
 IMAGE_PATH = re.compile(r'/api/reference-images/([a-f0-9]{32})')
@@ -169,7 +168,7 @@ def begin_proposal(owner, note_id, revision):
     note = owned(owner, note_id)
     if note['revision'] != revision or note['archived']:
         raise service.Error('저장된 최신 노트에서 개념을 정리해주세요.', 409)
-    if not ai.available():
+    if not ai.available(owner):
         raise service.Error('AI가 연결되지 않았습니다. 직접 개념을 입력해 등록할 수 있습니다.', 503)
     service.rate('reference-proposal:' + owner, 10, 3600)
     with db.connect(write=True) as c:
@@ -183,7 +182,7 @@ def begin_proposal(owner, note_id, revision):
             return previous['id'], False
         key = service.uid()
         c.execute('INSERT INTO knowledge_proposals VALUES (?,?,?,?,?,NULL,?,?,?,?)',
-                  (owner, key, note_id, revision, 'running', '', os.environ.get('AI_MODEL', ''), 'reference-ontology-v4', service.now()))
+                  (owner, key, note_id, revision, 'running', '', ai_settings.model_name(owner), 'reference-ontology-v4', service.now()))
     return key, True
 
 
@@ -215,7 +214,7 @@ def propose(owner, key):
     version = db.one('SELECT data FROM reference_note_versions WHERE owner=? AND note_id=? AND revision=?',
                      (owner, row['note_id'], row['revision']))
     note = json.loads(version['data'])
-    token = usage.scope.set((owner, None))
+    token = usage.scope.set((owner, key))
     try:
         candidates = ontology.concepts(owner)
         data = ai.generate(KnowledgeProposal, '''Extract a SMALL concept graph in Korean from this user-authored reference note.
@@ -455,7 +454,7 @@ def answer_review(owner, review_id, request):
                                          'assistance': 'notes_available', 'mastery': None}), service.now()))
         c.execute("UPDATE reference_reviews SET turns=?,revision=revision+1,state='running',error='' WHERE owner=? AND id=?",
                   (service.dump(turns), owner, review_id))
-        if not ai.available():
+        if not ai.available(owner):
             c.execute("UPDATE reference_reviews SET state='failed',error='설명을 저장했습니다. AI 연결 후 꼬리 질문을 다시 요청해주세요.' WHERE owner=? AND id=?", (owner, review_id))
             return False
     return True

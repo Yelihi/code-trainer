@@ -13,6 +13,8 @@ from typing import Literal
 from . import resources, interpretations, worksheets, practice_records
 from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
+from . import ai_settings
+from .ai_settings_schema import AISettingsInput, AISettingsRevision
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
@@ -150,8 +152,24 @@ def logout(request: Request, current=Depends(user)):
 
 
 @app.get('/api/health')
-def health():
-    return service.health()
+def health(request: Request):
+    current = user(request) if access.enabled() else service.session(request.cookies.get('trainer_session', ''))['user']
+    return service.health(current['id'] if current else None)
+
+
+@app.get('/api/ai/settings')
+def ai_connection(current=Depends(user)):
+    return ai_settings.status(current['id'])
+
+
+@app.put('/api/ai/settings')
+def ai_connect(body: AISettingsInput, current=Depends(user)):
+    return ai_settings.save(current['id'], body)
+
+
+@app.delete('/api/ai/settings')
+def ai_disconnect(body: AISettingsRevision, current=Depends(user)):
+    return ai_settings.disconnect(current['id'], body.revision)
 
 
 @app.get('/api/github/connection')

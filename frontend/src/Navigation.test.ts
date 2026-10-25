@@ -33,7 +33,8 @@ test('five navigation areas preserve destination identity, current page and admi
       assert.ok(active[0][0].includes(`href="${target}"`), path);
     }
     assert.doesNotMatch(render('/library-unknown'), /aria-current="page"/);
-    for (const feature of ['candidates', 'inside', 'ai']) {
+    assert.doesNotMatch(render('/settings/ai').match(/<a[^>]*href="\/settings\/ai"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
+    for (const feature of ['candidates', 'inside']) {
       const page = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(PlannedFeature, { feature })));
       assert.match(page, /준비 중/);
       assert.doesNotMatch(page, /<input|<form|<button/);

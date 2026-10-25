@@ -62,8 +62,8 @@ class InterpretationsTest(unittest.TestCase):
         with self.assertRaises(service.Error) as conflict:
             self.start({**raw, 'revision': 2}, 'original-request')
         self.assertEqual(conflict.exception.status, 409)
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            results = list(pool.map(lambda key: self.start(raw, key), ['concurrent-one', 'concurrent-two']))
+        with patch.object(ai, 'available', return_value=True), ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda key: interpretations.begin(self.owner, InterpretationInput(request_id=key, resource_id=raw['id'], revision=raw['revision'])), ['concurrent-one', 'concurrent-two']))
         self.assertTrue(all(not fresh and job['id'] == first['id'] for job, fresh in results))
         self.assertEqual(db.one('SELECT COUNT(*) AS n FROM interpretations')['n'], 1)
         with patch.object(ai, 'generate', return_value=InterpretationDraft.model_validate(DOCUMENT)):

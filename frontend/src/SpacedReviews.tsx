@@ -24,7 +24,7 @@ function Enrollment({ kind, id, revision, disabled }: { kind: Kind; id: string; 
     finally { sending.current = false; setBusy(false); }
   }
   const item = saved ?? data?.review;
-  return <section className="interpretation-entry"><div><span className="eyebrow">RETURN TO UNDERSTANDING</span><h2>시간을 두고 다시 살펴보세요.</h2><p>복습에 추가하면 다음 날부터 스스로 설명할 수 있는지 확인합니다. 추출·그래프 등록과 별도이며, AI를 호출하지 않습니다.</p></div><div className="interpretation-entry-actions"><ErrorNotice error={error || loadError} />{loadError && <button onClick={reload}>복습 상태 다시 불러오기</button>}{disabled && <p>변경한 내용을 저장하고 최신 자료를 확인해주세요.</p>}{item ? <Link to={'/material-reviews/' + item.id}>등록한 복습 · {timestamp(item.due_at)} →</Link> : <button disabled={disabled || busy || !data} onClick={() => void add()}>{busy ? '추가 중…' : '이 버전 복습에 추가'}</button>}</div></section>;
+  return <section className="interpretation-entry"><div><span className="eyebrow">RETURN TO UNDERSTANDING</span><h2>시간을 두고 다시 살펴보세요.</h2><p>복습에 추가하면 다음 날부터 스스로 설명할 수 있는지 확인합니다. 추출·그래프 등록과 별도이며, AI를 호출하지 않습니다.</p></div><div className="interpretation-entry-actions"><ErrorNotice error={error || loadError} />{loadError && <button onClick={reload}>복습 상태 다시 불러오기</button>}{disabled && <p>변경한 내용을 저장하고 최신 자료를 확인해주세요.</p>}{item ? <Link to={'/reviews/material/' + item.id}>등록한 복습 · {timestamp(item.due_at)} →</Link> : <button disabled={disabled || busy || !data} onClick={() => void add()}>{busy ? '추가 중…' : '이 버전 복습에 추가'}</button>}</div></section>;
 }
 export function SpacedReviewRoute() {
   const { id } = useParams(), { userId } = useApp();

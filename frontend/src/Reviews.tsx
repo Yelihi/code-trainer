@@ -40,7 +40,7 @@ export function Reviews() {
 }
 
 function MaterialReviewRow({ item }: { item: SpacedReview }) {
-  return <article className="list-row review-row"><div><small>{item.kind === 'note' ? '직접 쓴 노트' : item.kind === 'interpretation' ? 'AI 해석' : '내 답변·요약'} · v{item.source_revision}</small><h3>{item.snapshot.title}</h3><p>{item.state !== 'eligible' ? item.reason : (item.due ? '기한 경과 · ' : '예정 · ') + timestamp(item.due_at)}</p></div><Link className="button" to={'/material-reviews/' + item.id}>{item.due ? '다시 검토' : '자료·일정 보기'}</Link></article>;
+  return <article className="list-row review-row"><div><small>{item.kind === 'note' ? '직접 쓴 노트' : item.kind === 'interpretation' ? 'AI 해석' : '내 답변·요약'} · v{item.source_revision}</small><h3>{item.snapshot.title}</h3><p>{item.state !== 'eligible' ? item.reason : (item.due ? '기한 경과 · ' : '예정 · ') + timestamp(item.due_at)}</p></div><Link className="button" to={'/reviews/material/' + item.id}>{item.due ? '다시 검토' : '자료·일정 보기'}</Link></article>;
 }
 function ReviewCalendar({ dates }: { dates: string[] }) {
   const now = new Date(), week = reviewWeek(dates, now);

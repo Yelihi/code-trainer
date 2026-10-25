@@ -40,7 +40,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/learn/:id', element: <Context /> },
   { path: '/learn/:id/units/:unitId', element: <Lesson /> },
   { path: '/practice/:id', element: <Practice /> },
-  { path: '/material-reviews/:id', element: <SpacedReviewRoute /> },
+  { path: '/reviews/material/:id', element: <SpacedReviewRoute /> },
   { path: '/reviews', element: <Reviews /> },
   { path: '/reviews/:id', element: <Practice review /> },
   { path: '/admin/operations', element: <Operations /> },

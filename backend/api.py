@@ -15,8 +15,8 @@ from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
-from . import materials
-from .material_schema import MaterialKind, MaterialReviewInput
+from . import materials, material_proposals
+from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
@@ -398,6 +398,23 @@ def worksheet_view(identifier: str, current=Depends(user)):
 @app.get('/api/interpretations')
 def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
     return interpretations.listing(current['id'], page, resource_id)
+
+
+@app.get('/api/material-reviews/{identifier}/proposals')
+def material_proposal_list(identifier: str, current=Depends(user)):
+    return material_proposals.listing(current['id'], identifier)
+
+
+@app.post('/api/material-reviews/{identifier}/proposals', status_code=202)
+def material_proposal_start(identifier: str, body: MaterialProposalInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = material_proposals.begin(current['id'], identifier, body)
+    if fresh: tasks.add_task(material_proposals.generate, result['id'])
+    return result
+
+
+@app.get('/api/material-proposals/{identifier}')
+def material_proposal_view(identifier: str, current=Depends(user)):
+    return material_proposals.view(current['id'], identifier)
 
 
 @app.get('/api/materials/{kind}/{origin_id}')

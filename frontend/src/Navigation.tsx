@@ -16,7 +16,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
     { label: '나의 기록', to: '/me', paths: ['/me'] },
   ] },
   { label: '데이터 쌓기', items: [
-    { label: '추출 가능 자료', to: '/knowledge/candidates', paths: ['/knowledge/candidates'], planned: true },
+    { label: '추출 가능 자료', to: '/knowledge/candidates', paths: ['/knowledge/candidates', '/knowledge/candidates/:id'] },
     { label: '지식 그래프', to: '/knowledge', paths: ['/knowledge'] },
   ] },
   { label: '응용하기', items: [
@@ -44,7 +44,6 @@ export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
 }
 
 const planned = {
-  candidates: { area: '데이터 쌓기', title: '추출 가능 자료', description: '이해한 내용을, 연결할 지식으로.', detail: '해석과 실습에서 검토한 자료를 모아 개념·관계 후보를 비교하고 지식 그래프에 추가하는 공간입니다. 통합 추출 목록은 아직 준비 중입니다.', available: '지금은 저장한 노트에서 지식 그래프에 추가할 내용을 검토할 수 있습니다.', to: '/references', action: '노트에서 지식 검토하기' },
   inside: { area: '응용하기', title: 'Deep Inside', description: '쌓인 연결에서, 다음 질문을.', detail: '지식 사이의 연결을 바탕으로 더 깊이 탐구할 질문, 참고 자료와 실습 가이드를 제안할 공간입니다. 제안 생성과 채택 기능은 아직 준비 중입니다.', available: '지금은 지식 그래프에서 쌓인 개념과 근거를 직접 살펴볼 수 있습니다.', to: '/knowledge', action: '지식 그래프 살펴보기' },
 };
 export function PlannedFeature({ feature }: { feature: keyof typeof planned }) {

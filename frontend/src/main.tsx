@@ -1,3 +1,4 @@
+import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
 import { PlannedFeature, PracticeEntry } from './Navigation';
 import { InterpretationCode } from './InterpretationCode';
 import { Interpretations, InterpretationDetail } from './Interpretations';
@@ -29,7 +30,8 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/explore/practice', element: <PracticeEntry /> },
   { path: '/worksheets/:id', element: <WorksheetDetail /> },
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },
-  { path: '/knowledge/candidates', element: <PlannedFeature feature="candidates" /> },
+  { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
+  { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
   { path: '/apply', element: <PlannedFeature feature="inside" /> },
   { path: '/settings/ai', element: <AISettings /> },
   { path: '/inbox', element: <FeedInbox /> },

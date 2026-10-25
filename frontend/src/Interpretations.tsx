@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
+import { MaterialReview } from './MaterialReview';
 import { InterpretationPractice } from './InterpretationPractice';
 import { Markdown } from './Markdown';
 import { libraryPage } from './libraryTypes';
@@ -104,6 +105,7 @@ function Detail({ id }: { id: string }) {
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고, 같은 원문 v{data.revision}에서 새 해석을 시도합니다.</p><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></section>}
       {data.document && <InterpretationDocument document={data.document} interpretationId={data.id} />}
+      {data.state === 'ready' && data.document && <MaterialReview kind="interpretation" id={data.id} revision={data.revision} />}
       {data.state === 'ready' && data.document && <InterpretationPractice interpretationId={data.id} />}
     </>}
   </main>;

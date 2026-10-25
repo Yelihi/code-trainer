@@ -15,6 +15,8 @@ from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
+from . import materials
+from .material_schema import MaterialKind, MaterialReviewInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
@@ -396,6 +398,26 @@ def worksheet_view(identifier: str, current=Depends(user)):
 @app.get('/api/interpretations')
 def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
     return interpretations.listing(current['id'], page, resource_id)
+
+
+@app.get('/api/materials/{kind}/{origin_id}')
+def material_status(kind: MaterialKind, origin_id: str, revision: int = Query(ge=1), current=Depends(user)):
+    return materials.status(current['id'], kind, origin_id, revision)
+
+
+@app.post('/api/materials/{kind}/{origin_id}/review')
+def material_review(kind: MaterialKind, origin_id: str, body: MaterialReviewInput, current=Depends(user)):
+    return materials.mark(current['id'], kind, origin_id, body.revision)
+
+
+@app.get('/api/material-reviews')
+def material_reviews(page: int = Query(default=1, ge=1), current=Depends(user)):
+    return materials.listing(current['id'], page)
+
+
+@app.get('/api/material-reviews/{identifier}')
+def material_review_detail(identifier: str, current=Depends(user)):
+    return materials.detail(current['id'], identifier)
 
 
 @app.post('/api/interpretations', status_code=202)

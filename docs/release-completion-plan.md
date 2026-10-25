@@ -21,3 +21,28 @@
 변경 경계: backend/github_sharing.py의 기본 대상 저장/읽기와 연결 변경, backend/github_schema.py 입력, backend/api.py 인증 경로, frontend/src/GitHubSharing.tsx 설정/공유 호출자, 관련 테스트. 새 의존성·새 전역 상태·외부 게시 자동화 없음.
 
 검증: owner 격리, 조회만 발생, 저장 응답 유실 재전송, 잘못된 URL/상태, 조회 도중 계정 교체·해제, 저장소 ID/공개 범위 변경, 기존 공유 회귀를 격리 DB/MockTransport로 확인한다. frontend test/typecheck/lint/build 및 실제 임시 브라우저에서 등록→재열기→공유 초기값→수정/실패 흐름과390px 배치를 확인한다. 실제 사용자 토큰/저장소로 이슈를 게시하지 않는다.
+
+## 2026-10-25 구현·병합 기록
+
+아래 PR의 통합 대상은 모두 `release/second-brain-redesign`이다. main 병합과 운영 서버 배포는 별도 최종 확인 이후 진행한다.
+
+| 범위 | PR |
+| --- | --- |
+| P1 원문 수명 분리·이행 | [#22](https://github.com/Yelihi/code-trainer/pull/22) |
+| P2 본문 버전·자료 보관함 | [#23](https://github.com/Yelihi/code-trainer/pull/23) |
+| P5 다섯 영역 탐색 | [#24](https://github.com/Yelihi/code-trainer/pull/24) |
+| P3 RSA 원문 등록 | [#25](https://github.com/Yelihi/code-trainer/pull/25) |
+| P4 독립 해석 문서 | [#26](https://github.com/Yelihi/code-trainer/pull/26) |
+| P6 질문지·사용자 답변/요약 | [#27](https://github.com/Yelihi/code-trainer/pull/27), [#28](https://github.com/Yelihi/code-trainer/pull/28) |
+| P16 GitHub 기본 저장소 | [#29](https://github.com/Yelihi/code-trainer/pull/29) |
+| P12 개인 AI 연결 | [#30](https://github.com/Yelihi/code-trainer/pull/30) |
+| P7 해석 기반 코드 실습 | [#31](https://github.com/Yelihi/code-trainer/pull/31) |
+| P8 검토 완료 자료 | [#32](https://github.com/Yelihi/code-trainer/pull/32) |
+| P9 후보 추출 | [#33](https://github.com/Yelihi/code-trainer/pull/33) |
+| P10 그래프 등록·근거·설명 관찰 | [#34](https://github.com/Yelihi/code-trainer/pull/34) |
+| P11 일반 자료 복습·주간 일정 | [#35](https://github.com/Yelihi/code-trainer/pull/35) |
+| P13 근거 기반 Deep Inside | [#36](https://github.com/Yelihi/code-trainer/pull/36) |
+| P14 채택한 탐구·내 기록 | [#37](https://github.com/Yelihi/code-trainer/pull/37) |
+| P15 기본 꺼짐 예약 생성·호출 한도 | [#38](https://github.com/Yelihi/code-trainer/pull/38) |
+
+개발 환경, 사용자 테스트 순서, 유지보수 경계와 검증 한계는 [release 테스트 안내](release-testing.md)에 정리했다. 최초 P0의 전체 저장소 분석 상태는 FS 보고서에 별도로 남기며 기능별 구현 완료와 혼동하지 않는다.

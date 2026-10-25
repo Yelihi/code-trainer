@@ -103,13 +103,13 @@ function Detail({ id }: { id: string }) {
       <aside className="interpretation-provenance"><strong>{data.source_name} · 본문 v{data.revision}</strong><p>AI가 작성한 해석입니다. 인용한 원문과 비교하며 읽어보세요.{data.current_revision !== data.revision && ` 원문에는 더 최신인 v${data.current_revision}가 있습니다. 이 문서는 v${data.revision} 해석을 그대로 보존합니다.`}</p></aside>
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고, 같은 원문 v{data.revision}에서 새 해석을 시도합니다.</p><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></section>}
-      {data.document && <InterpretationDocument document={data.document} />}
+      {data.document && <InterpretationDocument document={data.document} interpretationId={data.id} />}
       {data.state === 'ready' && data.document && <InterpretationPractice interpretationId={data.id} />}
     </>}
   </main>;
 }
 
-export function InterpretationDocument({ document }: { document: Document }) {
+export function InterpretationDocument({ document, interpretationId }: { document: Document; interpretationId?: string }) {
   return <><section className="interpretation-summary"><span className="eyebrow">AI 해석 · 핵심 개념</span><Markdown language="">{document.summary}</Markdown><ul className="interpretation-concepts">{document.concepts.map((concept, i) => <li key={i}>{concept}</li>)}</ul></section>
     <nav className="interpretation-outline" aria-label="해석 섹션">{document.sections.map((section, i) => <a key={section.id} href={'#' + section.id}><span>{String(i + 1).padStart(2, '0')}</span>{section.title}</a>)}</nav>
     {document.sections.map(section => <section className="interpretation-section" id={section.id} key={section.id}>
@@ -120,6 +120,7 @@ export function InterpretationDocument({ document }: { document: Document }) {
       {!!section.examples.length && <div className="interpretation-addition"><h3>AI 예시</h3>{section.examples.map((text, i) => <Markdown key={i} language="">{text}</Markdown>)}</div>}
       {!!section.extensions.length && <div className="interpretation-addition"><h3>AI 확장 · 원문 밖의 연결</h3>{section.extensions.map((text, i) => <Markdown key={i} language="">{text}</Markdown>)}</div>}
       <div className="interpretation-questions"><h3>스스로 확인할 질문</h3><p>AI가 제안한 질문입니다. 먼저 자신의 말로 생각해보세요.</p><ol>{section.questions.map((question, i) => <li key={i}>{question}</li>)}</ol></div>
+      {interpretationId && <Link className="button" to={`/interpretations/${interpretationId}/code/${section.id}`}>이 섹션으로 코드 실습 →</Link>}
     </section>)}
   </>;
 }

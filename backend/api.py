@@ -411,6 +411,12 @@ def interpretation_view(identifier: str, current=Depends(user)):
     return interpretations.view(current['id'], identifier)
 
 
+@app.get('/api/interpretations/{identifier}/code')
+def interpretation_code(identifier: str, section_id: str = Query(pattern=r'^s[1-6]$'), current=Depends(user)):
+    from . import code_practice
+    return code_practice.listing(current['id'], identifier, section_id)
+
+
 @app.post('/api/resources')
 def resource_register(body: ResourceInput, current=Depends(user)):
     return resources.register(current['id'], body)

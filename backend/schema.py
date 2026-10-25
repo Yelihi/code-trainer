@@ -43,7 +43,9 @@ class FeedUpdate(Model):
 
 class GenerationInput(Model):
     request_id: str = Field(min_length=8, max_length=80)
-    source_kind: Literal['text', 'url', 'context', 'sample']
+    source_kind: Literal['text', 'url', 'context', 'sample', 'interpretation']
+    interpretation_id: str | None = Field(default=None, pattern=r'^[a-f0-9]{32}$')
+    section_id: str | None = Field(default=None, pattern=r'^s[1-6]$')
     source: str = Field(default='', max_length=60000)
     context_id: str | None = None
     unit_id: str | None = Field(default=None, min_length=1, max_length=80)
@@ -55,6 +57,11 @@ class GenerationInput(Model):
 
     @model_validator(mode='after')
     def source_valid(self):
+        if self.source_kind == 'interpretation':
+            if not self.interpretation_id or not self.section_id or any((self.source, self.source_name, self.context_id, self.unit_id, self.feed_post_id, self.framework)):
+                raise ValueError('해석 문서와 섹션을 선택해주세요. 본문은 저장된 해석에서 가져옵니다.')
+        elif self.interpretation_id or self.section_id:
+            raise ValueError('해석 출처는 해석 기반 코드 실습에만 사용합니다.')
         if self.feed_post_id and self.source_kind != 'url':
             raise ValueError('대기 포스팅은 URL 자료로 등록해주세요.')
         if self.unit_id and self.source_kind != 'context':

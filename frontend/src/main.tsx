@@ -1,4 +1,5 @@
 import { PlannedFeature, PracticeEntry } from './Navigation';
+import { InterpretationCode } from './InterpretationCode';
 import { Interpretations, InterpretationDetail } from './Interpretations';
 import { WorksheetDetail } from './Worksheets';
 import { PracticeRecordRoute } from './PracticeRecords';
@@ -24,6 +25,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/', element: <Home /> },
   { path: '/explore', element: <Interpretations /> },
   { path: '/interpretations/:id', element: <InterpretationDetail /> },
+  { path: '/interpretations/:id/code/:sectionId', element: <InterpretationCode /> },
   { path: '/explore/practice', element: <PracticeEntry /> },
   { path: '/worksheets/:id', element: <WorksheetDetail /> },
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },

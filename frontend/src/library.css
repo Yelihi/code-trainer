@@ -37,6 +37,13 @@
 .interpretation-addition h3 { color: var(--muted); }
 .interpretation-questions, .interpretation-recovery { padding: 24px; margin-top: 24px; border: 1px solid var(--line); background: var(--panel); }
 .interpretation-questions li { margin: 12px 0; }
+.worksheet-list { margin: 36px 0 44px; }
+.worksheet-list .reference-page-heading h2 { font-size: 24px; }
+.worksheet-list .reference-list-item h3 { margin: 8px 0; font-size: 20px; }
+.worksheet-questions { margin: 36px 0; }
+.worksheet-questions ol { padding-left: 28px; }
+.worksheet-questions li { padding: 20px 8px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.worksheet-questions li > a { font-size: 14px; }
 @media (max-width: 760px) {
   .interpretation-entry { flex-direction: column; align-items: stretch; padding: 20px; }
   .interpretation-entry-actions { max-width: none; }

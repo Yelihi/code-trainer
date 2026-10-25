@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
+import { InterpretationPractice } from './InterpretationPractice';
 import { Markdown } from './Markdown';
 import { libraryPage } from './libraryTypes';
 import './library.css';
@@ -76,6 +77,11 @@ export function InterpretationDetail() {
 }
 function Detail({ id }: { id: string }) {
   const [data, setData] = useState<Interpretation | null>(null), [error, setError] = useState(''), [reload, setReload] = useState(0);
+  const { hash } = useLocation();
+  useEffect(() => {
+    // Cross-page section links arrive before the fetched document is rendered.
+    if (data?.document && /^#s[1-6]$/.test(hash)) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [data?.document, hash]);
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
@@ -98,6 +104,7 @@ function Detail({ id }: { id: string }) {
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고, 같은 원문 v{data.revision}에서 새 해석을 시도합니다.</p><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></section>}
       {data.document && <InterpretationDocument document={data.document} />}
+      {data.state === 'ready' && data.document && <InterpretationPractice interpretationId={data.id} />}
     </>}
   </main>;
 }

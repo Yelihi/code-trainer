@@ -1,5 +1,6 @@
 import { PlannedFeature, PracticeEntry } from './Navigation';
 import { Interpretations, InterpretationDetail } from './Interpretations';
+import { WorksheetDetail } from './Worksheets';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -22,6 +23,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/explore', element: <Interpretations /> },
   { path: '/interpretations/:id', element: <InterpretationDetail /> },
   { path: '/explore/practice', element: <PracticeEntry /> },
+  { path: '/worksheets/:id', element: <WorksheetDetail /> },
   { path: '/knowledge/candidates', element: <PlannedFeature feature="candidates" /> },
   { path: '/apply', element: <PlannedFeature feature="inside" /> },
   { path: '/settings/ai', element: <PlannedFeature feature="ai" /> },

@@ -5,6 +5,7 @@ import { libraryPage } from './libraryTypes';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { Markdown } from './Markdown';
 import './library.css';
+import { MaterialProposals } from './MaterialProposals';
 
 export type ReviewedMaterial = { id: string; kind: 'interpretation' | 'practice'; origin_id: string; revision: number; current_revision: number; title: string; authorship: 'ai' | 'user'; body: string; state: 'eligible' | 'stale' | 'archived' | 'empty'; reason: string; interpretation_id: string; resource_id: string; raw_revision: number; source_name: string; reviewed_at: string };
 const states = { eligible: '추출 가능', stale: '변경됨 · 다시 검토', archived: '원문 보관됨', empty: '작성 내용 없음' };
@@ -39,6 +40,7 @@ function Detail({ id }: { id: string }) {
     {data && <><span className="eyebrow">{states[data.state]}</span><h1>{data.title}</h1><p>{data.authorship === 'ai' ? 'AI가 작성한 해석을 사용자가 확인했습니다.' : `내가 작성하고 검토한 답변·요약 v${data.revision}입니다.`} · {timestamp(data.reviewed_at)}</p>
       <aside className="interpretation-provenance"><strong>{data.source_name} · 원문 v{data.raw_revision}</strong><p>{data.reason || '확인한 버전의 본문입니다. 이 확인 자체가 AI 정답 판정이나 숙달 기록은 아닙니다.'}</p><Link to={origin(data)}>원래 학습 화면 보기 →</Link><p><Link to={'/library/' + data.resource_id}>원문과 버전 보기 →</Link></p></aside>
       <article className="interpretation-section"><Markdown language="">{data.body}</Markdown></article>
+      <MaterialProposals material={data} />
     </>}
   </main>;
 }

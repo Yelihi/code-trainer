@@ -11,6 +11,12 @@ class GitHubRepository(Model):
     url: str = Field(min_length=1, max_length=500)
 
 
+class GitHubDefaultRepository(GitHubRepository):
+    connection_id: str = Field(pattern=r'^[a-f0-9]{32}$')
+    repo_id: int = Field(gt=0)
+    private: bool
+
+
 class GitHubSource(Model):
     kind: Literal['note', 'concept', 'learning']
     id: str = Field(min_length=1, max_length=150)

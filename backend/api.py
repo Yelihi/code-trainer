@@ -15,7 +15,7 @@ from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
-from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
+from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
@@ -173,6 +173,16 @@ def github_disconnect(current=Depends(user)):
 def github_check(body: GitHubRepository, current=Depends(user)):
     service.rate('github-check:' + current['id'], 30)
     return github_sharing.check(current['id'], body.url)
+
+
+@app.get('/api/github/default-repository')
+def github_default(current=Depends(user)):
+    return {'repository': github_sharing.default_repository(current['id'])}
+
+
+@app.put('/api/github/default-repository')
+def github_save_default(body: GitHubDefaultRepository, current=Depends(user)):
+    return github_sharing.save_default(current['id'], body)
 
 
 @app.post('/api/github/preview')

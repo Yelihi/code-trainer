@@ -8,6 +8,11 @@ import { CodeBlock } from './CodeBlock';
 import { Markdown, InlineMarkdown } from './Markdown';
 import { AddToKnowledge } from './AddToKnowledge';
 
+function InterpretationSource({ data }: { data: LearningContext }) {
+  const source = data.interpretation_source;
+  return source ? <aside className="interpretation-provenance"><span>실습 출처 · {source.source_name} · 원문 v{source.revision}</span><p><Link to={`/interpretations/${source.interpretation_id}#${source.section_id}`}>해석 섹션으로 돌아가기 →</Link></p></aside> : null;
+}
+
 function useCourse(id?: string) {
   const resource = useResource<LearningContext>(`/contexts/${id}`);
   const [requested, setRequested] = useState<Generation | null>(null);
@@ -103,6 +108,7 @@ export function Context() {
       <button className="delete-material" onClick={() => void remove()} disabled={busy || deleting || !!pending}>{deleting ? '삭제 중…' : '자료 삭제'}</button>
     </div>
     <ErrorNotice error={actionError} />
+    <InterpretationSource data={data} />
     <h1>{data.title}</h1><p className="page-intro"><InlineMarkdown>{data.description}</InlineMarkdown></p>
     <section className="course-intro"><span className="eyebrow">LEARN, THEN PRACTICE</span><Markdown language={data.language}>{data.summary}</Markdown>
       {safeSourceUrl(data.source_url) && <a className="text-link" href={safeSourceUrl(data.source_url)} target="_blank" rel="noreferrer">학습 자료 출처</a>}
@@ -143,6 +149,7 @@ export function Lesson() {
   if (!unit) return <main className="page"><h1>학습 내용을 찾을 수 없습니다.</h1><Link to={`/learn/${id}`}>학습 과정으로 돌아가기</Link></main>;
   return <main className="page lesson-page">
     <div className="breadcrumb"><Link to={`/learn/${id}`}>{data.title}</Link><span>/</span> 개념 학습</div>
+    <InterpretationSource data={data} />
     <div className="lesson-layout"><aside className="lesson-outline"><span className="eyebrow">LEARNING PATH</span>
       <nav aria-label="학습 단원">{units.map((item, i) => <Link key={item.id} to={`/learn/${id}/units/${item.id}`} aria-current={item.id === unit.id ? 'page' : undefined}><span>{String(i + 1).padStart(2, '0')}</span>{item.title}</Link>)}</nav>
       <nav className="lesson-toc" aria-label="이 페이지의 목차">{unit.lesson.map((section, i) => <a key={i} href={`#section-${i}`}>{section.title}</a>)}<a href="#checkpoints">이해 확인</a></nav>

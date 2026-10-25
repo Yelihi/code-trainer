@@ -150,6 +150,7 @@ def summaries(owner, context_id):
 
 
 def context_view(owner, row):
+    from . import code_practice
     value = json.loads(row['data'])
     value.setdefault('difficulty', 'beginner')
     value.pop('learning_notes', None)
@@ -158,6 +159,7 @@ def context_view(owner, row):
     value['knowledge_added_units'] = added
     sets = summaries(owner, row['id'])
     return {**value, 'id': row['id'], 'source_url': row['source_url'], 'created_at': row['created_at'], 'sets': sets,
+        'interpretation_source': code_practice.origin(owner, row['id']),
         'generation': diagnostics.view(db.one('SELECT id,state,stage,context_id,set_id,unit_id,error,events FROM generations WHERE context_id=? AND owner=? AND unit_id IS NULL ORDER BY created_at DESC LIMIT 1', (row['id'], owner))),
         'unit_generations': [diagnostics.view(g) for g in db.all('''SELECT id,state,stage,context_id,set_id,unit_id,error,events
             FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY unit_id ORDER BY created_at DESC) AS position
@@ -242,9 +244,13 @@ def generations(owner):
 
 
 def begin_generation(owner, request):
+    from . import code_practice
     existing = db.one('SELECT id FROM generations WHERE owner=? AND request_id=?', (owner, request.request_id))
     if existing:
+        with db.connect() as c:
+            code_practice.replay(c, existing['id'], request)
         return generation(owner, existing['id']), False
+    selected = code_practice.selection(owner, request.interpretation_id, request.section_id) if request.source_kind == 'interpretation' else None
     if request.source_kind == 'context':
         context = json.loads(context_owned(owner, request.context_id)['data'])
         if context['language'] != request.language:
@@ -264,6 +270,7 @@ def begin_generation(owner, request):
     with db.connect(write=True) as c:
         existing = c.execute('SELECT id FROM generations WHERE owner=? AND request_id=?', (owner, request.request_id)).fetchone()
         if existing:
+            code_practice.replay(c, existing['id'], request)
             generation_id, fresh = existing['id'], False
         else:
             if request.context_id and not c.execute('SELECT id FROM contexts WHERE id=? AND owner=?', (request.context_id, owner)).fetchone():
@@ -290,6 +297,9 @@ def begin_generation(owner, request):
                           (generation_id, request.source_kind, request.source_name,
                            request.source if request.source_kind == 'url' else None,
                            request.source if request.source_kind == 'text' else None))
+            if selected:
+                c.execute('INSERT INTO code_origins VALUES (?,?,?,?,?,?)',
+                          (generation_id, request.interpretation_id, request.section_id, request.language, request.difficulty, code_practice.material(selected)))
     return generation(owner, generation_id), fresh
 
 
@@ -405,7 +415,8 @@ def generate(owner, generation_id, request):
             if not context.units:
                 context = ai.analyze(dump(context.model_dump()), request.language, context.difficulty)
         else:
-            text = source.fetch(request.source) if request.source_kind == 'url' else request.source
+            text = (db.one('SELECT content FROM code_origins WHERE generation_id=?', (generation_id,))['content']
+                    if request.source_kind == 'interpretation' else source.fetch(request.source) if request.source_kind == 'url' else request.source)
             db.execute('UPDATE source_documents SET content=? WHERE id=?', (text, generation_id))
             if len(text.strip()) < 20:
                 raise Error('학습할 자료를 20자 이상 입력해주세요.')

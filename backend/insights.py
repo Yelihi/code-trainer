@@ -20,6 +20,9 @@ def initialize(c):
         data TEXT NOT NULL, fingerprint TEXT NOT NULL, model TEXT NOT NULL,
         created_at TEXT NOT NULL, expires_at TEXT NOT NULL)''')
 
+    from . import insight_schedule
+    insight_schedule.initialize(c)
+
 
 def job_view(row):
     return {k:row[k] for k in ('id','state','error','model','created_at')} if row else None
@@ -37,6 +40,12 @@ def status(owner):
                 eligible=bool(context['assertions']),reason='' if context['assertions'] else '현재 유효한 근거로 연결된 개념이 부족합니다. 개념과 관계를 검토해 지식 그래프에 등록해주세요.')
 
 
+def enqueue(c,owner,context):
+    row=dict(id=service.uid(),owner=owner,state='queued',snapshot=service.dump(context),fingerprint=insight_context.fingerprint(context),error='',model=ai_settings.model_name(owner),created_at=service.now())
+    c.execute('INSERT INTO insight_jobs VALUES (:id,:owner,:state,:snapshot,:fingerprint,:error,:model,:created_at)',row)
+    return row
+
+
 def begin(owner,request_id):
     with db.connect(write=True) as c:
         old=c.execute('SELECT j.* FROM insight_requests r JOIN insight_jobs j ON j.id=r.job_id WHERE r.owner=? AND r.request_id=?',(owner,request_id)).fetchone()
@@ -48,8 +57,7 @@ def begin(owner,request_id):
             if not context['assertions']:raise service.Error('유효한 근거가 있는 개념 관계를 먼저 등록해주세요.',409)
             if not ai.available(owner):raise service.Error('설정에서 AI를 연결한 뒤 제안을 생성해주세요.',503)
             service.rate('insight:'+owner,5,3600)
-            row=dict(id=service.uid(),owner=owner,state='queued',snapshot=service.dump(context),fingerprint=insight_context.fingerprint(context),error='',model=ai_settings.model_name(owner),created_at=service.now());fresh=True
-            c.execute('INSERT INTO insight_jobs VALUES (:id,:owner,:state,:snapshot,:fingerprint,:error,:model,:created_at)',row)
+            row=enqueue(c,owner,context);fresh=True
         c.execute('INSERT INTO insight_requests VALUES (?,?,?)',(owner,request_id,row['id']))
     return job_view(row),fresh
 

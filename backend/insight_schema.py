@@ -1,5 +1,5 @@
 from typing import Annotated, Literal
-from pydantic import Field, StringConstraints
+from pydantic import Field, StringConstraints, StrictBool
 from .schema import Model
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1500)]
@@ -35,3 +35,8 @@ class InsightChoice(Model):
 class ExplorationNotes(Model):
     revision: int = Field(ge=0)
     notes: str = Field(max_length=50000)
+
+
+class InsightScheduleInput(Model):
+    enabled: StrictBool
+    revision: int = Field(ge=0)

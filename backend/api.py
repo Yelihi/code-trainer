@@ -1,7 +1,7 @@
 import asyncio
 import time
 import uuid
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from urllib.parse import urlsplit
 from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
@@ -16,8 +16,8 @@ from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
 from . import materials, material_proposals, material_knowledge, spaced_reviews
-from . import insights, insight_adoptions
-from .insight_schema import InsightRequest, InsightChoice, ExplorationNotes
+from . import insights, insight_adoptions, insight_schedule
+from .insight_schema import InsightRequest, InsightChoice, ExplorationNotes, InsightScheduleInput
 from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput
@@ -32,9 +32,13 @@ async def lifespan(app):
     access.validate_config()
     service.initialize()
     collector = asyncio.create_task(feeds.poll())
+    scheduler = asyncio.create_task(insight_schedule.poll())
     try:
         yield
     finally:
+        scheduler.cancel()
+        with suppress(asyncio.CancelledError):
+            await scheduler
         await feeds.stop(collector)
 
 
@@ -598,6 +602,16 @@ def source_document(source_id: str, current=Depends(user)):
 @app.patch('/api/admin/reports/{report_id}')
 def review_report(report_id: str, body: ReportUpdate, current=Depends(user)):
     return service.review_report(current, report_id, body)
+
+
+@app.get('/api/insights/schedule')
+def insight_schedule_status(current=Depends(user)):
+    return insight_schedule.status(current['id'])
+
+
+@app.put('/api/insights/schedule')
+def insight_schedule_configure(body: InsightScheduleInput, current=Depends(user)):
+    return insight_schedule.configure(current['id'], body)
 
 
 @app.post('/api/insights/{identifier}/choice')

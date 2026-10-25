@@ -38,6 +38,10 @@ class CodePracticeTest(unittest.TestCase):
         ready = service.generation(self.owner, job['id'])
         course = service.get_context(self.owner, ready['context_id'])
         self.assertEqual(course['difficulty'], 'intermediate')
+        with patch.object(ai, 'available', return_value=True):
+            with self.assertRaises(service.Error) as duplicate:
+                service.begin_generation(self.owner, self.request(interpretation, request_id='other-language', language='python'))
+            self.assertEqual(duplicate.exception.status, 409)
         self.assertEqual((course['interpretation_source']['interpretation_id'], course['interpretation_source']['section_id'], course['interpretation_source']['revision']), (interpretation['id'], 's1', 1))
         unit = GenerationInput(request_id='code-unit', source_kind='context', context_id=course['id'], unit_id=context.units[0].id, language='javascript')
         with patch.object(ai, 'available', return_value=True), patch.object(service.runner, 'available', return_value=True):

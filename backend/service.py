@@ -273,6 +273,10 @@ def begin_generation(owner, request):
             code_practice.replay(c, existing['id'], request)
             generation_id, fresh = existing['id'], False
         else:
+            if request.source_kind == 'interpretation' and c.execute('''SELECT g.id FROM code_origins o
+                    JOIN generations g ON g.id=o.generation_id WHERE g.owner=? AND o.interpretation_id=? AND o.section_id=?
+                    AND g.state IN ('generating','validating','ready')''', (owner, request.interpretation_id, request.section_id)).fetchone():
+                raise Error('이 섹션의 코딩 과정을 이미 준비했거나 준비 중입니다. 생성 기록에서 기존 과정을 열어주세요.', 409)
             if request.context_id and not c.execute('SELECT id FROM contexts WHERE id=? AND owner=?', (request.context_id, owner)).fetchone():
                 raise Error('학습 자료를 찾을 수 없습니다.', 404)
             if c.execute("SELECT id FROM generations WHERE state IN ('generating','validating')").fetchone():

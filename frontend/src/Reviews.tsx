@@ -1,3 +1,6 @@
+import { reviewWeek } from './reviewCalendar';
+import type { SpacedReview } from './SpacedReviews';
+import { Link } from 'react-router-dom';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useState } from 'react';
@@ -8,6 +11,7 @@ import { ErrorNotice, useResource } from './App';
 type ReviewItem = { exercise_id: string; title: string; context_title: string; kind: string; assistance: Assistance; due_at: string; due: boolean; active_review_id: string | null };
 export function Reviews() {
   const { data, error, reload } = useResource<{ items: ReviewItem[]; due_count: number }>('/me/reviews');
+  const { data: materials, error: materialError, reload: reloadMaterials } = useResource<{ items: SpacedReview[]; due_count: number }>('/spaced-reviews');
   const [busy, setBusy] = useState('');
   const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
@@ -18,7 +22,12 @@ export function Reviews() {
       await navigate(`/reviews/${value.id}`);
     } catch (error) { setActionError(errorMessage(error)); } finally { setBusy(''); }
   }
-  return <main className="page narrow-page"><div className="breadcrumb">Workspace / 복습</div><h1>오늘의 복습</h1>
+  return <main className="page narrow-page"><div className="breadcrumb">탐구하기 / 다시 검토</div><h1>이해를 다시 꺼내보는 시간.</h1>
+    <p className="page-intro">코드와 자료의 복습 기한을 한곳에서 살펴보세요.</p>
+    {data && materials && <ReviewCalendar dates={[...data.items.map(x => x.due_at), ...materials.items.filter(x => x.state === 'eligible').map(x => x.due_at)]} />}
+    <section><h2>자료 복습 {materials?.due_count ?? 0}개</h2><p>해석·내 답변·노트에서 직접 복습에 추가할 수 있습니다. 스스로 설명 가능하면3·7·14일 뒤, 다시 확인이 필요하면 다음 날 살펴봅니다.</p><ErrorNotice error={materialError} />{materialError && <button onClick={reloadMaterials}>자료 일정 다시 불러오기</button>}{!materials && !materialError && <LoadingSkeleton layout="list" label="자료 복습을 불러오는 중…" />}
+      {materials && <>{!materials.items.length && <div className="empty-state">복습에 추가한 자료가 없습니다.<Link to="/explore">해석 살펴보기 →</Link></div>}{materials.items.some(x => x.due) && <h3>기한이 된 자료 · 미완료</h3>}<div className="list">{materials.items.filter(x => x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div>{materials.items.some(x => !x.due) && <h3>예정 · 다시 확인할 자료</h3>}<div className="list">{materials.items.filter(x => !x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div></>}
+    </section><h2>코드 복습</h2>
     <p className="page-intro">이전 풀이를 보지 않고 다시 해결해보세요. 기존 코드와 진도는 그대로 보관됩니다.</p>
     <p className="muted">첫 통과 다음 날부터 시작합니다. 도움 없이 통과하면 3일·7일·14일 뒤, 실패하거나 도움을 참고하면 다음 날 다시 연습합니다. 앱 밖에서 받은 도움은 기록하지 않습니다.</p>
     <ErrorNotice error={error || actionError} />{error && <button onClick={reload}>다시 불러오기</button>}
@@ -28,6 +37,15 @@ export function Reviews() {
       <div className="list">{data.items.map(item => <article className="list-row review-row" key={item.exercise_id}><div><small>{item.context_title} · {item.kind}</small><h3>{item.title}</h3><p>{assistanceLabels[item.assistance]} · {timestamp(item.due_at)} 예정</p></div>
         <button disabled={!!busy || (!item.due && !item.active_review_id)} onClick={() => void start(item)}>{busy === item.exercise_id ? '준비 중…' : item.active_review_id ? '복습 이어하기' : item.due ? '다시 풀기' : '복습 예정'}</button></article>)}</div></>}
   </main>;
+}
+
+function MaterialReviewRow({ item }: { item: SpacedReview }) {
+  return <article className="list-row review-row"><div><small>{item.kind === 'note' ? '직접 쓴 노트' : item.kind === 'interpretation' ? 'AI 해석' : '내 답변·요약'} · v{item.source_revision}</small><h3>{item.snapshot.title}</h3><p>{item.state !== 'eligible' ? item.reason : (item.due ? '기한 경과 · ' : '예정 · ') + timestamp(item.due_at)}</p></div><Link className="button" to={'/reviews/material/' + item.id}>{item.due ? '다시 검토' : '자료·일정 보기'}</Link></article>;
+}
+function ReviewCalendar({ dates }: { dates: string[] }) {
+  const now = new Date(), week = reviewWeek(dates, now);
+  const overdue = dates.filter(value => new Date(value) < new Date(now.getFullYear(), now.getMonth(), now.getDate())).length;
+  return <section className="review-calendar"><h2>앞으로7일</h2><p>날짜는 현재 기기의 시간대 기준입니다. 오늘 이전 미완료 {overdue}개</p><ol>{week.map(day => <li key={day.date.toISOString()}><time dateTime={day.date.toISOString()}>{day.date.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' })}</time><strong>{day.count}<small>개</small></strong><span aria-hidden="true" style={{ height: Math.min(day.count, 8) * 4 }} /></li>)}</ol></section>;
 }
 
 type Usage = { items: { generation_id: string | null; operation: string; model: string; context_title: string | null; unit_id: string | null; calls: number; repair_calls: number; input_tokens: number; output_tokens: number; unknown_usage_calls: number; failed_calls: number }[]; totals: { calls: number; input_tokens: number; output_tokens: number; unknown_usage_calls: number } };

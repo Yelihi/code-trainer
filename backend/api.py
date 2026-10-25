@@ -15,7 +15,8 @@ from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
-from . import materials, material_proposals, material_knowledge
+from . import materials, material_proposals, material_knowledge, spaced_reviews
+from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
@@ -595,6 +596,31 @@ def source_document(source_id: str, current=Depends(user)):
 @app.patch('/api/admin/reports/{report_id}')
 def review_report(report_id: str, body: ReportUpdate, current=Depends(user)):
     return service.review_report(current, report_id, body)
+
+
+@app.get('/api/spaced-reviews')
+def spaced_review_queue(current=Depends(user)):
+    return spaced_reviews.queue(current['id'])
+
+
+@app.post('/api/spaced-reviews')
+def spaced_review_enroll(body: ReviewEnrollment, current=Depends(user)):
+    return spaced_reviews.enroll(current['id'], body.kind, body.origin_id, body.revision)
+
+
+@app.get('/api/spaced-reviews/source/{kind}/{identifier}')
+def spaced_review_status(kind: ReviewKind, identifier: str, revision: int = Query(ge=1), current=Depends(user)):
+    return {'review': spaced_reviews.find(current['id'], kind, identifier, revision)}
+
+
+@app.get('/api/spaced-reviews/{identifier}')
+def spaced_review_get(identifier: str, current=Depends(user)):
+    return spaced_reviews.view(current['id'], identifier)
+
+
+@app.post('/api/spaced-reviews/{identifier}/responses')
+def spaced_review_respond(identifier: str, body: ReviewResponse, current=Depends(user)):
+    return spaced_reviews.respond(current['id'], identifier, body)
 
 
 @app.get('/api/me/reviews')

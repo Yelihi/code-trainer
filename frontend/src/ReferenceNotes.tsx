@@ -1,3 +1,4 @@
+import { AddToReview } from './SpacedReviews';
 import { Select } from './Select';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
@@ -138,6 +139,7 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
       setNote(next); setTitle(next.title); setBody(next.body); setMetadata(next.metadata); setRevision(next.revision);
       clearReferenceDraft(storageKey); setMessage(`선택한 변경을 노트 v${next.revision}에 저장했습니다. 새 본문에서 AI 후보 생성·내용 검토를 다시 진행해주세요.`);
     }} onEdit={() => setTab('write')} />}
+    {note && <AddToReview kind="note" id={note.id} revision={note.revision} disabled={busy || dirty || !!note.archived || revision !== note.revision} />}
     {note && <footer className="reference-note-footer"><AnimatedDetails summary={<>노트 버전 · {note.versions.length}</>}><div className="reference-version-list">{note.versions.map(v => <button key={v.revision} onClick={() => { void api<{ revision: number; body: string; title: string }>(`/reference-notes/${note.id}/versions/${v.revision}`).then(setOldVersion).catch(e => setError(errorMessage(e))); }}>v{v.revision} · {timestamp(v.created_at)}</button>)}</div></AnimatedDetails>
       <div className="reference-actions"><a className="button" href={`/api/reference-notes/${note.id}/export`} download>Markdown · 이미지 내보내기</a><button disabled={busy || dirty} onClick={() => void archive()}>{note.archived ? '노트 복원' : '노트 보관'}</button></div>
     </footer>}

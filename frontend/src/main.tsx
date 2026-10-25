@@ -1,3 +1,4 @@
+import { SpacedReviewRoute } from './SpacedReviews';
 import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
 import { PlannedFeature, PracticeEntry } from './Navigation';
 import { InterpretationCode } from './InterpretationCode';
@@ -39,6 +40,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/learn/:id', element: <Context /> },
   { path: '/learn/:id/units/:unitId', element: <Lesson /> },
   { path: '/practice/:id', element: <Practice /> },
+  { path: '/reviews/material/:id', element: <SpacedReviewRoute /> },
   { path: '/reviews', element: <Reviews /> },
   { path: '/reviews/:id', element: <Practice review /> },
   { path: '/admin/operations', element: <Operations /> },

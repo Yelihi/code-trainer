@@ -1,11 +1,12 @@
 """One current temporary suggestion bundle, with explicit and replay-safe generation."""
 import json
 from datetime import datetime, timedelta
-from . import ai, ai_settings, db, insight_context, service, usage
+from . import ai, ai_settings, db, insight_context, service, usage, insight_adoptions
 from .insight_schema import InsightBundle
 
 
 def initialize(c):
+    insight_adoptions.initialize(c)
     c.execute('''CREATE TABLE IF NOT EXISTS insight_jobs (
         id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), state TEXT NOT NULL,
         snapshot TEXT, fingerprint TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
@@ -29,6 +30,7 @@ def status(owner):
     bundle=db.one('SELECT * FROM insight_bundles WHERE owner=?',(owner,))
     if bundle:
         bundle['context']=json.loads(bundle['context']);bundle['data']=json.loads(bundle['data']);bundle.pop('owner')
+        bundle['choices']=insight_adoptions.choices(owner,bundle['id'])
         bundle['state']='current' if insight_context.valid(owner,bundle['context']) else 'stale'
     context=insight_context.build(owner)
     return dict(bundle=bundle,job=job_view(db.one('SELECT * FROM insight_jobs WHERE owner=? ORDER BY created_at DESC,rowid DESC LIMIT 1',(owner,))),
@@ -73,6 +75,9 @@ No graph mutation. Return guidance only; acknowledge the limited supplied eviden
             if not current:return
             if not insight_context.valid(owner,context):
                 c.execute("UPDATE insight_jobs SET state='stale',snapshot=NULL,error='생성 중 근거가 변경되어 새 제안을 보관하지 않았습니다.' WHERE id=?",(identifier,));return
+            result.suggestions=insight_adoptions.filter_skipped(owner,result.suggestions,c)
+            if not result.suggestions:
+                c.execute("UPDATE insight_jobs SET state='empty',snapshot=NULL,error='건너뛴 연결을 제외하면 새 제안이 없습니다.' WHERE id=?",(identifier,));return
             clock=service.now();expires=(datetime.fromisoformat(clock)+timedelta(days=30)).isoformat()
             c.execute('INSERT OR REPLACE INTO insight_bundles VALUES (?,?,?,?,?,?,?,?)',(owner,identifier,service.dump(context),result.model_dump_json(),row['fingerprint'],current['model'],clock,expires))
             c.execute("UPDATE insight_jobs SET state='ready',snapshot=NULL WHERE id=?",(identifier,))

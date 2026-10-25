@@ -25,3 +25,13 @@ class InsightBundle(Model):
 
 class InsightRequest(Model):
     request_id: str = Field(min_length=8, max_length=80)
+
+
+class InsightChoice(Model):
+    index: int = Field(ge=0,le=2)
+    action: Literal['adopt','skip']
+
+
+class ExplorationNotes(Model):
+    revision: int = Field(ge=0)
+    notes: str = Field(max_length=50000)

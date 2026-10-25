@@ -25,7 +25,7 @@ test('five navigation areas preserve destination identity, current page and admi
       ['/worksheets/worksheet-id', '/explore/practice'],
       ['/reviews/material/id', '/reviews'], ['/reviews/set-id', '/reviews'], ['/reference-reviews/review-id', '/reviews'],
       ['/knowledge/candidates', '/knowledge/candidates'], ['/knowledge', '/knowledge'],
-      ['/apply', '/apply'], ['/settings/ai', '/settings/ai'], ['/github/share', '/settings/github'],
+      ['/apply', '/apply'], ['/apply/explorations/id', '/apply/explorations'], ['/settings/ai', '/settings/ai'], ['/github/share', '/settings/github'],
     ];
     for (const [path, target] of cases) {
       const active = [...render(path).matchAll(/<a\b[^>]*aria-current="page"[^>]*>/g)];

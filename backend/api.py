@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources, interpretations
+from . import resources, interpretations, worksheets
+from .worksheet_schema import WorksheetInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
@@ -328,6 +329,24 @@ def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
 def resource_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1),
                   kind: Literal['all', 'text', 'url', 'note'] = 'all', current=Depends(user)):
     return resources.listing(current['id'], q, page, kind)
+
+
+@app.get('/api/worksheets')
+def worksheet_list(page: int = Query(default=1, ge=1), interpretation_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
+    return worksheets.listing(current['id'], page, interpretation_id)
+
+
+@app.post('/api/worksheets', status_code=202)
+def worksheet_start(body: WorksheetInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = worksheets.begin(current['id'], body)
+    if fresh:
+        tasks.add_task(worksheets.generate, result['id'])
+    return result
+
+
+@app.get('/api/worksheets/{identifier}')
+def worksheet_view(identifier: str, current=Depends(user)):
+    return worksheets.view(current['id'], identifier)
 
 
 @app.get('/api/interpretations')

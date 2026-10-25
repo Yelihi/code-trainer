@@ -52,6 +52,7 @@ def rate(key, limit, seconds=60):
 
 def initialize():
     db.initialize()
+    db.execute("UPDATE worksheets SET state='interrupted',error='서버가 다시 시작되어 질문지 생성이 중단되었습니다. 같은 해석으로 다시 생성해주세요.',updated_at=? WHERE state IN ('queued','running')", (now(),))
     db.execute("UPDATE interpretations SET state='interrupted',error='서버가 다시 시작되어 해석이 중단되었습니다. 같은 원문 버전으로 다시 시도해주세요.',updated_at=? WHERE state IN ('queued','running')", (now(),))
     db.execute("UPDATE github_shares SET state='unknown',error='서버가 다시 시작되어 등록 결과를 확인하지 못했습니다. GitHub에서 먼저 확인해주세요.' WHERE state='sending'")
     from . import ontology

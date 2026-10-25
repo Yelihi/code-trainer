@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { createServer } from 'vite';
 
 test('five navigation areas preserve destination identity, current page and admin visibility', async () => {
@@ -22,6 +22,7 @@ test('five navigation areas preserve destination identity, current page and admi
       ['/library/source-id/edit', '/library'], ['/library/new/reference', '/library/new/reference'],
       ['/references/new', '/references/new'], ['/references/note-id', '/library'],
       ['/foundations/arrays/practice', '/explore/practice'], ['/practice/set-id', '/explore/practice'],
+      ['/worksheets/worksheet-id', '/explore/practice'],
       ['/reviews/set-id', '/reviews'], ['/reference-reviews/review-id', '/reviews'],
       ['/knowledge/candidates', '/knowledge/candidates'], ['/knowledge', '/knowledge'],
       ['/apply', '/apply'], ['/settings/ai', '/settings/ai'], ['/github/share', '/settings/github'],
@@ -38,7 +39,9 @@ test('five navigation areas preserve destination identity, current page and admi
       assert.doesNotMatch(page, /<input|<form|<button/);
       assert.match(page, /href="\/(references|knowledge|me)"/);
     }
-    const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(PracticeEntry)));
+    const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Routes, null,
+      createElement(Route, { element: createElement(Outlet, { context: { userId: 'fixture-owner', health: null } }) },
+        createElement(Route, { path: '*', element: createElement(PracticeEntry) })))));
     assert.match(practice, /href="\/foundations"/);
     assert.match(practice, /href="\/"/);
   } finally { await server.close(); }

@@ -2,13 +2,17 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [[ $# -eq 1 && "$1" == '--help' ]]; then
-  echo '사용법: cd backend && ./dev.sh'
+  echo '사용법: cd backend && ./dev.sh [start|stop|restart]'
+  echo '기본 start: 실행 / stop: 정상 종료 / restart: 종료 후 현재 작업 폴더에서 다시 실행'
   echo '루트 .env의 AI 설정 사용, API :8011, DB/로그: data/dev/, 실행 VM: code-trainer-dev'
   exit 0
 fi
-if [[ $# -ne 0 ]]; then
-  echo '사용법: ./dev.sh [--help]' >&2
+if [[ $# -gt 1 || ! "${1:-start}" =~ ^(start|stop|restart)$ ]]; then
+  echo '사용법: ./dev.sh [start|stop|restart|--help]' >&2
   exit 1
+fi
+if [[ "${1:-start}" == 'stop' ]]; then
+  exec .venv/bin/python scripts/stop-dev-server.py
 fi
 if ! command -v uv >/dev/null || [[ ! -x .venv/bin/python ]]; then
   echo 'uv와 루트 .venv가 필요합니다. 루트에서 uv venv --python 3.12 .venv && uv pip sync --python .venv/bin/python requirements.txt 를 실행하세요.' >&2
@@ -19,6 +23,9 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 export UV_ENV_FILE="$PWD/.env"
+if [[ "${1:-start}" == 'restart' ]]; then
+  .venv/bin/python scripts/stop-dev-server.py
+fi
 # Reject a second server before initialization can interrupt existing jobs.
 .venv/bin/python - <<'PY'
 import socket
@@ -27,7 +34,7 @@ with socket.socket() as server:
     try:
         server.bind(('127.0.0.1', 8011))
     except OSError:
-        raise SystemExit('127.0.0.1:8011 포트를 사용할 수 없습니다. 기존 개발 API 서버를 확인해주세요.')
+        raise SystemExit('127.0.0.1:8011 포트를 사용할 수 없습니다. ./dev.sh restart로 기존 개발 서버를 종료한 뒤 다시 실행할 수 있습니다.')
 PY
 for tool in docker colima; do
   if ! command -v "$tool" >/dev/null; then

@@ -209,6 +209,8 @@ npm run dev
 # 터미널 2: 개발 백엔드 API (http://127.0.0.1:8011)
 cd backend
 ./dev.sh
+# 종료: ./dev.sh stop
+# 기존 개발 서버를 종료하고 이 작업 폴더에서 재시작: ./dev.sh restart
 ```
 
 백엔드는 프로젝트 루트의 `.env`와 `.venv`를 사용합니다. 최초 Python 환경 준비는 루트에서

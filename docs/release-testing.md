@@ -21,6 +21,8 @@ uv pip sync --python .venv/bin/python requirements.txt
 ```sh
 cd backend
 ./dev.sh
+# 종료: ./dev.sh stop
+# 기존 개발 서버를 종료하고 이 작업 폴더에서 재시작: ./dev.sh restart
 ```
 
 터미널 2, 테스트 worktree 루트에서:

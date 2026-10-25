@@ -72,6 +72,8 @@ print('PASS: first-run image build, repeat launch, forced rebuild, prerequisite 
 with tempfile.TemporaryDirectory() as directory:
     project = Path(directory)
     (project / 'backend').mkdir()
+    (project / 'scripts').mkdir()
+    shutil.copy(root / 'scripts/stop-dev-server.py', project / 'scripts/stop-dev-server.py')
     shutil.copy(root / 'backend/dev.sh', project / 'backend/dev.sh')
     (project / '.env').write_text('AI_API_KEY=\nAI_MODEL=\n')
     binaries = project / '.venv/bin'
@@ -87,6 +89,8 @@ with open(os.environ['START_CHECK_LOG'], 'a') as log:
         'runner': os.environ.get('TRAINER_RUNNER_URL'), 'image': os.environ.get('TRAINER_IMAGE'),
         'tls': os.environ.get('DOCKER_TLS_VERIFY'),
         'shared_ai': os.environ.get('AI_API_KEY') == 'test-shared-key'}) + '\\n')
+if name == 'python' and sys.argv[1:] == ['scripts/stop-dev-server.py']:
+    sys.exit(int(os.environ.get('STOP_FAIL', '0')))
 if name == 'python' and sys.argv[1:] == ['-']:
     sys.exit(int(os.environ.get('BUSY_PORT', '0')))
 if name == 'docker':
@@ -148,7 +152,16 @@ if name == 'uv':
         assert result.returncode != 0 and not any(c['tool'] == 'uv' for c in calls)
     result, calls = run_dev(BUSY_PORT='1')
     assert result.returncode != 0 and not any(c['tool'] == 'uv' for c in calls)
+    result, calls = run_dev('restart')
+    assert result.returncode == 0, result.stderr
+    assert calls[0]['args'] == ['scripts/stop-dev-server.py']
+    assert calls[-1]['args'] == launch['args']
+    result, calls = run_dev('restart', STOP_FAIL='1')
+    assert result.returncode != 0 and len(calls) == 1
     (project / '.env').unlink()
+    result, calls = run_dev('stop')
+    assert result.returncode == 0 and len(calls) == 1
+    assert calls[0]['args'] == ['scripts/stop-dev-server.py']
     result, calls = run_dev()
     assert result.returncode != 0 and 'cp .env.example .env' in result.stderr and not calls
     (binaries / 'python').unlink()
@@ -159,3 +172,5 @@ if name == 'uv':
     result, calls = run_dev('--unknown')
     assert result.returncode != 0 and not calls
 print('PASS: dev API, DB/logs, Docker and dotenv isolation, shared AI setting, setup failures and port guard.')
+
+subprocess.run([sys.executable, str(root / 'scripts/test_dev_server.py')], check=True)

@@ -124,7 +124,7 @@ export function Home() {
         <li><span>01</span><div><strong>등록하기</strong><p>원문과 생각을 한곳에 모으기</p></div></li>
         <li><span>02</span><div><strong>탐구하기</strong><p>개념을 이해하고 직접 실습하기</p></div></li>
         <li><span>03</span><div><strong>데이터 쌓기</strong><p>개념과 관계를 지식 그래프로 연결하기</p></div></li>
-        <li><span>04</span><div><strong>응용하기</strong><p>연결에서 새로운 질문 찾기 · 준비 중</p></div></li>
+        <li><span>04</span><div><strong>응용하기</strong><p>연결에서 새로운 질문 찾기</p></div></li>
       </ol>
     </section>
     <div className="section-heading"><div><span className="eyebrow">CODING COURSES</span><h2>기존 코딩 학습 과정 <span className="count">{data?.total ?? '—'}</span></h2></div><div className="brain-actions"><Link className="text-link" to="/explore">일반 해석 문서</Link><Link className="text-link" to="/create">기존 자료 분석</Link><Link className="text-link" to="/me">학습 기록 보기</Link></div></div>

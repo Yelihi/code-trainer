@@ -20,7 +20,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
     { label: '지식 그래프', to: '/knowledge', paths: ['/knowledge'] },
   ] },
   { label: '응용하기', items: [
-    { label: 'Deep Inside', to: '/apply', paths: ['/apply'], planned: true },
+    { label: 'Deep Inside', to: '/apply', paths: ['/apply'] },
   ] },
   { label: '설정', items: [
     { label: 'GitHub 연동', to: '/settings/github', paths: ['/settings/github', '/github/share'] },
@@ -41,18 +41,6 @@ export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
       <span>{item.label}</span>{item.planned && <small className="navigation-badge">예정</small>}
     </Link>)}</nav>
   </section>)}</div>;
-}
-
-const planned = {
-  inside: { area: '응용하기', title: 'Deep Inside', description: '쌓인 연결에서, 다음 질문을.', detail: '지식 사이의 연결을 바탕으로 더 깊이 탐구할 질문, 참고 자료와 실습 가이드를 제안할 공간입니다. 제안 생성과 채택 기능은 아직 준비 중입니다.', available: '지금은 지식 그래프에서 쌓인 개념과 근거를 직접 살펴볼 수 있습니다.', to: '/knowledge', action: '지식 그래프 살펴보기' },
-};
-export function PlannedFeature({ feature }: { feature: keyof typeof planned }) {
-  const page = planned[feature];
-  return <main className="page journey-page">
-    <div className="breadcrumb">{page.area}<span>/</span>{page.title}</div>
-    <span className="eyebrow">준비 중</span><h1>{page.title}</h1><h2>{page.description}</h2>
-    <p>{page.detail}</p><div className="journey-available"><p>{page.available}</p><Link className="button" to={page.to}>{page.action}</Link></div>
-  </main>;
 }
 
 export function PracticeEntry() {

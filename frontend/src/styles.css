@@ -2202,3 +2202,12 @@ button.text-button,
 .review-calendar small { font-size: .7rem; margin-left: .2rem; }
 .review-calendar li > span { width: 100%; max-width: 32px; background: var(--purple); border-radius: 3px; }
 @media (max-width: 600px) { .review-calendar { padding: .75rem; } .review-calendar ol { gap: .25rem; } .review-calendar time { font-size: .7rem; } }
+
+.insight-request { display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin: 2rem 0 1rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 12px; }
+.insight-request > div { max-width: 46rem; } .insight-request > button { flex-shrink: 0; }
+.insight-list { display: grid; gap: 2rem; margin-top: 1.5rem; }
+.insight-guide { padding: clamp(1.25rem, 3vw, 2.5rem); border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.insight-question { padding: 1rem 1.5rem; margin: 1.5rem 0; border-left: 2px solid var(--purple); background: #9868ff0a; }
+.insight-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+.insight-steps h3 { font-size: 1rem; } .insight-evidence { padding: 1rem 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 800px) { .insight-request { align-items: stretch; flex-direction: column; gap: 1rem; } .insight-steps { grid-template-columns: 1fr; gap: .75rem; } }

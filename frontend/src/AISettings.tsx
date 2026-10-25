@@ -1,3 +1,4 @@
+import { InsightSchedule } from './InsightSchedule';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from './api';
@@ -21,6 +22,7 @@ function SettingsLoader() {
     <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
     {!data && !error && <LoadingSkeleton layout="editor" label="AI 연결을 불러오는 중…" />}
     {data && <SettingsForm initial={data} onReload={reload} />}
+    <InsightSchedule />
   </main>;
 }
 

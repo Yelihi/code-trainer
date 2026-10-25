@@ -1,6 +1,7 @@
+import { DeepInside } from './DeepInside';
 import { SpacedReviewRoute } from './SpacedReviews';
 import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
-import { PlannedFeature, PracticeEntry } from './Navigation';
+import { PracticeEntry } from './Navigation';
 import { InterpretationCode } from './InterpretationCode';
 import { Interpretations, InterpretationDetail } from './Interpretations';
 import { WorksheetDetail } from './Worksheets';
@@ -33,7 +34,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },
   { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
   { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
-  { path: '/apply', element: <PlannedFeature feature="inside" /> },
+  { path: '/apply', element: <DeepInside /> },
   { path: '/settings/ai', element: <AISettings /> },
   { path: '/inbox', element: <FeedInbox /> },
   { path: '/create', element: <Create /> },

@@ -52,6 +52,7 @@ def rate(key, limit, seconds=60):
 
 def initialize():
     db.initialize()
+    db.execute("UPDATE insight_jobs SET state='interrupted',snapshot=NULL,error='서버 재시작으로 생성이 중단되었습니다. 직접 다시 요청해주세요.' WHERE state IN ('queued','running')")
     db.execute("UPDATE material_proposals SET state='interrupted',error='서버가 다시 시작되어 추출이 중단되었습니다. 직접 다시 요청해주세요.' WHERE state IN ('queued','running')")
     db.execute("UPDATE worksheets SET state='interrupted',error='서버가 다시 시작되어 질문지 생성이 중단되었습니다. 같은 해석으로 다시 생성해주세요.',updated_at=? WHERE state IN ('queued','running')", (now(),))
     db.execute("UPDATE interpretations SET state='interrupted',error='서버가 다시 시작되어 해석이 중단되었습니다. 같은 원문 버전으로 다시 시도해주세요.',updated_at=? WHERE state IN ('queued','running')", (now(),))

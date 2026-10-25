@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 test('five navigation areas preserve destination identity, current page and admin visibility', async () => {
   const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
-    const { Navigation, PlannedFeature, PracticeEntry } = await server.ssrLoadModule('/src/Navigation.tsx');
+    const { Navigation, PracticeEntry } = await server.ssrLoadModule('/src/Navigation.tsx');
     const render = (path: string, isAdmin = false) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Navigation, { isAdmin, onNavigate() {} })));
     const html = render('/library');
     assert.deepEqual([...html.matchAll(/<nav aria-label="([^"]+)"/g)].map(match => match[1]), ['등록하기', '탐구하기', '데이터 쌓기', '응용하기', '설정']);
@@ -23,7 +23,7 @@ test('five navigation areas preserve destination identity, current page and admi
       ['/references/new', '/references/new'], ['/references/note-id', '/library'],
       ['/foundations/arrays/practice', '/explore/practice'], ['/practice/set-id', '/explore/practice'],
       ['/worksheets/worksheet-id', '/explore/practice'],
-      ['/reviews/set-id', '/reviews'], ['/reference-reviews/review-id', '/reviews'],
+      ['/reviews/material/id', '/reviews'], ['/reviews/set-id', '/reviews'], ['/reference-reviews/review-id', '/reviews'],
       ['/knowledge/candidates', '/knowledge/candidates'], ['/knowledge', '/knowledge'],
       ['/apply', '/apply'], ['/settings/ai', '/settings/ai'], ['/github/share', '/settings/github'],
     ];
@@ -34,12 +34,7 @@ test('five navigation areas preserve destination identity, current page and admi
     }
     assert.doesNotMatch(render('/library-unknown'), /aria-current="page"/);
     assert.doesNotMatch(render('/settings/ai').match(/<a[^>]*href="\/settings\/ai"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
-    for (const feature of ['inside']) {
-      const page = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(PlannedFeature, { feature })));
-      assert.match(page, /준비 중/);
-      assert.doesNotMatch(page, /<input|<form|<button/);
-      assert.match(page, /href="\/(references|knowledge|me)"/);
-    }
+    assert.doesNotMatch(render('/apply').match(/<a[^>]*href="\/apply"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
     const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Routes, null,
       createElement(Route, { element: createElement(Outlet, { context: { userId: 'fixture-owner', health: null } }) },
         createElement(Route, { path: '*', element: createElement(PracticeEntry) })))));

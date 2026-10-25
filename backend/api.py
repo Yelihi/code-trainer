@@ -16,6 +16,8 @@ from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
 from . import materials, material_proposals, material_knowledge, spaced_reviews
+from . import insights
+from .insight_schema import InsightRequest
 from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput
@@ -596,6 +598,18 @@ def source_document(source_id: str, current=Depends(user)):
 @app.patch('/api/admin/reports/{report_id}')
 def review_report(report_id: str, body: ReportUpdate, current=Depends(user)):
     return service.review_report(current, report_id, body)
+
+
+@app.get('/api/insights')
+def insight_status(current=Depends(user)):
+    return insights.status(current['id'])
+
+
+@app.post('/api/insights')
+def insight_generate(body: InsightRequest, tasks: BackgroundTasks, current=Depends(user)):
+    job, fresh = insights.begin(current['id'], body.request_id)
+    if fresh: tasks.add_task(insights.generate, job['id'])
+    return job
 
 
 @app.get('/api/spaced-reviews')

@@ -24,7 +24,7 @@ def start(operation, repair, connection):
             (call_id, owner, generation_id, operation, model, int(repair), 'started', datetime.now(timezone.utc).isoformat(),
              connection['revision'], connection['provider_url']))
         if generation_id:
-            for table in ('interpretations', 'worksheets', 'knowledge_proposals', 'material_proposals'):
+            for table in ('interpretations', 'worksheets', 'knowledge_proposals', 'material_proposals', 'insight_jobs'):
                 c.execute(f'UPDATE {table} SET model=? WHERE owner=? AND id=?', (model, owner, generation_id))
     return call_id
 

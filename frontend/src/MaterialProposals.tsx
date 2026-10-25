@@ -1,12 +1,13 @@
+import { MaterialKnowledge } from './ReferenceKnowledge';
 import { useEffect, useRef, useState } from 'react';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { Markdown } from './Markdown';
 import { Select } from './Select';
-import { relations, type ProposalData, type NoteContentReview } from './referenceTypes';
+import { type ProposalData, type NoteContentReview, type ConceptMatch } from './referenceTypes';
 import type { ReviewedMaterial } from './KnowledgeCandidates';
 
-export type MaterialProposal = { id: string; state: 'queued' | 'running' | 'ready' | 'failed' | 'stale' | 'interrupted'; error: string; created_at: string; material: ReviewedMaterial; data: (ProposalData & { review: NoteContentReview }) | null; matches: { key: string; pref_label: string; definition: string; scope: string; reason: string }[] };
+export type MaterialProposal = { id: string; state: 'queued' | 'running' | 'ready' | 'failed' | 'stale' | 'interrupted'; error: string; created_at: string; material: ReviewedMaterial; data: (ProposalData & { review: NoteContentReview }) | null; matches: (ConceptMatch & { key: string; pref_label: string; definition: string; scope: string; reason: string })[] };
 const states = { queued: '대기', running: '추출·검토 중', ready: '후보 준비됨', failed: '실패', stale: '자료 변경됨', interrupted: '중단됨' };
 export function MaterialProposals({ material }: { material: ReviewedMaterial }) {
   const { userId } = useApp();
@@ -48,8 +49,8 @@ function Proposals({ material, storageKey }: { material: ReviewedMaterial; stora
     {history && history.length > 0 && <label>최근 추출 기록<Select value={proposal?.id ?? ''} onChange={e => setSelected(e.target.value)}>{history.map(p => <option key={p.id} value={p.id}>{timestamp(p.created_at)} · {states[p.state]}</option>)}</Select></label>}
     {proposal && <><p role="status">{states[proposal.state]}</p><ErrorNotice error={proposal.error} />
       {proposal.data && <><section className="interpretation-provenance"><h3>본문과 후보 검토</h3><Markdown language="">{proposal.data.review.summary}</Markdown>{proposal.data.review.issues.map((issue, i) => <article key={i}><h4>{issue.kind === 'correction_needed' ? '수정 필요' : '확인 필요'}</h4><blockquote>{issue.quote}</blockquote><Markdown language="">{issue.explanation}</Markdown><Markdown language="">{issue.suggestion}</Markdown></article>)}<p>AI가 문제를 찾지 못했어도 사실이 검증된 것은 아닙니다. 수정이 필요하면 원래 학습 화면에서 새 작성분을 저장하거나 해석을 다시 진행해주세요.</p></section>
-        {proposal.data.concepts.map(c => <article className="reference-candidate" key={c.key}><h3>{c.pref_label}</h3><Markdown language="">{c.definition}</Markdown><p>범위 · {c.scope || '미지정'}</p><blockquote>{c.quote}</blockquote><small>{c.basis === 'question' ? '열린 질문' : material.authorship === 'ai' ? 'AI 해석에서 가져온 근거' : '내 설명에서 가져온 근거'}</small>{proposal.matches.filter(m => m.key === c.key).map((m, i) => <aside key={i}><strong>기존 개념 비교 · {m.pref_label}</strong><p>{m.definition} · {m.scope}</p><p>{m.reason}</p></aside>)}</article>)}
-        {proposal.data.assertions.map((a, i) => <article className="reference-candidate" key={i}><h3>{relations[a.kind]}</h3><p>{proposal.data!.concepts.find(c => c.key === a.subject)?.pref_label}{a.object && ' → ' + proposal.data!.concepts.find(c => c.key === a.object)?.pref_label}</p><Markdown language="">{a.text}</Markdown><p>{a.scope}</p><blockquote>{a.quote}</blockquote><small>{a.disposition === 'refutes' ? '반박하는 근거' : '뒷받침하는 근거'} · {a.basis === 'question' ? '열린 질문' : '해석·설명'}</small></article>)}
+        <MaterialKnowledge key={proposal.id + ':' + proposal.material.registration?.id + ':' + proposal.material.state} material={proposal.material}
+          proposal={{ id: proposal.id, state: proposal.state, revision: material.revision, error: proposal.error, review: proposal.data.review, matches: proposal.matches, data: { concepts: proposal.data.concepts, assertions: proposal.data.assertions } }} onRegistered={reload} />
       </>}
     </>}
   </section>;

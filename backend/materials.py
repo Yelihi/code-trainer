@@ -68,7 +68,8 @@ def detail(owner, identifier):
     row = db.one('SELECT * FROM material_reviews WHERE owner=? AND id=?', (owner, identifier))
     if not row:
         raise service.Error('검토한 자료를 찾을 수 없습니다.', 404)
-    return dict(read(owner, row['kind'], row['origin_id'], row['revision']), id=row['id'], reviewed_at=row['created_at'])
+    registration = db.one('SELECT id,version,state FROM knowledge_sources WHERE owner=? AND kind=? AND origin_id=? AND version=?', (owner, row['kind'], row['origin_id'], row['revision']))
+    return dict(read(owner, row['kind'], row['origin_id'], row['revision']), id=row['id'], reviewed_at=row['created_at'], registration=registration)
 
 
 def mark(owner, kind, origin_id, revision):

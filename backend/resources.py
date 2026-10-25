@@ -232,6 +232,8 @@ def register(owner, data):
         if not error and (not previous or previous['content'] != content):
             c.execute('INSERT INTO resource_versions VALUES (?,?,?,?,?,?,?,?)',
                       (owner, resource_id, previous['revision'] + 1 if previous else 1, data.kind, data.name, data.url or None, content, service.now()))
+            c.execute("""UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind IN ('interpretation','practice')
+                AND json_extract(metadata,'$.resource_id')=? AND state='active'""", (owner, resource_id))
         c.execute('''UPDATE resource_registrations SET state=?,error=?,active_request=NULL,lease_until=0,updated_at=?
                      WHERE owner=? AND resource_id=?''', ('failed' if error else 'ready', error, service.now(), owner, resource_id))
         if not error:

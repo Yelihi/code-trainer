@@ -31,7 +31,7 @@ class MaterialProposalsTest(unittest.TestCase):
             return material_proposals.begin(self.owner, review['id'], MaterialProposalInput(request_id=request))
 
     def answer(self, material):
-        quote = material['body'].split('\n')[0]
+        quote = next(line for line in material['body'].splitlines() if line.strip() and not line.startswith('#'))
         return dict(concepts=[dict(key='a', existing_id='', pref_label='관찰', definition='맥락을 살펴 기록한다.', scope='학습', aliases=[], quote=quote, basis='source')], assertions=[], review=dict(summary='제공된 본문 범위에서 검토했습니다.', issues=[]), matches=[])
 
     def provider(self, material):

@@ -114,7 +114,7 @@ def concept_matches(owner, lookup):
 def evidence(c, owner, source, body, quote, basis, concept_id=None, assertion_id=None, disposition='supports'):
     start = body.find(quote)
     if start < 0:
-        raise service.Error('근거 문장이 저장된 노트 본문에 없습니다. 원문에서 다시 선택해주세요.', 422)
+        raise service.Error('근거 문장이 저장된 자료 본문에 없습니다. 원문에서 다시 선택해주세요.', 422)
     key = hashlib.sha256(service.dump([source, concept_id, assertion_id, quote, basis, disposition]).encode()).hexdigest()
     location = service.dump({'start': start, 'end': start + len(quote)})
     c.execute('INSERT OR IGNORE INTO knowledge_evidence VALUES (?,?,?,?,?,?,?,?,?)',
@@ -139,7 +139,7 @@ def validate_proposal(owner, data, body):
         seen_matches.add(pair)
     for item in [*data.concepts, *data.assertions]:
         if item.quote not in body:
-            raise service.Error('근거 문장이 저장된 노트 본문과 일치하지 않습니다.', 422)
+            raise service.Error('근거 문장이 저장된 자료 본문과 일치하지 않습니다.', 422)
     for item in data.assertions:
         if item.subject not in keys or (item.kind != 'CLAIM' and item.object not in keys):
             raise service.Error('관계 양 끝의 개념을 먼저 선택해주세요.', 422)
@@ -227,6 +227,7 @@ def extend_graph(owner, graph):
     sources = {r['id']: r for r in db.all('SELECT * FROM knowledge_sources WHERE owner=?', (owner,))}
     notes = {r['id']: r for r in db.all('SELECT id,revision,archived FROM reference_notes WHERE owner=?', (owner,))}
     all_concepts = db.all('SELECT * FROM knowledge_concepts WHERE owner=?', (owner,))
+    observations = db.all('SELECT * FROM learning_observations WHERE owner=? ORDER BY created_at DESC,id DESC LIMIT 200', (owner,))
     evidence_rows = db.all('SELECT * FROM knowledge_evidence WHERE owner=?', (owner,))
     active = [e for e in evidence_rows if sources[e['source_id']]['state'] == 'active' and e['basis'] != 'question']
     live_nodes = {n['id']: n for n in graph['nodes']}
@@ -240,14 +241,21 @@ def extend_graph(owner, graph):
     aliases = db.all('SELECT * FROM knowledge_aliases WHERE owner=?', (owner,))
     assertions = db.all('SELECT * FROM knowledge_assertions WHERE owner=?', (owner,))
     def source_view(s):
+        metadata = json.loads(s['metadata'])
         return {'id': s['id'], 'title': s['title'], 'version': s['version'], 'state': s['state'],
                 'note_id': s['origin_id'] if s['kind'] == 'note' else None,
-                'metadata': json.loads(s['metadata']) if s['kind'] == 'note' else {}}
+                'material_review_id': metadata.get('review_id') if s['kind'] in ('interpretation','practice') else None,
+                'authorship': metadata.get('authorship') if s['kind'] in ('interpretation','practice') else None,
+                'raw_revision': metadata.get('raw_revision'),
+                'metadata': metadata if s['kind'] == 'note' else {}}
     for concept in all_concepts:
         proofs = [e for e in evidence_rows if e['concept_id'] == concept['id']]
         if not proofs:
             continue
         node = live_nodes.setdefault(concept['id'], {'id': concept['id'], 'kind': 'concept', 'exercise_ids': []})
+        node['observations'] = [{'id': o['id'], 'kind': o['kind'], 'created_at': o['created_at'],
+                                 'review_id': o['review_id'], 'material_review_id': json.loads(o['data']).get('material_review_id')}
+                                for o in observations if o['concept_id'] == concept['id']]
         node.update(label=concept['pref_label'], scope=concept['scope'], descriptions=[concept['definition']],
                     ontology_status=concept['status'], aliases=[a['label'] for a in aliases if a['concept_id'] == concept['id']],
                     sources=[{**source_view(sources[e['source_id']]), 'quote': e['quote'], 'basis': e['basis']} for e in proofs],

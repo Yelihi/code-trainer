@@ -75,6 +75,9 @@ def save(owner, data):
             c.execute('UPDATE reference_notes SET title=?,body=?,metadata=?,revision=?,updated_at=? WHERE owner=? AND id=?',
                       (data.title, data.body, metadata, revision, now, owner, data.id))
             c.execute("UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind='note' AND origin_id=? AND state='active'", (owner, data.id))
+            c.execute("""UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind IN ('interpretation','practice')
+                AND json_extract(metadata,'$.resource_id') IN (SELECT id FROM resources WHERE owner=? AND note_id=?)
+                AND state='active'""", (owner, owner, data.id))
         else:
             c.execute('INSERT INTO reference_notes VALUES (?,?,?,?,?,?,0,?,?)',
                       (data.id, owner, data.title, data.body, metadata, revision, now, now))
@@ -97,6 +100,9 @@ def archive(owner, note_id, archived):
         # Restoring a note does not silently reapprove its old graph evidence.
         c.execute("UPDATE knowledge_sources SET state=? WHERE owner=? AND kind='note' AND origin_id=?",
                   ('deleted' if archived else 'stale', owner, note_id))
+        c.execute("""UPDATE knowledge_sources SET state=? WHERE owner=? AND kind IN ('interpretation','practice')
+            AND json_extract(metadata,'$.resource_id') IN (SELECT id FROM resources WHERE owner=? AND note_id=?)""",
+            ('deleted' if archived else 'stale', owner, owner, note_id))
         if not archived:
             revision = note['revision'] + 1
             c.execute('UPDATE reference_notes SET revision=? WHERE owner=? AND id=?', (revision, owner, note_id))

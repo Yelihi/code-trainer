@@ -67,5 +67,6 @@ def save(owner, worksheet_id, request):
         if not previous or (previous['answers'], previous['summary']) != (answers, request.summary):
             revision += 1
             c.execute('INSERT INTO practice_record_versions VALUES (?,?,?,?,?,?)', (owner, worksheet_id, revision, answers, request.summary, service.now()))
+            c.execute("UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind='practice' AND origin_id=? AND state='active'", (owner, worksheet_id))
         c.execute('INSERT INTO practice_record_requests VALUES (?,?,?,?,?)', (owner, worksheet_id, request.request_id, digest, revision))
         return record(c.execute('SELECT * FROM practice_record_versions WHERE owner=? AND worksheet_id=? AND revision=?', (owner, worksheet_id, revision)).fetchone())

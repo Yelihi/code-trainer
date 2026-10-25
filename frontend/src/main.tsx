@@ -1,3 +1,4 @@
+import { Explorations, ExplorationRoute } from './Explorations';
 import { DeepInside } from './DeepInside';
 import { SpacedReviewRoute } from './SpacedReviews';
 import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
@@ -35,6 +36,8 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
   { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
   { path: '/apply', element: <DeepInside /> },
+  { path: '/apply/explorations', element: <Explorations /> },
+  { path: '/apply/explorations/:id', element: <ExplorationRoute /> },
   { path: '/settings/ai', element: <AISettings /> },
   { path: '/inbox', element: <FeedInbox /> },
   { path: '/create', element: <Create /> },

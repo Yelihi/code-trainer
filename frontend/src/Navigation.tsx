@@ -21,6 +21,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
   ] },
   { label: '응용하기', items: [
     { label: 'Deep Inside', to: '/apply', paths: ['/apply'] },
+    { label: '나의 탐구', to: '/apply/explorations', paths: ['/apply/explorations/*'] },
   ] },
   { label: '설정', items: [
     { label: 'GitHub 연동', to: '/settings/github', paths: ['/settings/github', '/github/share'] },

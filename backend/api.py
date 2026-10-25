@@ -16,8 +16,8 @@ from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
 from . import materials, material_proposals, material_knowledge, spaced_reviews
-from . import insights
-from .insight_schema import InsightRequest
+from . import insights, insight_adoptions
+from .insight_schema import InsightRequest, InsightChoice, ExplorationNotes
 from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput
@@ -598,6 +598,26 @@ def source_document(source_id: str, current=Depends(user)):
 @app.patch('/api/admin/reports/{report_id}')
 def review_report(report_id: str, body: ReportUpdate, current=Depends(user)):
     return service.review_report(current, report_id, body)
+
+
+@app.post('/api/insights/{identifier}/choice')
+def insight_choice(identifier: str, body: InsightChoice, current=Depends(user)):
+    return insight_adoptions.choose(current['id'], identifier, body.index, body.action)
+
+
+@app.get('/api/explorations')
+def exploration_list(page: int = Query(1, ge=1), current=Depends(user)):
+    return insight_adoptions.listing(current['id'], page)
+
+
+@app.get('/api/explorations/{identifier}')
+def exploration_read(identifier: str, current=Depends(user)):
+    return insight_adoptions.read(current['id'], identifier)
+
+
+@app.put('/api/explorations/{identifier}')
+def exploration_save(identifier: str, body: ExplorationNotes, current=Depends(user)):
+    return insight_adoptions.save(current['id'], identifier, body)
 
 
 @app.get('/api/insights')

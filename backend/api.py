@@ -15,7 +15,7 @@ from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
 from .ai_settings_schema import AISettingsInput, AISettingsRevision
-from . import materials, material_proposals
+from . import materials, material_proposals, material_knowledge
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput
 from .resource_schema import ResourceInput
@@ -398,6 +398,11 @@ def worksheet_view(identifier: str, current=Depends(user)):
 @app.get('/api/interpretations')
 def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
     return interpretations.listing(current['id'], page, resource_id)
+
+
+@app.post('/api/material-reviews/{identifier}/knowledge')
+def material_knowledge_register(identifier: str, body: RegisterKnowledge, current=Depends(user)):
+    return material_knowledge.register(current['id'], identifier, body)
 
 
 @app.get('/api/material-reviews/{identifier}/proposals')

@@ -7,7 +7,7 @@ import { Markdown } from './Markdown';
 import './library.css';
 import { MaterialProposals } from './MaterialProposals';
 
-export type ReviewedMaterial = { id: string; kind: 'interpretation' | 'practice'; origin_id: string; revision: number; current_revision: number; title: string; authorship: 'ai' | 'user'; body: string; state: 'eligible' | 'stale' | 'archived' | 'empty'; reason: string; interpretation_id: string; resource_id: string; raw_revision: number; source_name: string; reviewed_at: string };
+export type ReviewedMaterial = { registration: { id: string; version: number; state: string } | null; id: string; kind: 'interpretation' | 'practice'; origin_id: string; revision: number; current_revision: number; title: string; authorship: 'ai' | 'user'; body: string; state: 'eligible' | 'stale' | 'archived' | 'empty'; reason: string; interpretation_id: string; resource_id: string; raw_revision: number; source_name: string; reviewed_at: string };
 const states = { eligible: '추출 가능', stale: '변경됨 · 다시 검토', archived: '원문 보관됨', empty: '작성 내용 없음' };
 function origin(material: ReviewedMaterial) { return material.kind === 'interpretation' ? '/interpretations/' + material.origin_id : '/worksheets/' + material.origin_id + '/practice'; }
 

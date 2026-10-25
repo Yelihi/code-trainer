@@ -24,11 +24,11 @@ export function ConceptConnection({ candidate, original, matches, selected, deci
     return () => { clearTimeout(timer); controller.abort(); };
   }, [lookup, retry]);
   const options = [...matches, ...(found.lookup === lookup ? found.matches : [])].filter((m, i, all) => all.findIndex(x => x.concept.id === m.concept.id) === i).slice(0, 3);
-  if (selected && !options.some(m => m.concept.id === selected.id)) options.unshift({ concept: selected, reason: '직접 선택한 기존 개념입니다. 이번 노트의 설명과 비교해주세요.' });
+  if (selected && !options.some(m => m.concept.id === selected.id)) options.unshift({ concept: selected, reason: '직접 선택한 기존 개념입니다. 이번 자료의 설명과 비교해주세요.' });
   return <section className="concept-connection" aria-label={`${original.pref_label || '새 개념'}의 기존 개념 비교`}>
     <h4>기존 개념과 비교하기</h4>
     <p className="muted">정의와 범위가 같은 개념에만 연결해주세요. 이름이 비슷해도 의미가 다르면 별개 개념으로 추가하세요.</p>
-    <div className="concept-original"><small>이번 노트의 개념</small><strong>{original.pref_label || '아래에서 개념명을 입력해주세요.'}</strong>
+    <div className="concept-original"><small>이번 자료의 개념</small><strong>{original.pref_label || '아래에서 개념명을 입력해주세요.'}</strong>
       {original.definition && <Markdown language="">{original.definition}</Markdown>}<span>범위 · {original.scope || '미지정'}</span>
     </div>
     {loading && <p role="status">비슷한 이름과 별칭을 찾고 있습니다…</p>}
@@ -45,7 +45,7 @@ export function ConceptConnection({ candidate, original, matches, selected, deci
       </button>
     </article>)}</div>
     <div className="concept-choice"><button type="button" aria-pressed={decided && !candidate.existing_id} onClick={onNew}>별개 개념으로 추가</button>
-      <p role="status">{!decided ? '등록 방식을 선택해주세요.' : candidate.existing_id ? '기존 개념에 이번 노트의 근거를 연결합니다.' : '새 개념을 만들도록 선택했습니다.'}</p>
+      <p role="status">{!decided ? '등록 방식을 선택해주세요.' : candidate.existing_id ? '기존 개념에 이번 자료의 근거를 연결합니다.' : '새 개념을 만들도록 선택했습니다.'}</p>
     </div>
   </section>;
 }

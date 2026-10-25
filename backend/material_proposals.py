@@ -22,8 +22,10 @@ def view(owner, identifier):
     row['data'] = json.loads(row['data']) if row['data'] else None
     row['matches'] = []
     for match in (row['data'] or {}).get('matches', []):
-        concept = db.one('SELECT pref_label,definition,scope FROM knowledge_concepts WHERE owner=? AND id=?', (owner, match['existing_id']))
-        if concept: row['matches'].append({**concept, 'key': match['key'], 'reason': match['reason']})
+        concept = db.one('SELECT * FROM knowledge_concepts WHERE owner=? AND id=?', (owner, match['existing_id']))
+        if concept:
+            concept['aliases'] = [a['label'] for a in db.all('SELECT label FROM knowledge_aliases WHERE owner=? AND concept_id=?', (owner, concept['id']))]
+            row['matches'].append({**concept, 'key': match['key'], 'reason': match['reason'], 'concept': concept})
     material = materials.detail(owner, row['review_id'])
     material.pop('body')
     row['material'] = material

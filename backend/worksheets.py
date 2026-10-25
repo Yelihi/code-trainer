@@ -1,7 +1,6 @@
 """Explicit worksheet generation from immutable general interpretations."""
 import json
-import os
-from . import ai, db, interpretations, usage
+from . import ai_settings, ai, db, interpretations, usage
 from .worksheet_schema import WorksheetDraft
 
 
@@ -67,11 +66,11 @@ def begin(owner, request):
             fresh = pending is None
             identifier = pending['id'] if pending else service.uid()
             if fresh:
-                if not ai.available():
+                if not ai.available(owner):
                     raise service.Error('AI 설정이 필요합니다. 기존 해석과 질문지는 보존됩니다.', 503)
                 service.rate('worksheet:' + owner, 5, 3600)
                 c.execute('''INSERT INTO worksheets(id,owner,interpretation_id,state,model,created_at,updated_at)
-                    VALUES (?,?,?,'queued',?,?,?)''', (identifier, owner, request.interpretation_id, os.environ.get('AI_MODEL', ''), service.now(), service.now()))
+                    VALUES (?,?,?,'queued',?,?,?)''', (identifier, owner, request.interpretation_id, ai_settings.model_name(owner), service.now(), service.now()))
             c.execute('INSERT INTO worksheet_requests VALUES (?,?,?)', (owner, request.request_id, identifier))
     return view(owner, identifier), fresh
 

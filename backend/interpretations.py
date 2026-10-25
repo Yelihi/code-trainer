@@ -1,7 +1,6 @@
 """General interpretations retain their immutable source version and previous attempts."""
 import json
-import os
-from . import ai, db, resources, usage
+from . import ai, db, resources, usage, ai_settings
 from .interpretation_schema import InterpretationDraft
 
 
@@ -67,11 +66,11 @@ def begin(owner, data):
             fresh = pending is None
             identifier = pending['id'] if pending else service.uid()
             if fresh:
-                if not ai.available():
+                if not ai.available(owner):
                     raise service.Error('AI 설정이 필요합니다. 원문은 그대로 보관됩니다.', 503)
                 service.rate('interpretation:' + owner, 5, 3600)
                 c.execute('''INSERT INTO interpretations(id,owner,resource_id,revision,source_name,state,model,created_at,updated_at)
-                             VALUES (?,?,?,?,?,'queued',?,?,?)''', (identifier, owner, data.resource_id, data.revision, source['name'], os.environ.get('AI_MODEL', ''), service.now(), service.now()))
+                             VALUES (?,?,?,?,?,'queued',?,?,?)''', (identifier, owner, data.resource_id, data.revision, source['name'], ai_settings.model_name(owner), service.now(), service.now()))
             c.execute('INSERT INTO interpretation_requests VALUES (?,?,?)', (owner, data.request_id, identifier))
     return view(owner, identifier), fresh
 

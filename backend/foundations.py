@@ -87,7 +87,7 @@ def view(owner, lesson_id):
     ready = db.one("SELECT id FROM foundation_reviews WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='ready' LIMIT 1", (owner, lesson_id, item['version'], since))
     attempt = db.one('SELECT * FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, lesson_id, item['version'], since))
     return {**public(item), 'knowledge_added_at': added['created_at'] if added else None,
-            'ai_available': ai.available(), 'unlocked': bool(ready),
+            'ai_available': ai.available(owner), 'unlocked': bool(ready),
             'progress': {'revision': progress['revision'], **json.loads(progress['data'])} if progress else None,
             'review': record(review), 'attempt': record(attempt),
             'completed': bool(db.one("SELECT id FROM foundation_attempts WHERE owner=? AND lesson_id=? AND version=? AND created_at>=? AND state='passed' LIMIT 1", (owner, lesson_id, item['version'], since)))}
@@ -141,7 +141,7 @@ def begin(owner, lesson_id, request, explain=False):
         if c.execute(f"SELECT id FROM {table} WHERE owner=? AND lesson_id=? AND state='running'", (owner, lesson_id)).fetchone():
             raise service.Error('이 단원의 검토가 진행 중입니다. 완료 후 다시 시도해주세요.', 409)
         if explain:
-            if not ai.available():
+            if not ai.available(owner):
                 raise service.Error('설명 검토에 필요한 AI가 연결되지 않았습니다. 작성 내용은 저장해둘 수 있습니다.', 503)
             snapshot = {'questions': item['questions']}
         else:

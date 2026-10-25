@@ -24,7 +24,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
   ] },
   { label: '설정', items: [
     { label: 'GitHub 연동', to: '/settings/github', paths: ['/settings/github', '/github/share'] },
-    { label: 'AI 연결', to: '/settings/ai', paths: ['/settings/ai'], planned: true },
+    { label: 'AI 연결', to: '/settings/ai', paths: ['/settings/ai'] },
     { label: '운영 상태', to: '/admin/operations', paths: ['/admin/operations'], admin: true },
     { label: '원본 자료 · 관리자', to: '/admin/sources', paths: ['/admin/sources/*'], admin: true },
   ] },
@@ -46,7 +46,6 @@ export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
 const planned = {
   candidates: { area: '데이터 쌓기', title: '추출 가능 자료', description: '이해한 내용을, 연결할 지식으로.', detail: '해석과 실습에서 검토한 자료를 모아 개념·관계 후보를 비교하고 지식 그래프에 추가하는 공간입니다. 통합 추출 목록은 아직 준비 중입니다.', available: '지금은 저장한 노트에서 지식 그래프에 추가할 내용을 검토할 수 있습니다.', to: '/references', action: '노트에서 지식 검토하기' },
   inside: { area: '응용하기', title: 'Deep Inside', description: '쌓인 연결에서, 다음 질문을.', detail: '지식 사이의 연결을 바탕으로 더 깊이 탐구할 질문, 참고 자료와 실습 가이드를 제안할 공간입니다. 제안 생성과 채택 기능은 아직 준비 중입니다.', available: '지금은 지식 그래프에서 쌓인 개념과 근거를 직접 살펴볼 수 있습니다.', to: '/knowledge', action: '지식 그래프 살펴보기' },
-  ai: { area: '설정', title: 'AI 연결', description: '나의 탐구를 도울 AI 연결.', detail: '사용자별 API 키와 모델을 등록하고 관리하는 기능은 아직 준비 중입니다. 현재 AI 기능은 서버에 설정된 공통 연결을 사용합니다.', available: '현재 사용 기록은 나의 기록에서 확인할 수 있습니다.', to: '/me', action: '나의 기록 보기' },
 };
 export function PlannedFeature({ feature }: { feature: keyof typeof planned }) {
   const page = planned[feature];

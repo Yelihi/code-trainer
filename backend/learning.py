@@ -85,7 +85,7 @@ def status(owner, record_id=None):
             'records': records, 'record_id': selected, 'created_at': record['created_at'] if record else None,
             'current_passed_count': len(items),
             'error': cached['error'] if current else '', 'updated_at': cached['updated_at'] if current else None,
-            'ai_available': ai.available()}
+            'ai_available': ai.available(owner)}
 
 
 def begin(owner):
@@ -100,8 +100,8 @@ def begin(owner):
         row = c.execute('SELECT * FROM learning_summaries WHERE owner=?', (owner,)).fetchone()
         if row and (row['state'] == 'running' or (row['state'] == 'ready' and row['fingerprint'] == key)):
             return None
-        if not ai.available():
-            raise service.Error('AI_API_KEY와 AI_MODEL 환경변수를 설정해주세요.', 503)
+        if not ai.available(owner):
+            raise service.Error('설정에서 본인의 AI 키와 모델을 연결해주세요.', 503)
         c.execute('''INSERT INTO learning_summaries(owner,fingerprint,state,updated_at) VALUES (?,?,'running',?)
             ON CONFLICT(owner) DO UPDATE SET fingerprint=excluded.fingerprint,state='running',error='',
             data='{"concepts":[]}',updated_at=excluded.updated_at''', (owner, key, service.now()))

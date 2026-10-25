@@ -81,6 +81,52 @@ class GitHubSharingTest(unittest.TestCase):
         self.assertEqual(db.all('SELECT * FROM github_connections'), [])
         self.assertEqual(self.client.post('/api/github/repository-check', json={'url': checked['url']}).status_code, 409)
 
+    def default_payload(self):
+        self.connect()
+        value = self.client.post('/api/github/repository-check', json={'url': 'https://github.com/owner/notes'}).json()
+        return {key: value[key] for key in ('url', 'connection_id', 'repo_id', 'private')}
+
+    def test_default_is_owner_scoped_read_only_and_retryable(self):
+        data = self.default_payload()
+        endpoint = '/api/github/default-repository'
+        self.assertIsNone(self.client.get(endpoint).json()['repository'])
+        first = self.client.put(endpoint, json=data)
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual(first.json()['url'], data['url'])
+        self.assertEqual(self.client.put(endpoint, json=data).json(), first.json())
+        self.assertEqual(self.client.get(endpoint).json()['repository'], first.json())
+        self.assertIsNone(github.default_repository('stranger'))
+        self.assertNotIn(self.token, first.text)
+        self.assertTrue(all(request.method == 'GET' for request in self.requests))
+        self.connect()
+        self.assertIsNone(self.client.get(endpoint).json()['repository'])
+        self.assertEqual(self.client.put(endpoint, json=data).status_code, 409)
+        data = self.default_payload()
+        self.client.put(endpoint, json=data)
+        self.client.request('DELETE', '/api/github/connection', json={})
+        self.assertIsNone(self.client.get(endpoint).json()['repository'])
+
+    def test_default_rejects_changed_metadata_errors_and_connection_race(self):
+        data = self.default_payload()
+        endpoint = '/api/github/default-repository'
+        original = self.client.put(endpoint, json=data).json()
+        for key, value in (('private', False), ('id', 999), ('has_issues', False), ('archived', True)):
+            with self.subTest(key=key):
+                old = self.repo[key]
+                self.repo[key] = value
+                self.assertEqual(self.client.put(endpoint, json=data).status_code, 409)
+                self.assertEqual(self.client.get(endpoint).json()['repository'], original)
+                self.repo[key] = old
+        self.user_status = 401
+        self.assertEqual(self.client.put(endpoint, json=data).status_code, 400)
+        self.assertEqual(self.client.get(endpoint).json()['repository'], original)
+        self.user_status = 200
+        self.assertEqual(self.client.put(endpoint, json={**data, 'url': 'https://evil.test/repo'}).status_code, 422)
+        self.revoke_during_check = True
+        self.assertEqual(self.client.put(endpoint, json=data).status_code, 409)
+        self.assertIsNone(self.client.get(endpoint).json()['repository'])
+        self.assertFalse(any(request.method != 'GET' for request in self.requests))
+
     def test_repository_url_is_not_an_arbitrary_network_destination(self):
         for url in ('http://github.com/a/b', 'https://evil.test/a/b', 'https://github.com@evil.test/a/b',
                     'https://github.com:443/a/b', 'https://github.com/a/../b', 'https://github.com/a/%2Fb',

@@ -14,6 +14,9 @@ def initialize(c):
     CREATE TABLE IF NOT EXISTS github_connections (
       owner TEXT PRIMARY KEY REFERENCES users(id), id TEXT NOT NULL,
       user_id INTEGER NOT NULL, login TEXT NOT NULL, token TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS github_default_repositories (
+      owner TEXT PRIMARY KEY REFERENCES github_connections(owner) ON DELETE CASCADE,
+      connection_id TEXT NOT NULL, repo_id INTEGER NOT NULL, url TEXT NOT NULL, private INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS github_shares (
       id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), request_id TEXT NOT NULL,
       kind TEXT NOT NULL, source_id TEXT NOT NULL, version TEXT NOT NULL,
@@ -153,6 +156,28 @@ def check(owner, url):
             'repo': repo['full_name'], 'url': 'https://github.com/' + repo['full_name'], 'private': repo['private'],
             'issues_enabled': issues, 'active': active, 'can_attempt': issues and active,
             'write_permission': 'unverified', 'checked_at': service.now()}
+
+
+def default_repository(owner):
+    value = db.one('SELECT connection_id,repo_id,url,private FROM github_default_repositories WHERE owner=?', (owner,))
+    return {**value, 'private': bool(value['private'])} if value else None
+
+
+def save_default(owner, data):
+    service.rate('github-default:' + owner, 30)
+    checked = check(owner, data.url)
+    if any(checked[key] != getattr(data, key) for key in ('connection_id', 'repo_id', 'private')):
+        raise service.Error('계정 또는 저장소가 변경되었습니다. 저장소를 다시 확인해주세요.', 409)
+    if not checked['can_attempt']:
+        raise service.Error('이슈가 비활성화되었거나 보관·제한된 저장소입니다.', 409)
+    value = {key: checked[key] for key in ('connection_id', 'repo_id', 'url', 'private')}
+    with db.connect(write=True) as c:
+        connection = c.execute('SELECT id FROM github_connections WHERE owner=?', (owner,)).fetchone()
+        if not connection or connection['id'] != data.connection_id:
+            raise service.Error('GitHub 연결이 변경되었습니다. 저장소를 다시 확인해주세요.', 409)
+        c.execute('INSERT OR REPLACE INTO github_default_repositories VALUES (?,?,?,?,?)',
+                  (owner, value['connection_id'], value['repo_id'], value['url'], value['private']))
+    return value
 
 
 def preview(owner, kind, source_id):

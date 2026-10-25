@@ -9,6 +9,7 @@ import './githubSharing.css';
 
 type Connection = { storage_ready: boolean; connection: { id: string; login: string; updated_at: string } | null };
 type Repository = { connection_id: string; login: string; repo_id: number; repo: string; url: string; private: boolean; issues_enabled: boolean; active: boolean; can_attempt: boolean; write_permission: 'unverified'; checked_at: string };
+type DefaultRepository = Pick<Repository, 'connection_id' | 'repo_id' | 'url' | 'private'>;
 type Share = { id: string; kind: string; source_id: string; version: string; repo: string; private: boolean; login: string; title: string; body: string; state: 'sending' | 'published' | 'failed' | 'unknown'; issue_url: string | null; error: string; created_at: string };
 type Preview = { kind: string; id: string; version: string; version_label: string; title: string; body: string; has_images: boolean; history: Share[] };
 const stateLabels = { sending: '등록 중', published: '등록 완료', failed: '등록 실패', unknown: '결과 확인 필요' };
@@ -18,31 +19,68 @@ function Check({ state, children }: { state: 'ok' | 'warning' | 'error'; childre
   return <li className={`github-check ${state}`}><span aria-hidden="true">{state === 'ok' ? '✓' : state === 'warning' ? '!' : '×'}</span><div>{children}</div></li>;
 }
 
-function RepositoryCheck({ onChecked, disabled = false }: { onChecked?: (value: Repository | null) => void; disabled?: boolean }) {
+function RepositoryCheck({ onChecked, disabled = false, registration = false }: { onChecked?: (value: Repository | null) => void; disabled?: boolean; registration?: boolean }) {
   const [url, setUrl] = useState('');
   const [result, setResult] = useState<Repository | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState<DefaultRepository | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [loadVersion, setLoadVersion] = useState(0);
+  const [message, setMessage] = useState('');
+  const edited = useRef(false);
+  const defaultRequest = useRef<AbortController | null>(null);
   const request = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const controller = new AbortController(); defaultRequest.current = controller;
+    api<{ repository: DefaultRepository | null }>('/github/default-repository', 'GET', undefined, controller.signal).then(({ repository: value }) => {
+      if (controller.signal.aborted) return;
+      setSaved(value); setLoadError('');
+      if (!edited.current && value) setUrl(value.url);
+    }).catch(e => { if (!controller.signal.aborted) setLoadError(errorMessage(e)); });
+    return () => controller.abort();
+  }, [loadVersion]);
   useEffect(() => () => request.current?.abort(), []);
   function change(value: string) {
-    request.current?.abort(); setUrl(value); setResult(null); setError(''); setBusy(false); onChecked?.(null);
+    edited.current = true;
+    request.current?.abort(); setUrl(value); setResult(null); setError(''); setMessage(''); setBusy(false); onChecked?.(null);
   }
   async function check() {
     request.current?.abort();
     const controller = new AbortController(); request.current = controller;
-    setBusy(true); setError(''); setResult(null); onChecked?.(null);
+    edited.current = true;
+    setBusy(true); setError(''); setMessage(''); setResult(null); onChecked?.(null);
     try {
       const value = await api<Repository>('/github/repository-check', 'POST', { url }, controller.signal);
+      if (!registration && saved && value.url.toLowerCase() === saved.url.toLowerCase()
+          && (value.repo_id !== saved.repo_id || value.private !== saved.private || value.connection_id !== saved.connection_id)) {
+        throw new Error('기본 저장소의 계정 또는 공개 범위가 변경되었습니다. 설정에서 다시 등록해주세요.');
+      }
       if (!controller.signal.aborted) { setResult(value); onChecked?.(value); }
+    } catch (e) { if (!controller.signal.aborted) setError(errorMessage(e)); }
+    finally { if (!controller.signal.aborted) setBusy(false); }
+  }
+  async function register() {
+    if (!result || busy) return;
+    defaultRequest.current?.abort();
+    request.current?.abort();
+    const controller = new AbortController(); request.current = controller;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const { url, connection_id, repo_id, private: isPrivate } = result;
+      const value = await api<DefaultRepository>('/github/default-repository', 'PUT', { url, connection_id, repo_id, private: isPrivate }, controller.signal);
+      if (!controller.signal.aborted) { setSaved(value); setMessage('기본 저장소를 등록했습니다. 공유할 때 주소를 미리 채웁니다.'); }
     } catch (e) { if (!controller.signal.aborted) setError(errorMessage(e)); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   }
   return <section className="github-card">
     <div className="github-section-title"><span className="github-step">02</span><div><h2>공유할 저장소</h2><p>주소는 공유할 때마다 바꿀 수 있습니다.</p></div></div>
+    {saved && <p className="github-caption">기본 저장소 · <a href={saved.url} target="_blank" rel="noreferrer">{saved.url}</a> · {saved.private ? '비공개' : '공개'}로 등록됨</p>}
+    <ErrorNotice error={loadError} />{loadError && <button type="button" onClick={() => setLoadVersion(v => v + 1)}>기본 저장소 다시 불러오기</button>}
     <label htmlFor="github-repo">GitHub 저장소 주소</label><div className="github-repo-input"><input id="github-repo" type="url" value={url} onChange={e => change(e.target.value)} placeholder="https://github.com/owner/repository" maxLength={500} disabled={disabled} spellCheck={false} /><button type="button" disabled={disabled || busy || !url.trim()} onClick={() => void check()}>{busy ? '확인 중…' : '권한 확인'}</button></div>
     {busy && <p className="github-checking" role="status"><span aria-hidden="true" />계정과 저장소를 확인하고 있습니다.</p>}
     <ErrorNotice error={error} />
+    {message && <p role="status" className="notice">{message}</p>}
     {result && <div aria-live="polite"><div className="github-repo-heading"><a href={result.url} target="_blank" rel="noreferrer">{result.repo} ↗</a><span className={`github-badge ${result.private ? '' : 'public'}`}>{result.private ? '비공개 저장소' : '공개 저장소'}</span></div>
       <ul className="github-checks">
         <Check state="ok">작성 계정 <strong>@{result.login}</strong></Check>
@@ -51,6 +89,7 @@ function RepositoryCheck({ onChecked, disabled = false }: { onChecked?: (value: 
         <Check state={result.active ? 'ok' : 'error'}>{result.active ? '활성 저장소' : '보관되었거나 제한된 저장소입니다.'}</Check>
         <Check state="warning"><strong>Issues 쓰기 권한 · 설정 확인 필요</strong><small>조회 성공만으로 쓰기 권한은 확인되지 않습니다. 토큰의 대상 저장소와 Issues: Read and write, 조직 승인 상태를 확인해주세요.</small></Check>
       </ul><p className="github-caption">{timestamp(result.checked_at)} 확인 · 테스트 이슈를 만들지 않습니다.</p>
+      {registration && <><button type="button" className="primary" disabled={disabled || busy || !result.can_attempt} onClick={() => void register()}>기본 저장소 등록</button><p className="github-caption">주소만 저장하며, 이슈는 공유 화면에서 내용을 확인한 뒤 등록합니다. 토큰 교체·연결 해제 시 기본 저장소도 해제됩니다.</p></>}
     </div>}
   </section>;
 }
@@ -87,7 +126,7 @@ export function GitHubSettings() {
         <p className="github-caption">서버에서 암호화해 저장합니다. 저장한 토큰은 화면이나 브라우저 저장소에 보관하지 않습니다.</p>
         <button className="primary" disabled={busy || !data.storage_ready || !/^github_pat_[A-Za-z0-9_]{20,240}$/.test(token.trim())}>{busy ? '연결 확인 중…' : data.connection ? '새 토큰으로 연결' : 'GitHub 연결'}</button>
       </form>
-    </section><RepositoryCheck key={data.connection?.id ?? 'disconnected'} disabled={!data.connection || !data.storage_ready || busy} /></div>
+    </section><RepositoryCheck key={data.connection?.id ?? 'disconnected'} registration disabled={!data.connection || !data.storage_ready || busy} /></div>
     <aside className="github-guide"><span className="eyebrow">BEFORE YOU CONNECT</span><h2>필요한 권한만 선택하세요.</h2><ol><li><strong>Resource owner 선택</strong><p>공유할 저장소의 개인 또는 조직을 선택합니다.</p></li><li><strong>대상 저장소 선택</strong><p>Only select repositories에서 공유할 저장소를 지정합니다.</p></li><li><strong>Issues → Read and write</strong><p>Repository permissions에 설정합니다. Contents 쓰기 권한은 필요하지 않습니다.</p></li><li><strong>만료일과 조직 승인 확인</strong><p>조직에서 승인을 요구하면 승인 완료 후 사용할 수 있습니다.</p></li></ol><a className="button" href={tokenHelp} target="_blank" rel="noreferrer">GitHub에서 토큰 만들기 ↗</a><p>토큰이 허용하는 저장소 안에서 매번 다른 주소를 사용할 수 있습니다.</p>
       <div className="github-guide-footer"><h3>공유는 어디에서 하나요?</h3><p>저장된 레퍼런스 노트 또는 지식 그래프의 상세 패널에서 <strong>GitHub 이슈로 공유</strong>를 선택하세요.</p><Link className="text-link" to="/references">레퍼런스 노트로 ↗</Link></div>
     </aside></div>}

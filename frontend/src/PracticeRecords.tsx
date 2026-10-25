@@ -3,6 +3,7 @@ import { Link, useBlocker, useParams } from 'react-router-dom';
 import { api, ApiError, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
+import { MaterialReview } from './MaterialReview';
 import { Markdown } from './Markdown';
 import { AnimatedDetails } from './AnimatedDetails';
 import type { Worksheet } from './Worksheets';
@@ -119,6 +120,7 @@ function Editor({ initial }: { initial: RecordData }) {
       <section className="practice-summary"><h2><label htmlFor="practice-summary">내 말로 쓴 요약</label></h2><p>핵심 개념, 새롭게 이해한 점, 더 알아볼 내용을 남겨보세요.</p><textarea id="practice-summary" rows={8} maxLength={50000} value={draft.summary} onChange={e => update({ ...current.current, summary: e.target.value })} /></section>
       <footer className="practice-save"><div><p aria-live="polite">{draft.pending ? '저장 결과 확인 중 · 작성분 유지' : dirty ? '계정에 저장하지 않은 변경사항' : saved ? `v${saved.revision} · ${timestamp(saved.updated_at)} 저장` : '아직 작성한 내용이 없습니다.'}</p><small>이 브라우저의 임시 글과 별도로, 저장 버튼을 눌러 계정에 보관하세요.</small></div><button className="primary" disabled={busy || conflict || (!dirty && !draft.pending)}>{busy ? '저장 중…' : draft.pending ? '저장 결과 다시 확인' : '답변·요약 저장'}</button></footer>
     </form>
+    {saved && <MaterialReview kind="practice" id={worksheet.id} revision={saved.revision} disabled={dirty || busy || !!draft.pending || conflict} />}
     <AnimatedDetails summary="내 작성분 미리보기"><PracticeRecordText content={draft} worksheet={worksheet} /></AnimatedDetails>
     {!!versions.length && <AnimatedDetails summary={`저장 이력 · ${versions.length}`}><div className="reference-version-list">{versions.map(v => <button key={v.revision} onClick={() => void inspectVersion(v.revision)}>v{v.revision} · {timestamp(v.updated_at)}</button>)}</div></AnimatedDetails>}
     {oldVersion && <section className="practice-comparison"><header className="reference-page-heading"><h2>저장 이력 v{oldVersion.revision}</h2><button onClick={() => setOldVersion(null)}>닫기</button></header><PracticeRecordText content={oldVersion} worksheet={worksheet} /></section>}

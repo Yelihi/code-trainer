@@ -9,6 +9,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
     "erasableSyntaxOnly": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true

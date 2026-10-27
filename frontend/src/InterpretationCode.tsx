@@ -3,8 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { api, difficulties, errorMessage, isPending, languages, timestamp, type Difficulty, type Generation, type Language } from './api';
 import { ErrorNotice, GenerationStatus, useApp } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
-import { Select } from './Select';
+import { NativeSelect } from './components/ui/native-select';
 import './library.css';
+import { Button } from './components/ui/button';
+import { Label } from './components/ui/label';
 
 type History = { source: { title: string; source_name: string; resource_id: string; revision: number; current_revision: number }; items: (Generation & { language: Language; difficulty: Difficulty; created_at: string })[] };
 
@@ -54,14 +56,14 @@ function CodeSetup({ id, sectionId }: { id: string; sectionId: string }) {
   return <main className="page narrow-page"><div className="breadcrumb"><Link to={`/interpretations/${id}#${sectionId}`}>해석 섹션</Link><span>/</span> 코드 실습</div>
     <span className="eyebrow">FROM CONCEPT TO CODE</span><h1>{data?.source.title ?? '코드 실습 준비'}</h1>
     <p className="page-intro">이 섹션을 코딩 학습 과정으로 준비합니다.<br />과정을 확인한 뒤 원하는 단원에서 검증된 문제 생성을 요청하세요.</p>
-    <ErrorNotice error={loadError} />{loadError && <button onClick={() => setVersion(v => v + 1)}>생성 기록 다시 확인</button>}
+    <ErrorNotice error={loadError} />{loadError && <Button onClick={() => setVersion(v => v + 1)}>생성 기록 다시 확인</Button>}
     {!data && !loadError && <LoadingSkeleton layout="editor" label="실습 출처와 기록을 불러오는 중…" />}
     {data && <aside className="interpretation-provenance"><strong>{data.source.source_name} · 원문 v{data.source.revision}</strong><p>선택한 섹션의 원문 인용과 AI 해석을 구분해 사용합니다. 코딩으로 실습하기 어려운 내용은 이유를 안내합니다.{data.source.current_revision !== data.source.revision && ` 현재 원문은 v${data.source.current_revision}이며, 이 실습은 v${data.source.revision} 해석을 유지합니다.`}</p></aside>}
-    {prepared ? <p className="notice">이 섹션은 {languages[prepared.language]} · {difficulties[prepared.difficulty]} 과정으로 준비되었습니다. <Link to={'/learn/' + prepared.context_id}>기존 과정에서 실습 이어가기 →</Link></p> : <form className="source-form" onSubmit={event => void start(event)}>
-      <label htmlFor="code-language">실습 언어</label><Select id="code-language" value={language} disabled={pending} onChange={e => setLanguage(e.target.value as Language)}>{Object.entries(languages).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</Select>
-      <label htmlFor="code-difficulty">난이도</label><Select id="code-difficulty" value={difficulty} disabled={pending} onChange={e => setDifficulty(e.target.value as Difficulty)}>{Object.entries(difficulties).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</Select>
+    {prepared ? <p className="notice">이 섹션은 {languages[prepared.language]} · {difficulties[prepared.difficulty]} 과정으로 준비되었습니다. <Link to={'/learn/' + prepared.context_id}>기존 과정에서 실습 이어가기</Link></p> : <form className="source-form" onSubmit={event => void start(event)}>
+      <Label htmlFor="code-language">실습 언어</Label><NativeSelect id="code-language" value={language} disabled={pending} onChange={e => setLanguage(e.target.value as Language)}>{Object.entries(languages).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</NativeSelect>
+      <Label htmlFor="code-difficulty">난이도</Label><NativeSelect id="code-difficulty" value={difficulty} disabled={pending} onChange={e => setDifficulty(e.target.value as Difficulty)}>{Object.entries(difficulties).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</NativeSelect>
       <ErrorNotice error={error} />{warning && <p role="status" className="notice">{warning}</p>}
-      <button className="primary" disabled={!data || !!loadError || pending || !userId || !health?.ai}>{pending ? '과정 준비 중…' : '이 섹션으로 코딩 과정 준비'}</button>
+      <Button className="primary" disabled={!data || !!loadError || pending || !userId || !health?.ai}>{pending ? '과정 준비 중…' : '이 섹션으로 코딩 과정 준비'}</Button>
       {!health?.ai && <p>과정을 만들려면 <Link to="/settings/ai">AI 연결</Link>이 필요합니다. 기존 실습은 계속 사용할 수 있습니다.</p>}
     </form>}
     <h2 className="spaced-heading">이 섹션의 코드 실습 기록</h2><p>최근 20개 과정 · 문제는 과정 안에서 단원별로 생성합니다.</p>

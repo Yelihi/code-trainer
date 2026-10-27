@@ -23,6 +23,7 @@ import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
 import { ReferenceReview } from './ReferenceReview';
 import { GitHubSettings, GitHubShare } from './GitHubSharing';
 import { AISettings } from './AISettings';
+import './shadcn.css';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [

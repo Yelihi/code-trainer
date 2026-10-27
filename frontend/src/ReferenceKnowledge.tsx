@@ -1,12 +1,16 @@
 import type { ReviewedMaterial } from './KnowledgeCandidates';
 import { ConceptConnection } from './ConceptConnection';
-import { Select } from './Select';
+import { NativeSelect } from './components/ui/native-select';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ReferenceContentReview } from './ReferenceContentReview';
 import { api, errorMessage } from './api';
 import { ErrorNotice, useApp } from './App';
 import { clearReferenceDraft, registrationBlock, bases, relations, type Assertion, type Candidate, type Concept, type Proposal, type ProposalData, type ReferenceNote } from './referenceTypes';
+import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
+import { Textarea } from './components/ui/textarea';
+import { Label } from './components/ui/label';
 
 type ConnectionDraft = { data: ProposalData; requestId: string; decisions?: Record<string, boolean>; originals?: Record<string, Candidate>; selected?: Record<string, Concept> };
 const unlinked = (data: ProposalData): ProposalData => ({ ...data, concepts: data.concepts.map(c => ({ ...c, existing_id: '' })) });
@@ -104,56 +108,56 @@ function KnowledgeEditor(props: NoteKnowledgeProps | MaterialKnowledgeProps) {
   const pending = busy || proposal?.state === 'running';
   const undecided = data?.concepts.filter(c => !decisions[c.key]).length ?? 0;
   const reviewBlocked = isMaterial && (props.material.state !== 'eligible' || proposal?.state !== 'ready') ? props.material.reason || '현재 자료의 추출·검토를 완료해주세요.' : registrationBlock(proposalId, proposal, source.revision);
-  if (source.registration?.version === source.revision && source.registration.state === 'active') return <section className="reference-connected"><span className="eyebrow">CONNECTED</span><h2>개념 지도에 등록했습니다.</h2><p>이 {isMaterial ? '자료' : '노트'} v{source.revision}의 근거와 연결을 보관하고 있습니다.</p><Link className="button" to="/knowledge">지식 그래프 열기 ↗</Link></section>;
+  if (source.registration?.version === source.revision && source.registration.state === 'active') return <section className="reference-connected"><span className="eyebrow">CONNECTED</span><h2>개념 지도에 등록했습니다.</h2><p>이 {isMaterial ? '자료' : '노트'} v{source.revision}의 근거와 연결을 보관하고 있습니다.</p><Link className="button" to="/knowledge">지식 그래프 열기</Link></section>;
   return <section className="reference-knowledge">
     <div className="section-heading"><div><span className="eyebrow">CONNECT WITH INTENTION</span><h2>개념 지도에 연결하기</h2></div><span className="reference-version">{isMaterial ? '자료' : '노트'} v{source.revision}</span></div>
     <p>기존 개념, 새로운 주장과 관계를 검토하고 직접 등록하세요. 후보를 준비하는 것만으로 지도에 추가되지는 않습니다.</p>
     {source.registration && <p className="notice">이전 등록은 v{source.registration.version}입니다. 변경된 근거를 확인해 새 버전을 등록해주세요.</p>}
-    {!isMaterial && <div className="reference-actions"><button disabled={pending} onClick={() => void analyze()}>{pending ? '개념 추출·검토 중…' : 'AI로 후보 생성·내용 검토'}</button><button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] }, {}, {}, {})}>직접 개념 입력</button></div>}
+    {!isMaterial && <div className="reference-actions"><Button disabled={pending} onClick={() => void analyze()}>{pending ? '개념 추출·검토 중…' : 'AI로 후보 생성·내용 검토'}</Button><Button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] }, {}, {}, {})}>직접 개념 입력</Button></div>}
     <ErrorNotice error={error || proposal?.error || ''} />
     {proposal?.state === 'running' && <p role="status" className="notice">개념과 근거를 추출한 뒤, 별도 검토로 본문과 후보의 정확성을 살피고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
     {!isMaterial && proposal?.review && <ReferenceContentReview key={proposal.id + ':' + source.revision} note={props.note} proposal={proposal} pending={!!pending} onApply={applySuggestions} onEdit={props.onEdit} />}
     {proposal?.state === 'ready' && !proposal.review && <p className="notice">내용 검토 기능 적용 전의 후보입니다. AI 후보를 다시 생성해 검토해주세요.</p>}
     {data && <form onSubmit={e => { e.preventDefault(); void register(); }}>
-      <label className="reference-concept-search">기존 개념 검색<input value={search} onChange={e => setSearch(e.target.value)} placeholder="개념명 · 정의 · 별칭으로 찾기" maxLength={160} /></label>
+      <Label className="reference-concept-search">기존 개념 검색<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="개념명 · 정의 · 별칭으로 찾기" maxLength={160} /></Label>
       <fieldset disabled={!!pending}><legend>개념과 근거</legend>
         {data.concepts.map((c, i) => <article className="reference-candidate" key={c.key}>
-          <header><strong>개념 {i + 1}</strong><button type="button" disabled={data.concepts.length === 1} onClick={() => change({ concepts: data.concepts.filter(x => x.key !== c.key), assertions: data.assertions.filter(a => a.subject !== c.key && a.object !== c.key) })}>제외</button></header>
+          <header><strong>개념 {i + 1}</strong><Button type="button" disabled={data.concepts.length === 1} onClick={() => change({ concepts: data.concepts.filter(x => x.key !== c.key), assertions: data.assertions.filter(a => a.subject !== c.key && a.object !== c.key) })}>제외</Button></header>
           <ConceptConnection candidate={c} original={c.existing_id ? originals[c.key] ?? c : c}
             matches={proposal?.revision === source.revision ? (proposal.matches ?? []).filter(m => m.key === c.key) : []}
             selected={c.existing_id ? selected[c.key] ?? concepts.find(x => x.id === c.existing_id) : undefined} decided={!!decisions[c.key]}
             onSelect={target => connect(i, target)} onNew={() => connect(i)} />
-          <label>다른 기존 개념 직접 선택<Select value={c.existing_id} onChange={e => {
+          <Label>다른 기존 개념 직접 선택<NativeSelect value={c.existing_id} onChange={e => {
             const found = concepts.find(x => x.id === e.target.value);
             if (found) connect(i, found);
-          }}><option value="">검색 결과에서 선택</option>{c.existing_id && !concepts.some(x => x.id === c.existing_id) && <option value={c.existing_id}>{c.pref_label} · 선택된 개념</option>}{concepts.map(x => <option key={x.id} value={x.id}>{x.pref_label} · {x.scope || '범위 미지정'}{x.status === 'provisional' ? ' · 기존 단원' : ''}</option>)}</Select></label>
-          <div className="reference-fields"><label>대표명<input required value={c.pref_label} maxLength={160} readOnly={!!c.existing_id} onChange={e => concept(i, { pref_label: e.target.value })} /></label><label>적용 범위<input maxLength={200} value={c.scope} readOnly={!!c.existing_id && (selected[c.key] ?? concepts.find(x => x.id === c.existing_id))?.status !== 'provisional'} onChange={e => concept(i, { scope: e.target.value })} /></label></div>
-          <label>정의<textarea required maxLength={3000} value={c.definition} readOnly={!!c.existing_id && (selected[c.key] ?? concepts.find(x => x.id === c.existing_id))?.status !== 'provisional'} onChange={e => concept(i, { definition: e.target.value })} /></label>
+          }}><option value="">검색 결과에서 선택</option>{c.existing_id && !concepts.some(x => x.id === c.existing_id) && <option value={c.existing_id}>{c.pref_label} · 선택된 개념</option>}{concepts.map(x => <option key={x.id} value={x.id}>{x.pref_label} · {x.scope || '범위 미지정'}{x.status === 'provisional' ? ' · 기존 단원' : ''}</option>)}</NativeSelect></Label>
+          <div className="reference-fields"><Label>대표명<Input required value={c.pref_label} maxLength={160} readOnly={!!c.existing_id} onChange={e => concept(i, { pref_label: e.target.value })} /></Label><Label>적용 범위<Input maxLength={200} value={c.scope} readOnly={!!c.existing_id && (selected[c.key] ?? concepts.find(x => x.id === c.existing_id))?.status !== 'provisional'} onChange={e => concept(i, { scope: e.target.value })} /></Label></div>
+          <Label>정의<Textarea required maxLength={3000} value={c.definition} readOnly={!!c.existing_id && (selected[c.key] ?? concepts.find(x => x.id === c.existing_id))?.status !== 'provisional'} onChange={e => concept(i, { definition: e.target.value })} /></Label>
           {c.existing_id && (selected[c.key] ?? concepts.find(x => x.id === c.existing_id))?.status === 'provisional' && <p className="muted">기존 단원에서 가져온 개념입니다. 이번 근거로 정의를 구체화하면 같은 개념 ID에 반영됩니다.</p>}
-          <label>확인한 별칭 · 쉼표로 구분<input defaultValue={c.aliases.join(', ')} key={c.key + c.existing_id} maxLength={1200} onBlur={e => concept(i, { aliases: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} /></label>
-          <label>근거 문장 · 본문에서 그대로 가져오기<textarea required maxLength={3000} value={c.quote} onChange={e => concept(i, { quote: e.target.value })} /></label>
-          <label>근거의 성격<Select value={c.basis} onChange={e => concept(i, { basis: e.target.value as Candidate['basis'] })}>{Object.entries(bases).filter(([k]) => !isMaterial || k !== 'source').map(([k, v]) => <option key={k} value={k}>{isMaterial && k === 'interpretation' ? '해석·설명' : v}</option>)}</Select></label>
+          <Label>확인한 별칭 · 쉼표로 구분<Input defaultValue={c.aliases.join(', ')} key={c.key + c.existing_id} maxLength={1200} onBlur={e => concept(i, { aliases: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} /></Label>
+          <Label>근거 문장 · 본문에서 그대로 가져오기<Textarea required maxLength={3000} value={c.quote} onChange={e => concept(i, { quote: e.target.value })} /></Label>
+          <Label>근거의 성격<NativeSelect value={c.basis} onChange={e => concept(i, { basis: e.target.value as Candidate['basis'] })}>{Object.entries(bases).filter(([k]) => !isMaterial || k !== 'source').map(([k, v]) => <option key={k} value={k}>{isMaterial && k === 'interpretation' ? '해석·설명' : v}</option>)}</NativeSelect></Label>
         </article>)}
-        <button type="button" disabled={data.concepts.length >= 16} onClick={() => change({ ...data, concepts: [...data.concepts, { ...blankConcept('c' + crypto.randomUUID().slice(0, 8)), basis: isMaterial ? 'interpretation' : 'source' }] })}>+ 개념 추가</button>
+        <Button type="button" disabled={data.concepts.length >= 16} onClick={() => change({ ...data, concepts: [...data.concepts, { ...blankConcept('c' + crypto.randomUUID().slice(0, 8)), basis: isMaterial ? 'interpretation' : 'source' }] })}>+ 개념 추가</Button>
       </fieldset>
       <fieldset disabled={!!pending}><legend>주장과 개념 사이의 관계</legend>
         <p className="muted">근거가 있는 관계만 남겨주세요. 상하·선행 관계의 순환은 저장할 수 없습니다.</p>
         {data.assertions.map((a, i) => <article className="reference-candidate" key={i}>
-          <header><strong>{relations[a.kind]}</strong><button type="button" onClick={() => change({ ...data, assertions: data.assertions.filter((_, j) => i !== j) })}>제외</button></header>
-          <label>관계 종류<Select value={a.kind} onChange={e => assertion(i, { kind: e.target.value as Assertion['kind'], object: e.target.value === 'CLAIM' ? '' : data.concepts.find(c => c.key !== a.subject)?.key ?? '' })}>{Object.entries(relations).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></label>
-          <div className="reference-fields"><label>시작 개념<Select value={a.subject} onChange={e => assertion(i, { subject: e.target.value })}>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</Select></label>
-            {a.kind !== 'CLAIM' && <label>도착 개념<Select required value={a.object} onChange={e => assertion(i, { object: e.target.value })}><option value="">개념 선택</option>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</Select></label>}</div>
-          <label>주장 또는 연결 이유<textarea required maxLength={3000} value={a.text} onChange={e => assertion(i, { text: e.target.value })} /></label>
-          <label>적용 조건<input maxLength={200} value={a.scope} onChange={e => assertion(i, { scope: e.target.value })} /></label>
-          <label>근거 문장<textarea required maxLength={3000} value={a.quote} onChange={e => assertion(i, { quote: e.target.value })} /></label>
-          <label>근거의 성격<Select value={a.basis} onChange={e => assertion(i, { basis: e.target.value as Assertion['basis'] })}>{Object.entries(bases).filter(([k]) => !isMaterial || k !== 'source').map(([k, v]) => <option key={k} value={k}>{isMaterial && k === 'interpretation' ? '해석·설명' : v}</option>)}</Select></label>
-          <label>근거의 방향<Select value={a.disposition ?? 'supports'} onChange={e => assertion(i, { disposition: e.target.value as Assertion['disposition'] })}><option value="supports">이 주장 / 관계를 지지함</option><option value="refutes">이 주장 / 관계를 반박함</option></Select></label>
+          <header><strong>{relations[a.kind]}</strong><Button type="button" onClick={() => change({ ...data, assertions: data.assertions.filter((_, j) => i !== j) })}>제외</Button></header>
+          <Label>관계 종류<NativeSelect value={a.kind} onChange={e => assertion(i, { kind: e.target.value as Assertion['kind'], object: e.target.value === 'CLAIM' ? '' : data.concepts.find(c => c.key !== a.subject)?.key ?? '' })}>{Object.entries(relations).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</NativeSelect></Label>
+          <div className="reference-fields"><Label>시작 개념<NativeSelect value={a.subject} onChange={e => assertion(i, { subject: e.target.value })}>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</NativeSelect></Label>
+            {a.kind !== 'CLAIM' && <Label>도착 개념<NativeSelect required value={a.object} onChange={e => assertion(i, { object: e.target.value })}><option value="">개념 선택</option>{data.concepts.map(c => <option key={c.key} value={c.key}>{c.pref_label || c.key}</option>)}</NativeSelect></Label>}</div>
+          <Label>주장 또는 연결 이유<Textarea required maxLength={3000} value={a.text} onChange={e => assertion(i, { text: e.target.value })} /></Label>
+          <Label>적용 조건<Input maxLength={200} value={a.scope} onChange={e => assertion(i, { scope: e.target.value })} /></Label>
+          <Label>근거 문장<Textarea required maxLength={3000} value={a.quote} onChange={e => assertion(i, { quote: e.target.value })} /></Label>
+          <Label>근거의 성격<NativeSelect value={a.basis} onChange={e => assertion(i, { basis: e.target.value as Assertion['basis'] })}>{Object.entries(bases).filter(([k]) => !isMaterial || k !== 'source').map(([k, v]) => <option key={k} value={k}>{isMaterial && k === 'interpretation' ? '해석·설명' : v}</option>)}</NativeSelect></Label>
+          <Label>근거의 방향<NativeSelect value={a.disposition ?? 'supports'} onChange={e => assertion(i, { disposition: e.target.value as Assertion['disposition'] })}><option value="supports">이 주장 / 관계를 지지함</option><option value="refutes">이 주장 / 관계를 반박함</option></NativeSelect></Label>
         </article>)}
-        <button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: isMaterial ? 'interpretation' : 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</button>
+        <Button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: isMaterial ? 'interpretation' : 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</Button>
       </fieldset>
       {undecided > 0 && <p className="notice" role="status">개념 {undecided}개의 등록 방식을 선택해주세요. 기존 개념 연결 또는 별개 개념 추가를 선택하면 등록할 수 있습니다.</p>}
-      {reviewBlocked && <div className="notice reference-registration-block" id="reference-registration-block" role="status"><strong>{undecided === 0 ? '개념 선택은 완료됐지만 본문 검토가 남아 있습니다.' : '본문 검토도 완료해야 등록할 수 있습니다.'}</strong><p>{reviewBlocked}</p>{!isMaterial && proposal?.review && <button type="button" onClick={() => document.getElementById('reference-content-review')?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>본문 검토 확인하기 ↑</button>}</div>}
-      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>{proposal?.review ? '검토 후 직접 변경한 후보는 등록 전에 다시 확인해주세요.' : 'AI 검토 없이 직접 입력한 내용입니다. 정의와 근거를 확인해주세요.'}</small></p><button className="primary" aria-describedby={reviewBlocked ? "reference-registration-block" : undefined} disabled={!!pending || !!reviewBlocked || undecided > 0}>검토한 내용으로 개념 지도에 추가하기</button></div>
+      {reviewBlocked && <div className="notice reference-registration-block" id="reference-registration-block" role="status"><strong>{undecided === 0 ? '개념 선택은 완료됐지만 본문 검토가 남아 있습니다.' : '본문 검토도 완료해야 등록할 수 있습니다.'}</strong><p>{reviewBlocked}</p>{!isMaterial && proposal?.review && <Button type="button" onClick={() => document.getElementById('reference-content-review')?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>본문 검토 확인하기 ↑</Button>}</div>}
+      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>{proposal?.review ? '검토 후 직접 변경한 후보는 등록 전에 다시 확인해주세요.' : 'AI 검토 없이 직접 입력한 내용입니다. 정의와 근거를 확인해주세요.'}</small></p><Button className="primary" aria-describedby={reviewBlocked ? "reference-registration-block" : undefined} disabled={!!pending || !!reviewBlocked || undecided > 0}>검토한 내용으로 개념 지도에 추가하기</Button></div>
     </form>}
   </section>;
 }

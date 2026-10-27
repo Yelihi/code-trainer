@@ -7,10 +7,14 @@ import { ErrorNotice, GenerationStatus, useApp, useResource } from './App';
 import { CodeBlock } from './CodeBlock';
 import { Markdown, InlineMarkdown } from './Markdown';
 import { AddToKnowledge } from './AddToKnowledge';
+import { Button } from './components/ui/button';
+import { Textarea } from './components/ui/textarea';
+import { Label } from './components/ui/label';
+import { Badge } from './components/ui/badge';
 
 function InterpretationSource({ data }: { data: LearningContext }) {
   const source = data.interpretation_source;
-  return source ? <aside className="interpretation-provenance"><span>실습 출처 · {source.source_name} · 원문 v{source.revision}</span><p><Link to={`/interpretations/${source.interpretation_id}#${source.section_id}`}>해석 섹션으로 돌아가기 →</Link></p></aside> : null;
+  return source ? <aside className="interpretation-provenance"><span>실습 출처 · {source.source_name} · 원문 v{source.revision}</span><p><Link to={`/interpretations/${source.interpretation_id}#${source.section_id}`}>해석 섹션으로 돌아가기</Link></p></aside> : null;
 }
 
 function useCourse(id?: string) {
@@ -66,17 +70,17 @@ function UnitPractice({ course, unitId, disabled = false }: { course: ReturnType
   }
   if (set) return <div className="unit-practice">{set.withdrawn ? <p className="muted">문제 제공 중단</p> : <Link className="button" to={`/practice/${set.id}`}>연습 {set.completed} / {set.total}</Link>}</div>;
   return <section className="unit-practice" aria-label="단원 문제 생성">
-    <button className="primary" disabled={disabled || course.busy || !!course.pending || health?.ai === false || health?.sandbox === false} onClick={() => void course.generate(unitId)}>
+    <Button className="primary" disabled={disabled || course.busy || !!course.pending || health?.ai === false || health?.sandbox === false} onClick={() => void course.generate(unitId)}>
       {generation && isPending(generation) ? '문제 생성 중…' : generation?.state === 'failed' ? '문제 생성 다시 시도' : '이 단원 문제 생성'}
-    </button>
+    </Button>
     {course.pending && course.pending.unit_id !== unitId && <p className="muted">다른 단원을 생성 중입니다. 개념 학습은 계속할 수 있습니다.</p>}
     {health && (!health.ai || !health.sandbox) && <p className="notice">문제를 생성하려면 AI와 실행 환경을 연결해주세요.</p>}
     {generation && (isPending(generation) || generation.state === 'failed') && <GenerationStatus generation={generation} />}
     {generation?.state === 'failed' && <AnimatedDetails className="generation-report" summary="문제 생성 오류 제보">
       {reported === generation.id ? <p role="status">제보를 저장했습니다. 나의 기록에서 확인할 수 있습니다.</p> : <form onSubmit={event => { event.preventDefault(); void report(); }}>
-        <label>어떤 문제가 있었나요?<textarea required minLength={5} maxLength={2000} value={message} onChange={event => setMessage(event.target.value)} /></label>
+        <Label>어떤 문제가 있었나요?<Textarea required minLength={5} maxLength={2000} value={message} onChange={event => setMessage(event.target.value)} /></Label>
         <p className="muted">작업 ID와 진단 로그를 함께 저장합니다. 나의 기록에서 확인할 수 있습니다.</p>
-        <button disabled={reporting}>{reporting ? '저장 중…' : '제보 보내기'}</button><ErrorNotice error={error} />
+        <Button disabled={reporting}>{reporting ? '저장 중…' : '제보 보내기'}</Button><ErrorNotice error={error} />
       </form>}
     </AnimatedDetails>}
   </section>;
@@ -98,14 +102,14 @@ export function Context() {
     } catch (error) { setActionError(errorMessage(error)); }
     finally { setDeleting(false); }
   }
-  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <LoadingSkeleton layout="list" label="학습 과정을 불러오는 중…" heading />}</main>;
+  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <Button onClick={reload}>다시 불러오기</Button> : <LoadingSkeleton layout="list" label="학습 과정을 불러오는 중…" heading />}</main>;
   const units = data.units ?? [];
   const sets = data.sets ?? [];
   const missing = units.filter(unit => !sets.some(set => set.unit_id === unit.id));
   return <main className="page course-page">
     <div className="breadcrumb"><Link to="/">학습 공간</Link><span>/</span> 학습 과정</div>
-    <div className="section-heading"><span className="language-tag">{languages[data.language]} · {difficulties[data.difficulty ?? 'beginner']}</span>
-      <button className="delete-material" onClick={() => void remove()} disabled={busy || deleting || !!pending}>{deleting ? '삭제 중…' : '자료 삭제'}</button>
+    <div className="section-heading"><Badge variant="language" className="language-tag">{languages[data.language]} · {difficulties[data.difficulty ?? 'beginner']}</Badge>
+      <Button className="delete-material" onClick={() => void remove()} disabled={busy || deleting || !!pending}>{deleting ? '삭제 중…' : '자료 삭제'}</Button>
     </div>
     <ErrorNotice error={actionError} />
     <InterpretationSource data={data} />
@@ -129,9 +133,9 @@ export function Context() {
     })}</ol>
     {!units.length && <>
       {course.jobs.filter(job => !job.unit_id).map(job => <GenerationStatus key={job.id} generation={job} />)}
-      <button className="primary" onClick={() => void generate()} disabled={busy || deleting || !!pending || health?.ai === false}>
+      <Button className="primary" onClick={() => void generate()} disabled={busy || deleting || !!pending || health?.ai === false}>
         {busy ? '요청 중…' : '학습 과정 구성하기'}
-      </button>
+      </Button>
     </>}
     {!!sets.filter(set => !set.unit_id).length && <section className="legacy-sets"><h2>이전에 만든 연습</h2><div className="set-list">{sets.filter(set => !set.unit_id).map(set => <div className="set-row" key={set.id}><div><h3>{set.title}</h3><span className="muted">{set.completed} / {set.total} 단계 완료</span></div>{!set.withdrawn && <Link className="button" to={`/practice/${set.id}`}>이어서 풀기</Link>}</div>)}</div></section>}
   </main>;
@@ -142,7 +146,7 @@ export function Lesson() {
   const course = useCourse(id);
   const { data, error, reload, actionError } = course;
   useEffect(() => { window.scrollTo(0, 0); }, [id, unitId]);
-  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <button onClick={reload}>다시 불러오기</button> : <LoadingSkeleton layout="article" label="개념을 불러오는 중…" heading />}</main>;
+  if (!data) return <main className="page"><ErrorNotice error={error} />{error ? <Button onClick={reload}>다시 불러오기</Button> : <LoadingSkeleton layout="article" label="개념을 불러오는 중…" heading />}</main>;
   const units = data.units ?? [];
   const index = units.findIndex(unit => unit.id === unitId);
   const unit = units[index];

@@ -8,6 +8,7 @@ import { InterpretationPractice } from './InterpretationPractice';
 import { Markdown } from './Markdown';
 import { libraryPage } from './libraryTypes';
 import './library.css';
+import { Button } from './components/ui/button';
 
 type Document = { title: string; summary: string; concepts: string[]; sections: {
   id: string; title: string; body: string; prerequisites: string[]; source_quotes: string[];
@@ -42,7 +43,7 @@ function StartInterpretation({ resourceId, revision, disabled = false, retryId =
     } catch (e) { if (alive.current) setError(errorMessage(e)); }
     finally { sending.current = false; if (alive.current) setBusy(false); }
   }
-  return <><ErrorNotice error={error} /><button className="primary" disabled={disabled || busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : `v${revision} ${retryId ? '다시 해석하기' : '해석 시작'}`}</button>
+  return <><ErrorNotice error={error} /><Button className="primary" disabled={disabled || busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : `v${revision} ${retryId ? '다시 해석하기' : '해석 시작'}`}</Button>
     {health && !health.ai && <p className="reference-state">AI 설정이 필요합니다. 저장한 원문은 그대로 보관됩니다.</p>}</>;
 }
 
@@ -50,7 +51,7 @@ export function ResourceInterpretations({ resourceId, revision, content }: { res
   const { userId } = useApp();
   return <section className="interpretation-entry"><div><span className="eyebrow">EXPLORE THE SOURCE</span><h2>원문에서 이해로.</h2><p>{revision ? `선택한 본문 v${revision}에서 개념과 질문을 정리합니다.` : '본문을 저장한 뒤 해석을 시작할 수 있습니다.'}<br />원문은 보존하고, AI 해석은 별도 문서로 남깁니다.</p></div><div className="interpretation-entry-actions">
     {revision > 0 && <StartInterpretation key={`${userId}:${resourceId}:${revision}`} resourceId={resourceId} revision={revision} disabled={!content?.trim()} />}
-    <Link to={'/explore?resource=' + resourceId}>이 자료의 해석 기록 →</Link></div></section>;
+    <Link to={'/explore?resource=' + resourceId}>이 자료의 해석 기록</Link></div></section>;
 }
 
 export function Interpretations() {
@@ -63,12 +64,12 @@ function InterpretationList() {
   const { data, error, reload } = useResource<History>(`/interpretations?page=${page}${resourceId ? '&resource_id=' + encodeURIComponent(resourceId) : ''}`);
   return <main className="page reference-page library-page"><div className="breadcrumb"><Link to="/library">자료 보관함</Link><span>/</span> 해석하기</div>
     <header className="reference-page-heading"><div><span className="eyebrow">READ. QUESTION. UNDERSTAND.</span><h1>읽은 것을 이해의 구조로.</h1><p>원문에서 출발한 개념과 질문을 다시 펼쳐보세요.<br />각 해석은 시작할 때 선택한 원문 버전을 기억합니다.</p></div><Link className="button primary" to="/library">해석할 자료 선택</Link></header>
-    <div className="interpretation-list-links">{resourceId && <Link to="/explore">전체 해석 보기</Link>}<Link to="/">기존 코딩 학습 과정 →</Link></div>
-    <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
+    <div className="interpretation-list-links">{resourceId && <Link to="/explore">전체 해석 보기</Link>}<Link to="/">기존 코딩 학습 과정</Link></div>
+    <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="해석 문서를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{resourceId ? '선택한 자료의 해석 기록' : '나의 해석 문서'}</span><span>{data.total}개의 기록</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><span className="reference-list-mark" aria-hidden="true">↳</span><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div><span aria-hidden="true">→</span></Link>)}</div> : <section className="reference-empty"><span aria-hidden="true">↳</span><h2>아직 해석한 자료가 없습니다.</h2><p>보관함에서 원문을 열고 해석을 시작해보세요.<br />언어 선택 없이 개념과 질문부터 살펴볼 수 있습니다.</p><Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원문 살펴보기</Link></section>}
-      {data.pages > 1 && <nav className="pagination" aria-label="해석 기록 페이지"><button disabled={data.page <= 1} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), page: String(data.page - 1) })}>이전</button><span>{data.page} / {data.pages}</span><button disabled={data.page >= data.pages} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), page: String(data.page + 1) })}>다음</button></nav>}</>}
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <section className="reference-empty"><h2>아직 해석한 자료가 없습니다.</h2><p>보관함에서 원문을 열고 해석을 시작해보세요.<br />언어 선택 없이 개념과 질문부터 살펴볼 수 있습니다.</p><Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원문 살펴보기</Link></section>}
+      {data.pages > 1 && <nav className="pagination" aria-label="해석 기록 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), page: String(data.page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), page: String(data.page + 1) })}>다음</Button></nav>}</>}
   </main>;
 }
 
@@ -98,7 +99,7 @@ function Detail({ id }: { id: string }) {
     return () => { controller.abort(); clearTimeout(timer); };
   }, [id, reload]);
   return <main className="page reference-page interpretation-page"><div className="breadcrumb"><Link to="/explore">해석하기</Link><span>/</span> 개념 문서</div>
-    <ErrorNotice error={error} />{error && <button onClick={() => setReload(n => n + 1)}>상태 다시 불러오기</button>}
+    <ErrorNotice error={error} />{error && <Button onClick={() => setReload(n => n + 1)}>상태 다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="editor" label="해석 문서를 불러오는 중…" />}
     {data && <><header className="reference-page-heading"><div><span className="eyebrow">{states[data.state]} · AI INTERPRETATION</span><h1>{data.document?.title ?? data.source_name}</h1><p>원문 v{data.revision} 기준 · {timestamp(data.created_at)}</p></div><Link className="button" to={'/library/' + data.resource_id}>원문과 버전 보기</Link></header>
       <aside className="interpretation-provenance"><strong>{data.source_name} · 본문 v{data.revision}</strong><p>AI가 작성한 해석입니다. 인용한 원문과 비교하며 읽어보세요.{data.current_revision !== data.revision && ` 원문에는 더 최신인 v${data.current_revision}가 있습니다. 이 문서는 v${data.revision} 해석을 그대로 보존합니다.`}</p></aside>
@@ -122,7 +123,7 @@ export function InterpretationDocument({ document, interpretationId }: { documen
       {!!section.examples.length && <div className="interpretation-addition"><h3>AI 예시</h3>{section.examples.map((text, i) => <Markdown key={i} language="">{text}</Markdown>)}</div>}
       {!!section.extensions.length && <div className="interpretation-addition"><h3>AI 확장 · 원문 밖의 연결</h3>{section.extensions.map((text, i) => <Markdown key={i} language="">{text}</Markdown>)}</div>}
       <div className="interpretation-questions"><h3>스스로 확인할 질문</h3><p>AI가 제안한 질문입니다. 먼저 자신의 말로 생각해보세요.</p><ol>{section.questions.map((question, i) => <li key={i}>{question}</li>)}</ol></div>
-      {interpretationId && <Link className="button" to={`/interpretations/${interpretationId}/code/${section.id}`}>이 섹션으로 코드 실습 →</Link>}
+      {interpretationId && <Link className="button" to={`/interpretations/${interpretationId}/code/${section.id}`}>이 섹션으로 코드 실습</Link>}
     </section>)}
   </>;
 }

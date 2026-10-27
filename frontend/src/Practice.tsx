@@ -20,6 +20,11 @@ import {
   type ProblemSet,
 } from "./api";
 import { ErrorNotice, useResource } from "./App";
+import { Button } from './components/ui/button';
+import { Textarea } from './components/ui/textarea';
+import { Label } from './components/ui/label';
+import { Checkbox } from './components/ui/checkbox';
+import { Badge } from './components/ui/badge';
 
 const statuses: Record<string, string> = {
   ok: "실행 완료",
@@ -43,7 +48,7 @@ export function Practice({ review = false }: { review?: boolean }) {
     return (
       <main className="page">
         <ErrorNotice error={error} />
-        <button onClick={reload}>다시 불러오기</button>
+        <Button onClick={reload}>다시 불러오기</Button>
       </main>
     );
   if (!data)
@@ -323,11 +328,11 @@ function PracticeEditor({
           <h1>{reviewId ? "복습 · " : ""}{problemSet.title}</h1>
           <p className="muted">{assistanceLabels[assistance]} · {reviewId ? "이전 풀이와 별도로 저장됩니다." : "도움 사용은 제출 기록에 함께 남습니다."}</p>
         </div>
-        <span className="language-tag">{languages[problemSet.language]} · {difficulties[problemSet.difficulty ?? 'beginner']}</span>
+        <Badge variant="language" className="language-tag">{languages[problemSet.language]} · {difficulties[problemSet.difficulty ?? 'beginner']}</Badge>
       </div>
       <nav className="stage-tabs" aria-label="학습 단계">
         {problemSet.exercises.map((item, i) => (
-          <button
+          <Button
             key={item.id}
             disabled={!!busy || saving || finishing}
             aria-current={i === index ? "step" : undefined}
@@ -338,7 +343,7 @@ function PracticeEditor({
               {item.passed || (i === index && passed) ? "✓" : `0${i + 1}`}
             </span>
             {item.kind}
-          </button>
+          </Button>
         ))}
       </nav>
       <div className="mobile-panel-tabs" aria-label="풀이 영역">
@@ -347,13 +352,13 @@ function PracticeEditor({
           ["code", "코드"],
           ["result", exercise.kind === "READ" ? "결과" : "테스트 · 결과"],
         ].map(([key, text]) => (
-          <button
+          <Button
             key={key}
             onClick={() => setPanel(key)}
             aria-pressed={panel === key}
           >
             {text}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="practice-notices">
@@ -363,18 +368,18 @@ function PracticeEditor({
             <p>
               다른 탭의 저장 내용과 충돌했습니다. 현재 코드는 유지되어 있습니다.
             </p>
-            <button
+            <Button
               disabled={saving}
               onClick={() => void resolveConflict(false)}
             >
               서버 내용 불러오기
-            </button>
-            <button
+            </Button>
+            <Button
               disabled={saving}
               onClick={() => void resolveConflict(true)}
             >
               내 코드 유지 · 다음 저장에 덮어쓰기
-            </button>
+            </Button>
           </div>
         )}
         {problemSet.withdrawn && (
@@ -397,13 +402,13 @@ function PracticeEditor({
                 <span className="save-status" role="status">
                   {saving ? "저장 중…" : dirty ? "저장하지 않은 변경" : "저장됨"}
                 </span>
-                <button
+                <Button
                   className="text-button"
                   onClick={() => void save()}
                   disabled={saving || !dirty || conflict}
                 >
                   저장
-                </button>
+                </Button>
               </div>
               <CodeMirror
                 onCreateEditor={(view) => view.contentDOM.setAttribute("aria-label", "코드 편집기")}
@@ -439,7 +444,7 @@ function PracticeEditor({
               <section id="exercise-solution" className="solution-panel" aria-label="예시 정답 코드">
                 <div className="editor-header">
                   <span>예시 정답 · 읽기 전용</span>
-                  <button className="text-button" onClick={() => setSolutionOpen(false)}>정답 닫기</button>
+                  <Button className="text-button" onClick={() => setSolutionOpen(false)}>정답 닫기</Button>
                 </div>
                 {solutionLoading && <p role="status">정답 불러오는 중…</p>}
                 <ErrorNotice error={solutionError} />
@@ -458,7 +463,7 @@ function PracticeEditor({
             )}
           </div>
           <div className="run-toolbar">
-            <button
+            <Button
               onClick={() => void execute("run")}
               disabled={
                 !!busy || finishing ||
@@ -467,16 +472,16 @@ function PracticeEditor({
               }
             >
               {busy === "run" ? "실행 중…" : actionLabels.run}
-            </button>
+            </Button>
             {exercise.kind !== "READ" && (
-              <button
+              <Button
                 onClick={() => void execute("test")}
                 disabled={!!busy || finishing || problemSet.withdrawn}
               >
                 {busy === "test" ? "검사 중…" : actionLabels.test}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               className="primary"
               onClick={() => void execute("submit")}
               disabled={
@@ -486,7 +491,7 @@ function PracticeEditor({
               }
             >
               {busy === "submit" ? "채점 중…" : actionLabels.submit}
-            </button>
+            </Button>
           </div>
           <p className="execution-help">
             {exercise.kind === "READ"
@@ -495,20 +500,20 @@ function PracticeEditor({
           </p>
           <section className="result-panel" aria-label="실행 결과">
             <div className="result-tabs">
-              <button
+              <Button
                 className={resultTab === "result" ? "active" : ""}
                 aria-pressed={resultTab === "result"}
                 onClick={() => setResultTab("result")}
               >
                 실행 결과
-              </button>
-              {exercise.kind !== "READ" && <button
+              </Button>
+              {exercise.kind !== "READ" && <Button
                 className={resultTab === "stdin" ? "active" : ""}
                 aria-pressed={resultTab === "stdin"}
                 onClick={() => setResultTab("stdin")}
               >
                 {codeTests ? "내 테스트 코드" : "직접 실행 입력"}
-              </button>}
+              </Button>}
               {(resultTab === "result" || !!busy) && <span className="muted">
                 {busy && actionLabels[busy] ? `${actionLabels[busy]} 중…` : result ? actionLabels[result.action] : "실행 대기"}
               </span>}
@@ -517,9 +522,9 @@ function PracticeEditor({
               <div className="stdin-label">
                 <div className="test-code-heading">
                   <strong>풀이 코드 + 아래 테스트 코드 → 실행 결과</strong>
-                  <button onClick={() => void execute("run")} disabled={!!busy || finishing || problemSet.withdrawn}>
+                  <Button onClick={() => void execute("run")} disabled={!!busy || finishing || problemSet.withdrawn}>
                     {busy === "run" ? "실행 중…" : "이 테스트 코드 실행"}
-                  </button>
+                  </Button>
                 </div>
                 <p>위에서 작성한 함수를 아래에서 호출해보세요. 실행하면 출력이 ‘실행 결과’에 표시됩니다.</p>
                 <CodeMirror
@@ -534,14 +539,14 @@ function PracticeEditor({
                 <p>직접 실행용 임시 코드입니다. 저장되지 않으며, 공개 테스트 검사와 제출·채점에는 사용되지 않습니다.</p>
               </div>
             ) : resultTab === "stdin" ? (
-              <label className="stdin-label">
+              <Label className="stdin-label">
                 표준 입력
-                <textarea
+                <Textarea
                   value={stdin}
                   maxLength={2000}
                   onChange={(event) => setStdin(event.target.value)}
                 />
-              </label>
+              </Label>
             ) : (
               <div className="result-content" role="status">
                 {!result ? (
@@ -641,11 +646,11 @@ function PracticeEditor({
                   {test.code ? <CodeBlock code={test.code} language={problemSet.language} /> : <pre>{test.stdin}</pre>}
                   <small>{codeTests ? "예상 출력" : "OUTPUT"}</small>
                   <pre>{test.expected}</pre>
-                  {codeTests && <button className="text-button" onClick={() => {
+                  {codeTests && <Button className="text-button" onClick={() => {
                     setTestCode(test.code ?? "");
                     setResultTab("stdin");
                     setPanel("result");
-                  }}>내 테스트 코드로 복사</button>}
+                  }}>내 테스트 코드로 복사</Button>}
                 </div>
               ))}
             </>
@@ -663,7 +668,7 @@ function PracticeEditor({
                 <InlineMarkdown>{hint}</InlineMarkdown>
               </p>
             ))}
-            <button
+            <Button
               onClick={() => void nextHint()}
               disabled={
                 !!busy ||
@@ -672,13 +677,13 @@ function PracticeEditor({
               }
             >
               {hints.length ? "다음 힌트 보기" : "힌트 열기"}
-            </button>
+            </Button>
           </div>
           <section className="solution-section">
-            <button onClick={() => void showSolution()} disabled={solutionLoading}
+            <Button onClick={() => void showSolution()} disabled={solutionLoading}
               aria-expanded={solutionOpen} aria-controls="exercise-solution">
               {solutionLoading ? "정답 불러오는 중…" : solutionOpen ? "정답 닫기" : "정답 보기"}
-            </button>
+            </Button>
             {solutionOpen && exercise.kind === "READ" && <div id="exercise-solution">
               <ErrorNotice error={solutionError} />
               {solution && <>
@@ -695,9 +700,9 @@ function PracticeEditor({
                 void sendReport();
               }}
             >
-              <label>
+              <Label>
                 어떤 문제가 있나요?
-                <textarea
+                <Textarea
                   value={message}
                   onChange={(event) => {
                     setMessage(event.target.value);
@@ -707,21 +712,21 @@ function PracticeEditor({
                   minLength={5}
                   maxLength={2000}
                 />
-              </label>
+              </Label>
               {result?.data.attempt_id && (
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
+                <Label className="checkbox-label" htmlFor="attach-attempt">
+                  <Checkbox
+                    id="attach-attempt"
                     checked={attachAttempt}
-                    onChange={(event) => setAttachAttempt(event.target.checked)}
+                    onCheckedChange={(checked) => setAttachAttempt(checked === true)}
                   />
                   현재 제출 기록 첨부
-                </label>
+                </Label>
               )}
               <small className="muted">
                 작성 중인 코드는 자동 첨부하지 않습니다.
               </small>
-              <button disabled={!!busy}>제보 보내기</button>
+              <Button disabled={!!busy}>제보 보내기</Button>
               {reported && (
                 <p className="success-text" role="status">
                   제보가 접수되었습니다.
@@ -730,18 +735,18 @@ function PracticeEditor({
             </form>
           </AnimatedDetails>
           <div className="exercise-navigation">
-            <button
+            <Button
               disabled={index === 0 || !!busy || saving || finishing}
               onClick={() => void move(index - 1)}
             >
               이전
-            </button>
-            <button
+            </Button>
+            <Button
               disabled={index === problemSet.exercises.length - 1 || !!busy || saving || finishing}
               onClick={() => void move(index + 1)}
             >
               다음
-            </button>
+            </Button>
           </div>
         </aside>
       </div>
@@ -751,9 +756,9 @@ function PracticeEditor({
           <h2 id="completion-title">{reviewId ? '복습을 완료했습니다' : completedCount === problemSet.exercises.length ? '이번 세트를 완료했습니다' : 'BUILD를 통과했습니다'}</h2>
           <p>{completedCount} / {problemSet.exercises.length} 단계 완료 · 제출한 풀이는 나의 기록에 저장되어 있습니다.</p>
         </div>
-        <button className="primary" disabled={!!busy || saving || finishing || conflict} onClick={() => void finish()}>
+        <Button className="primary" disabled={!!busy || saving || finishing || conflict} onClick={() => void finish()}>
           {finishing ? '저장하고 마무리하는 중…' : '학습 마무리'}
-        </button>
+        </Button>
       </section>}
       {blocker.state === "blocked" && (
         <div className="auth-backdrop">
@@ -769,8 +774,8 @@ function PracticeEditor({
                 ? "요청을 처리 중입니다. 제출은 화면을 떠나도 계속될 수 있습니다."
                 : "저장하지 않은 내용이 있습니다."}
             </p>
-            <button onClick={() => blocker.reset()}>계속 작성</button>
-            <button
+            <Button onClick={() => blocker.reset()}>계속 작성</Button>
+            <Button
               disabled={!!busy || saving}
               onClick={() =>
                 void save().then((ok) => {
@@ -779,10 +784,10 @@ function PracticeEditor({
               }
             >
               저장 후 이동
-            </button>
-            <button className="text-button" onClick={() => blocker.proceed()}>
+            </Button>
+            <Button className="text-button" onClick={() => blocker.proceed()}>
               저장하지 않고 이동
-            </button>
+            </Button>
           </section>
         </div>
       )}

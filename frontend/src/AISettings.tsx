@@ -5,6 +5,9 @@ import { api, errorMessage } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import './githubSharing.css';
+import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
 
 type Settings = { revision: number; source: 'personal' | 'environment' | 'disabled' | 'unconfigured'; model: string; provider_url: string; saved_provider_url: string; storage_ready: boolean; available: boolean; error: string };
 
@@ -17,9 +20,9 @@ function SettingsLoader() {
   const { data, error, reload } = useResource<Settings>('/ai/settings');
   return <main className="page github-page">
     <div className="breadcrumb">설정 <span>/</span> AI 연결</div>
-    <span className="eyebrow">YOUR TOOLS FOR EXPLORATION</span><h1>나의 AI 연결.</h1>
+    <h1>나의 AI 연결</h1>
     <p className="page-intro">자료 해석과 실습, 지식 정리를 도울 API 키와 모델을 등록하세요.</p>
-    <ErrorNotice error={error} />{error && <button onClick={reload}>다시 불러오기</button>}
+    <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="editor" label="AI 연결을 불러오는 중…" />}
     {data && <SettingsForm initial={data} onReload={reload} />}
     <InsightSchedule />
@@ -58,18 +61,20 @@ function SettingsForm({ initial, onReload }: { initial: Settings; onReload: () =
       {data.saved_provider_url && <p>저장된 API 주소 · {data.saved_provider_url}</p>}
       <p className="github-caption">설정 저장은 인증 성공을 보장하지 않습니다. 실제 요청 시 제공자의 키·모델 권한과 사용량에 따라 처리됩니다.</p>
       <ErrorNotice error={error || data.error} />
-      {error && <button type="button" disabled={busy} onClick={onReload}>최신 설정 다시 불러오기 · 입력 초기화</button>}
+      {error && <Button type="button" disabled={busy} onClick={onReload}>최신 설정 다시 불러오기 · 입력 초기화</Button>}
       {message && <p role="status" className="notice">{message}</p>}
       <form onSubmit={event => void save(event)}>
         <p>새 연결의 API 주소 · <strong>{data.provider_url || '서버 설정 필요'}</strong></p>
-        <label htmlFor="ai-model">모델 ID</label><input id="ai-model" value={model} onChange={event => setModel(event.target.value)} required maxLength={200} disabled={busy} spellCheck={false} autoComplete="off" />
-        <label htmlFor="ai-key">{data.source === 'personal' ? '새 API 키' : 'API 키'}</label><input id="ai-key" type="password" value={key} onChange={event => setKey(event.target.value)} required maxLength={1000} disabled={busy} spellCheck={false} autoComplete="off" />
+        <Label htmlFor="ai-model">모델 ID</Label><Input id="ai-model" value={model} onChange={event => setModel(event.target.value)} required maxLength={200} disabled={busy} spellCheck={false} autoComplete="off" />
+        <Label htmlFor="ai-key">{data.source === 'personal' ? '새 API 키' : 'API 키'}</Label><Input id="ai-key" type="password" value={key} onChange={event => setKey(event.target.value)} required maxLength={1000} disabled={busy} spellCheck={false} autoComplete="off" />
         <p className="github-caption">입력한 키는 암호화해 저장하고 다시 표시하지 않습니다. 화면을 떠나면 미저장 키 입력이 사라집니다.</p>
-        <button className="primary" disabled={busy || !data.storage_ready || !data.provider_url || !key || !model}>{busy ? '처리 중…' : 'AI 연결 저장'}</button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button className="primary" disabled={busy || !data.storage_ready || !data.provider_url || !key || !model}>{busy ? '처리 중…' : 'AI 연결 저장'}</Button>
+          {(data.source === 'personal' || data.source === 'environment') && <Button type="button" disabled={busy} onClick={() => void disconnect()}>AI 연결 해제</Button>}
+        </div>
       </form>
-      {(data.source === 'personal' || data.source === 'environment') && <button type="button" disabled={busy} onClick={() => void disconnect()}>AI 연결 해제</button>}
     </section>
     <p>키 교체·삭제는 다음 요청부터 적용합니다. 이미 제공자에게 보낸 요청은 완료될 수 있습니다. 개인 설정을 등록한 뒤에는 키를 삭제하거나 인증에 실패해도 공통 키로 대체하지 않습니다.</p>
-    <Link className="text-link" to="/me">나의 기록에서 AI 사용량 확인 ↗</Link>
+    <Link className="text-link" to="/me">나의 기록에서 AI 사용량 확인</Link>
   </div>;
 }

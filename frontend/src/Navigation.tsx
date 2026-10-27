@@ -1,5 +1,6 @@
 import { Link, matchPath, useLocation } from 'react-router-dom';
 import { WorksheetList } from './Worksheets';
+import { Badge } from './components/ui/badge';
 
 type NavigationItem = { label: string; to: string; paths: string[]; planned?: boolean; admin?: boolean };
 const groups: { label: string; items: NavigationItem[] }[] = [
@@ -39,7 +40,7 @@ export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
   return <div className="navigation-groups">{groups.map((group, index) => <section className="navigation-group" key={group.label}>
     <h2 className="sidebar-label"><span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{group.label}</h2>
     <nav aria-label={group.label}>{group.items.filter(item => !item.admin || isAdmin).map(item => <Link key={item.to} to={item.to} className={active === item ? 'active' : undefined} aria-current={active === item ? 'page' : undefined} onClick={onNavigate}>
-      <span>{item.label}</span>{item.planned && <small className="navigation-badge">예정</small>}
+      <span>{item.label}</span>{item.planned && <Badge variant="outline" className="navigation-badge ml-auto rounded border-current px-1 py-0 text-[11px] text-[#bcb2cd]">예정</Badge>}
     </Link>)}</nav>
   </section>)}</div>;
 }
@@ -51,10 +52,10 @@ export function PracticeEntry() {
     <p>해석을 바탕으로 질문지를 만들고, 코드 실습과 기초 구현 학습을 이어가세요.</p>
     <WorksheetList />
     <div className="context-grid">
-      <Link className="context-card" to="/"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택 →</span></Link>
-      <Link className="context-card" to="/foundations"><h2>자료구조 · 알고리즘</h2><p>준비된 기초 구현 과정을 선택하고 직접 코드를 작성합니다.</p><span className="text-link">기초 구현 학습 →</span></Link>
+      <Link className="context-card" to="/"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택</span></Link>
+      <Link className="context-card" to="/foundations"><h2>자료구조 · 알고리즘</h2><p>준비된 기초 구현 과정을 선택하고 직접 코드를 작성합니다.</p><span className="text-link">기초 구현 학습</span></Link>
     </div>
     <p className="notice">질문지를 열어 내 답변과 요약을 남겨보세요. 일부만 작성해도 저장하고 이어서 수정할 수 있습니다.</p>
-    <Link className="text-link" to="/me">나의 실습 기록 보기 →</Link>
+    <Link className="text-link" to="/me">나의 실습 기록 보기</Link>
   </main>;
 }

@@ -51,11 +51,10 @@
 .github-markdown-preview { overflow-wrap: anywhere; }
 .github-markdown-preview h2 { font-size: 21px; margin: 0 0 24px; }
 .github-markdown-preview .markdown { font-size: 13px; }
-.github-publish { border: 1px solid #9868ff44; background: linear-gradient(120deg, #9868ff0e, #52d7b705); border-radius: 16px; padding: 28px; margin-top: 26px; }
+.github-publish { border: 1px solid var(--line); background: var(--panel); border-radius: 16px; padding: 28px; margin-top: 26px; }
 .github-publish h2 { font-size: 19px; margin-top: 0; }
 .github-publish p { font-size: 14px; line-height: 1.8; }
 .github-publish .github-consent { display: flex; align-items: flex-start; gap: 12px; margin: 20px 0; line-height: 1.7; font-weight: 400; }
-.github-consent input { margin-top: 4px; accent-color: #9868ff; width: 17px; height: 17px; flex: 0 0 17px; }
 .github-public-notice, .github-over-limit { color: #edc185; }
 .github-history { margin-top: 40px; }
 .github-history > h2 { font-size: 19px; margin-bottom: 20px; }

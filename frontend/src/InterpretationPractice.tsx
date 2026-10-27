@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, errorMessage } from './api';
 import { ErrorNotice, useApp } from './App';
+import { Button } from './components/ui/button';
 
 export function StartWorksheet({ interpretationId, retryId = '' }: { interpretationId: string; retryId?: string }) {
   const { userId, health } = useApp();
@@ -28,7 +29,7 @@ export function StartWorksheet({ interpretationId, retryId = '' }: { interpretat
     finally { sending.current = false; if (alive.current) setBusy(false); }
   }
   return <><ErrorNotice error={error} />{warning && <p role="status" className="notice">{warning}</p>}
-    <button className="primary" disabled={busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : retryId ? '같은 해석으로 다시 생성' : '실습용 질문지 만들기'}</button>
+    <Button className="primary" disabled={busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : retryId ? '같은 해석으로 다시 생성' : '실습용 질문지 만들기'}</Button>
     {health && !health.ai && <p className="reference-state">질문지를 만들려면 AI 설정이 필요합니다. 기존 기록은 계속 읽을 수 있습니다.</p>}</>;
 }
 
@@ -36,6 +37,6 @@ export function InterpretationPractice({ interpretationId }: { interpretationId:
   const { userId } = useApp();
   return <section className="interpretation-entry"><div><span className="eyebrow">EXPLAIN IN YOUR OWN WORDS</span><h2>읽은 내용을 내 말로.</h2><p>이 해석을 바탕으로 실습용 질문지를 만듭니다.<br />질문을 따라 생각하고, 관련 개념을 다시 살펴보세요.</p></div><div className="interpretation-entry-actions">
     <StartWorksheet key={userId + ':' + interpretationId} interpretationId={interpretationId} />
-    <Link to={'/explore/practice?interpretation=' + interpretationId}>이 해석의 질문지 기록 →</Link>
+    <Link to={'/explore/practice?interpretation=' + interpretationId}>이 해석의 질문지 기록</Link>
   </div></section>;
 }

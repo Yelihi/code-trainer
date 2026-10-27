@@ -1,9 +1,13 @@
-import { Select } from './Select';
+import { NativeSelect } from './components/ui/native-select';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { buildTrace, type Frame } from './foundationTrace';
 import { traversalGraph } from './foundationStructures';
 import { InlineMarkdown } from './Markdown';
 import { AnimatedDetails } from './AnimatedDetails';
+import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
+import { Slider } from './components/ui/slider';
 
 export function FoundationVisual({ kind, scenes, roundNodes = false }: { kind: string; scenes?: Frame[]; roundNodes?: boolean }) {
   const [doubly, setDoubly] = useState(false);
@@ -34,8 +38,8 @@ export function FoundationVisual({ kind, scenes, roundNodes = false }: { kind: s
   }, [playing, frames.length, atEnd]);
   return <section className={`foundation-visual visual-${kind}`} aria-label="개념 시각화">
     <div className="section-heading"><div><span className="eyebrow">SEE IT MOVE</span><h2>움직임으로 이해하기</h2></div><span className="visual-counter">{String(step + 1).padStart(2, '0')} <small>/ {frames.length}</small></span></div>
-    {linked && <div className="visual-options"><div role="group" aria-label="연결 리스트 비교"><button aria-pressed={!doubly} onClick={() => { setDoubly(false); setStep(0); setPlaying(false); }}>단일 연결 · next</button><button aria-pressed={doubly} onClick={() => { setDoubly(true); setStep(0); setPlaying(false); }}>이중 연결 · prev + next</button></div><p>개념 비교: 중간 삽입 → 제거 → 순서 변경. 구현 과제는 단일 연결 리스트의 앞 삽입·제거입니다.</p></div>}
-    {graph && <div className="visual-options graph-options"><label>시작 정점<Select value={start} onChange={event => { setStart(event.target.value); setStep(0); setPlaying(false); }}>{Object.keys(traversalGraph).map(id => <option key={id}>{id}</option>)}</Select></label><p>방향 그래프 · 갈림길, 공유 이웃, 순환, 떨어진 정점 G</p><AnimatedDetails summary="인접 목록과 방문 순서 규칙"><p>각 목록의 왼쪽 이웃부터 검사합니다. 같은 그래프라도 시작점·이웃 순서에 따라 방문 순서가 달라집니다.</p><div className="graph-adjacency">{Object.entries(traversalGraph).map(([id, neighbors]) => <code key={id}>{id}: [{neighbors.join(', ')}]</code>)}</div></AnimatedDetails></div>}
+    {linked && <div className="visual-options"><div role="group" aria-label="연결 리스트 비교"><Button aria-pressed={!doubly} onClick={() => { setDoubly(false); setStep(0); setPlaying(false); }}>단일 연결 · next</Button><Button aria-pressed={doubly} onClick={() => { setDoubly(true); setStep(0); setPlaying(false); }}>이중 연결 · prev + next</Button></div><p>개념 비교: 중간 삽입 → 제거 → 순서 변경. 구현 과제는 단일 연결 리스트의 앞 삽입·제거입니다.</p></div>}
+    {graph && <div className="visual-options graph-options"><Label>시작 정점<NativeSelect value={start} onChange={event => { setStart(event.target.value); setStep(0); setPlaying(false); }}>{Object.keys(traversalGraph).map(id => <option key={id}>{id}</option>)}</NativeSelect></Label><p>방향 그래프 · 갈림길, 공유 이웃, 순환, 떨어진 정점 G</p><AnimatedDetails summary="인접 목록과 방문 순서 규칙"><p>각 목록의 왼쪽 이웃부터 검사합니다. 같은 그래프라도 시작점·이웃 순서에 따라 방문 순서가 달라집니다.</p><div className="graph-adjacency">{Object.entries(traversalGraph).map(([id, neighbors]) => <code key={id}>{id}: [{neighbors.join(', ')}]</code>)}</div></AnimatedDetails></div>}
     <div className="visual-stage-layout"><div className="visual-stage" tabIndex={0} role="region" aria-label="시각화 그림 · 넓은 그림은 좌우로 스크롤할 수 있습니다">
     <div className="visual-legend"><span><i />현재 살펴보는 원소</span><span>{heap ? '완전 이진 트리 · 최소 힙' : fixed ? '정해진 예시를 단계별로 탐색합니다' : '값을 바꿔 동작을 비교해보세요'}</span>{graph && <><span><i className="discovered" />발견</span><span><i className="finished" />처리 완료</span></>}</div>
     <svg viewBox={kind === 'stack' ? '240 0 200 340' : '0 0 640 340'} role="img" aria-label={`${frame.note} ${frame.detail}`}>
@@ -68,14 +72,14 @@ export function FoundationVisual({ kind, scenes, roundNodes = false }: { kind: s
         setError('−99~99 정수를 쉼표로 나눠 최대 8개 입력하세요. 비워두면 빈 배열입니다.'); setApplied(false); return;
       }
       setError(''); setPlaying(false); setStep(0); setValues(next); setSearch(Number(target)); setApplied(true);
-    }}><label>입력 값<input value={input} onChange={event => { setInput(event.target.value); setApplied(false); }} maxLength={60} /></label>
-      {kind === 'binary-search' && <label>찾을 값<input value={target} onChange={event => { setTarget(event.target.value); setApplied(false); }} maxLength={3} /></label>}
-      <button className={applied ? 'is-applied' : ''}>{applied ? '✓ 적용됨' : '값 적용'}</button></form>}
+    }}><Label>입력 값<Input value={input} onChange={event => { setInput(event.target.value); setApplied(false); }} maxLength={60} /></Label>
+      {kind === 'binary-search' && <Label>찾을 값<Input value={target} onChange={event => { setTarget(event.target.value); setApplied(false); }} maxLength={3} /></Label>}
+      <Button className={applied ? 'is-applied' : ''}>{applied ? '✓ 적용됨' : '값 적용'}</Button></form>}
     {!fixed && <p className={`visual-applied ${applied ? 'success-text' : 'muted'}`} role="status">{applied ? '✓ 입력값이 적용되었습니다.' : '현재 재생 값'} <span>[{values.join(', ')}]{kind === 'binary-search' && ` · 찾을 값 ${search}`}</span></p>}
     {error && <p role="alert" className="notice error">{error}</p>}
     <div key={step} className="visual-caption" aria-live={playing && !atEnd ? 'off' : 'polite'}><span className="eyebrow">STEP {String(step + 1).padStart(2, '0')}</span><strong>{frame.note}</strong><p><InlineMarkdown>{frame.detail || '한 단계씩 이동하며 상태 변화를 확인하세요.'}</InlineMarkdown></p>{frame.code && <div className="trace-operation"><span>현재 연산 · 의사 코드</span><code>{frame.code}</code></div>}</div>
-    <label className="visual-timeline">단계 탐색<input type="range" min={0} max={frames.length - 1} value={step} aria-valuetext={`${step + 1} / ${frames.length}: ${frame.note}`} onChange={event => { setPlaying(false); setStep(Number(event.target.value)); }} /></label>
-    <div className="visual-controls"><button aria-label="시각화 처음으로" onClick={() => { setStep(0); setPlaying(false); }}>처음</button><button disabled={step === 0} onClick={() => { setPlaying(false); setStep(step - 1); }}>이전</button><button className="primary" onClick={() => { if (atEnd) { setStep(0); setPlaying(true); } else setPlaying(!playing); }}>{playing && !atEnd ? '일시정지' : atEnd ? '다시 재생' : '재생'}</button><button disabled={atEnd} onClick={() => { setPlaying(false); setStep(step + 1); }}>다음</button></div>
+    <Label className="visual-timeline">단계 탐색<Slider min={0} max={frames.length - 1} value={[step]} aria-label="단계 탐색" aria-valuetext={`${step + 1} / ${frames.length}: ${frame.note}`} onValueChange={([value]) => { setPlaying(false); setStep(value); }} /></Label>
+    <div className="visual-controls"><Button aria-label="시각화 처음으로" onClick={() => { setStep(0); setPlaying(false); }}>처음</Button><Button disabled={step === 0} onClick={() => { setPlaying(false); setStep(step - 1); }}>이전</Button><Button className="primary" onClick={() => { if (atEnd) { setStep(0); setPlaying(true); } else setPlaying(!playing); }}>{playing && !atEnd ? '일시정지' : atEnd ? '다시 재생' : '재생'}</Button><Button disabled={atEnd} onClick={() => { setPlaying(false); setStep(step + 1); }}>다음</Button></div>
     </div></div>
   </section>;
 }

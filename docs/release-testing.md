@@ -45,10 +45,10 @@ npm run dev
 
 ## 권장 확인 순서
 
-1. **등록하기 → 레퍼런스 등록**: 텍스트/Markdown 또는 URL을 저장한다. 등록 단계에 언어·난이도 선택이나 AI 생성이 필요하지 않다. 제목만 바꾸면 본문 버전이 유지되고, 본문을 바꾸면 새 버전이 생기는지 확인한다. 직접 노트는 기존 노트 편집·이미지·보관/복원 기능을 사용한다.
+1. **등록하기 → 레퍼런스 등록**: 텍스트/Markdown 또는 URL을 저장한다. 파일 버튼과 화면 전체 드롭으로 `.md`/`.txt`를 추가하고 파일 이름이 표시되는지 확인한다. 작성 중 다른 화면으로 이동할 때 계속 작성은 내용을 유지하고 이탈은 임시 글을 삭제해야 한다. 등록 단계에 언어·난이도 선택이나 AI 생성이 필요하지 않다. 제목만 바꾸면 본문 버전이 유지되고, 본문을 바꾸면 새 버전이 생기는지 확인한다. 직접 노트는 기존 노트 편집·이미지·보관/복원 기능을 사용한다.
 2. **탐구하기 → 해석하기**: 저장한 원문 버전을 선택해 AI 해석을 만든다. 출처 버전과 섹션을 확인한다. 질문지를 만들고 자신의 답변·요약을 저장한다. 코드 실습은 해석 섹션에서 언어·난이도를 선택해 생성한다. 자료구조·알고리즘 카탈로그도 실습하기에서 접근한다.
 3. **정리 확인 → 데이터 쌓기**: 정확한 자료 버전을 검토 완료로 표시한다. 추출 가능 자료에서 AI 후보를 생성하고, 개념·관계·인용을 검토·수정한 뒤 명시적으로 그래프에 등록한다. 자료를 읽거나 AI 후보를 생성한 것만으로 등록되지 않는다. 사용자 작성 자료의 실제 설명 관찰과 AI 해석을 구분한다.
-4. **복습에 추가 → 다시 검토**: 자료를 별도로 복습에 추가한다. 주간 일정에 다음 날이 표시된다. 기한이 되면 직접 응답하고 다음 일정으로 이동한다. ‘설명할 수 있음’은3·7·14일, ‘다시 확인 필요’는1일이다. 열람만으로 완료되지 않는다. 기존 코드 복습은 도움·실패 기록을 반영하는 기존 규칙을 유지한다.
+4. **복습에 추가 → 다시 검토**: 자료를 별도로 복습에 추가한다. 항목별 곡선에 다음 날의 복습 예정점이 표시되고, 마우스·키보드 선택 시 요구사항이 나타나는지 확인한다. 곡선은 실제 기억률 측정값이 아니라 복습 간격 안내다. 기한이 되면 직접 응답하고 다음 일정으로 이동한다. ‘설명할 수 있음’은3·7·14일, ‘다시 확인 필요’는1일이다. 열람만으로 완료되지 않는다. 기존 코드 복습은 도움·실패 기록을 반영하는 기존 규칙을 유지한다.
 5. **응용하기 → Deep Inside**: 근거가 있는 개념 관계를 등록한 뒤 제안을 받는다. 질문·읽기·작은 실습 가이드와 출처를 확인한다. 채택하면 ‘나의 탐구’에서 내 예상·관찰·질문을 작성한다. 새 제안 묶음으로 바꿔도 채택 기록은 남는다. 건너뛴 연결은30일간 재제안에서 제외된다.
 6. **설정**: GitHub 기본 저장소 등록과 AI 개인 연결을 확인한다. 저장소 등록만으로 외부 이슈를 게시하지 않는다. 예약 생성은 기본 꺼짐이다. 켜면7일 뒤부터 변경된 유효 그래프를 확인하며, 최근30일 자동 시도4회·호출당 최대4,000출력 토큰 한도가 적용된다. 실패·중단도 시도 횟수에 포함되고 금액 상한은 보장하지 않는다. 실제 AI 요청에는 연결한 제공자의 비용이 발생한다.
 
@@ -62,7 +62,7 @@ npm run dev
 | 해석·질문지·내 답변 | `Interpretations.tsx`, `Worksheets.tsx`, `PracticeRecords.tsx` | `interpretations.py`, `worksheets.py`, `practice_records.py`; 같은 이름의 테스트 |
 | 해석 기반 코드 실습 | `InterpretationCode.tsx`, 기존 `Practice.tsx` | `code_practice.py` → 기존 `service.py`/`ai.py`/`runner.py`; `test_code_practice` |
 | 검토·추출·등록 | `MaterialReview.tsx`, `KnowledgeCandidates.tsx`, `ReferenceKnowledge.tsx` | `materials.py`, `material_proposals.py`, `material_knowledge.py` → `ontology.py`; `test_material*` |
-| 일반 자료 복습 | `SpacedReviews.tsx`, `Reviews.tsx`, `reviewCalendar.ts` | `spaced_reviews.py`; `test_spaced_reviews`, `reviewCalendar.test.ts` |
+| 일반 자료 복습 | `SpacedReviews.tsx`, `Reviews.tsx`, `reviewCurve.ts` | `spaced_reviews.py`; `test_spaced_reviews`, `reviewCurve.test.ts` |
 | Deep Inside | `DeepInside.tsx`, `Explorations.tsx`, `InsightSchedule.tsx` | `insight_context.py`, `insights.py`, `insight_adoptions.py`, `insight_schedule.py`; `test_insight*` |
 | 개인 AI·GitHub | `AISettings.tsx`, `GitHubSharing.tsx` | `ai_settings.py`, `github_sharing.py`; `test_ai_settings`, `test_github_sharing` |
 | 공통 경계 | `main.tsx`, `Navigation.tsx`, `App.tsx`, `api.ts` | `api.py` 인증 경로 → 도메인 모듈 → `db.connect(write=True)` |

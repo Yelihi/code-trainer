@@ -9,7 +9,7 @@ import traceback
 import uuid
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-from . import ai, db, diagnostics, runner, source, practice, usage, prediction
+from . import ai, db, diagnostics, runner, source, practice, usage, prediction, resources
 from .sample import sample
 from .schema import ContextDraft, ExerciseDraft, SetDraft
 
@@ -52,6 +52,10 @@ def rate(key, limit, seconds=60):
 
 def initialize():
     db.initialize()
+    db.execute("UPDATE insight_jobs SET state='interrupted',snapshot=NULL,error='서버 재시작으로 생성이 중단되었습니다. 직접 다시 요청해주세요.' WHERE state IN ('queued','running')")
+    db.execute("UPDATE material_proposals SET state='interrupted',error='서버가 다시 시작되어 추출이 중단되었습니다. 직접 다시 요청해주세요.' WHERE state IN ('queued','running')")
+    db.execute("UPDATE worksheets SET state='interrupted',error='서버가 다시 시작되어 질문지 생성이 중단되었습니다. 같은 해석으로 다시 생성해주세요.',updated_at=? WHERE state IN ('queued','running')", (now(),))
+    db.execute("UPDATE interpretations SET state='interrupted',error='서버가 다시 시작되어 해석이 중단되었습니다. 같은 원문 버전으로 다시 시도해주세요.',updated_at=? WHERE state IN ('queued','running')", (now(),))
     db.execute("UPDATE github_shares SET state='unknown',error='서버가 다시 시작되어 등록 결과를 확인하지 못했습니다. GitHub에서 먼저 확인해주세요.' WHERE state='sending'")
     from . import ontology
     ontology.migrate()
@@ -71,8 +75,8 @@ def initialize():
         pass
 
 
-def health():
-    return {'sandbox': runner.available(), 'ai': ai.available(), 'languages': list(runner.RUNTIMES)}
+def health(owner=None):
+    return {'sandbox': runner.available(), 'ai': ai.available(owner), 'languages': list(runner.RUNTIMES)}
 
 
 def session(token):
@@ -148,6 +152,7 @@ def summaries(owner, context_id):
 
 
 def context_view(owner, row):
+    from . import code_practice
     value = json.loads(row['data'])
     value.setdefault('difficulty', 'beginner')
     value.pop('learning_notes', None)
@@ -156,6 +161,7 @@ def context_view(owner, row):
     value['knowledge_added_units'] = added
     sets = summaries(owner, row['id'])
     return {**value, 'id': row['id'], 'source_url': row['source_url'], 'created_at': row['created_at'], 'sets': sets,
+        'interpretation_source': code_practice.origin(owner, row['id']),
         'generation': diagnostics.view(db.one('SELECT id,state,stage,context_id,set_id,unit_id,error,events FROM generations WHERE context_id=? AND owner=? AND unit_id IS NULL ORDER BY created_at DESC LIMIT 1', (row['id'], owner))),
         'unit_generations': [diagnostics.view(g) for g in db.all('''SELECT id,state,stage,context_id,set_id,unit_id,error,events
             FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY unit_id ORDER BY created_at DESC) AS position
@@ -188,6 +194,7 @@ def delete_context(owner, context_id):
         exercises = 'SELECT e.id FROM exercises e JOIN sets s ON e.set_id=s.id WHERE s.context_id=?'
         if c.execute(f"SELECT id FROM attempts WHERE status='running' AND exercise_id IN ({exercises})", (context_id,)).fetchone():
             raise Error('풀이를 채점 중입니다. 완료된 뒤 삭제해주세요.', 409)
+        resources.migrate(c, context_id)
         for table in ('reports', 'progress', 'attempts'):
             c.execute(f'DELETE FROM {table} WHERE exercise_id IN ({exercises})', (context_id,))
         c.execute('DELETE FROM exercises WHERE set_id IN (SELECT id FROM sets WHERE context_id=?)', (context_id,))
@@ -239,9 +246,13 @@ def generations(owner):
 
 
 def begin_generation(owner, request):
+    from . import code_practice
     existing = db.one('SELECT id FROM generations WHERE owner=? AND request_id=?', (owner, request.request_id))
     if existing:
+        with db.connect() as c:
+            code_practice.replay(c, existing['id'], request)
         return generation(owner, existing['id']), False
+    selected = code_practice.selection(owner, request.interpretation_id, request.section_id) if request.source_kind == 'interpretation' else None
     if request.source_kind == 'context':
         context = json.loads(context_owned(owner, request.context_id)['data'])
         if context['language'] != request.language:
@@ -253,7 +264,7 @@ def begin_generation(owner, request):
                 raise Error('이 단원의 문제 세트는 이미 준비되어 있습니다.', 409)
         elif context.get('units'):
             raise Error('문제를 생성할 단원을 선택해주세요.', 409)
-    if request.source_kind != 'sample' and not ai.available():
+    if request.source_kind != 'sample' and not ai.available(owner):
         raise Error('AI 연결을 설정하거나 준비된 예제를 사용해주세요.', 503)
     if (request.unit_id or request.source_kind == 'sample') and not runner.available():
         raise Error('Docker 실행 환경을 준비해주세요. ./start.sh --setup', 503)
@@ -261,8 +272,13 @@ def begin_generation(owner, request):
     with db.connect(write=True) as c:
         existing = c.execute('SELECT id FROM generations WHERE owner=? AND request_id=?', (owner, request.request_id)).fetchone()
         if existing:
+            code_practice.replay(c, existing['id'], request)
             generation_id, fresh = existing['id'], False
         else:
+            if request.source_kind == 'interpretation' and c.execute('''SELECT g.id FROM code_origins o
+                    JOIN generations g ON g.id=o.generation_id WHERE g.owner=? AND o.interpretation_id=? AND o.section_id=?
+                    AND g.state IN ('generating','validating','ready')''', (owner, request.interpretation_id, request.section_id)).fetchone():
+                raise Error('이 섹션의 코딩 과정을 이미 준비했거나 준비 중입니다. 생성 기록에서 기존 과정을 열어주세요.', 409)
             if request.context_id and not c.execute('SELECT id FROM contexts WHERE id=? AND owner=?', (request.context_id, owner)).fetchone():
                 raise Error('학습 자료를 찾을 수 없습니다.', 404)
             if c.execute("SELECT id FROM generations WHERE state IN ('generating','validating')").fetchone():
@@ -287,6 +303,9 @@ def begin_generation(owner, request):
                           (generation_id, request.source_kind, request.source_name,
                            request.source if request.source_kind == 'url' else None,
                            request.source if request.source_kind == 'text' else None))
+            if selected:
+                c.execute('INSERT INTO code_origins VALUES (?,?,?,?,?,?)',
+                          (generation_id, request.interpretation_id, request.section_id, request.language, request.difficulty, code_practice.material(selected)))
     return generation(owner, generation_id), fresh
 
 
@@ -402,7 +421,8 @@ def generate(owner, generation_id, request):
             if not context.units:
                 context = ai.analyze(dump(context.model_dump()), request.language, context.difficulty)
         else:
-            text = source.fetch(request.source) if request.source_kind == 'url' else request.source
+            text = (db.one('SELECT content FROM code_origins WHERE generation_id=?', (generation_id,))['content']
+                    if request.source_kind == 'interpretation' else source.fetch(request.source) if request.source_kind == 'url' else request.source)
             db.execute('UPDATE source_documents SET content=? WHERE id=?', (text, generation_id))
             if len(text.strip()) < 20:
                 raise Error('학습할 자료를 20자 이상 입력해주세요.')
@@ -426,7 +446,9 @@ def generate(owner, generation_id, request):
         if request.source_kind != 'sample' and not request.unit_id:
             with db.connect(write=True) as c:
                 c.execute("UPDATE generations SET state='ready',stage='개념 학습 준비 완료' WHERE id=?", (generation_id,))
-                c.execute('UPDATE feed_choices SET registered=1 WHERE owner=? AND generation_id=?', (owner, generation_id))
+                c.execute('''UPDATE feed_choices SET registered=1 WHERE owner=? AND generation_id=?
+                    AND NOT EXISTS (SELECT 1 FROM resource_feed_posts f
+                        WHERE f.owner=feed_choices.owner AND f.post_id=feed_choices.post_id)''', (owner, generation_id))
             diagnostics.event('개념 학습 준비 완료 · 단원별로 문제를 생성할 수 있습니다.')
             return
         image_id = runner.pin_runtime()

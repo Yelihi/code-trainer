@@ -1,5 +1,7 @@
 # Code Trainer
 
+**Second Brain release:** 등록하기 → 탐구하기 → 데이터 쌓기 → 응용하기 → 설정으로 개편했습니다. [release 테스트·개발 실행·유지보수 안내](docs/release-testing.md)를 먼저 확인하세요. 아래에는 기존 코드 학습 기능의 설명도 포함되어 있습니다. 운영 main 반영 여부는 release 병합과 별개입니다.
+
 자료의 개념과 선행 관계를 분석해 학습 과정을 만들고, 단원별 개념 페이지와 READ → FIX → MODIFY → BUILD 문제를 연결하는 로컬 연습 앱입니다.
 React·TypeScript·Vite, FastAPI·Pydantic, SQLite를 사용합니다.
 
@@ -207,6 +209,8 @@ npm run dev
 # 터미널 2: 개발 백엔드 API (http://127.0.0.1:8011)
 cd backend
 ./dev.sh
+# 종료: ./dev.sh stop
+# 기존 개발 서버를 종료하고 이 작업 폴더에서 재시작: ./dev.sh restart
 ```
 
 백엔드는 프로젝트 루트의 `.env`와 `.venv`를 사용합니다. 최초 Python 환경 준비는 루트에서

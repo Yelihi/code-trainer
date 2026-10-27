@@ -1,4 +1,7 @@
 import { useId, useLayoutEffect, useRef } from "react";
+import { Input } from './components/ui/input';
+import { Button } from './components/ui/button';
+import { Label } from './components/ui/label';
 
 export function replaceOutputLine(answer: string, index: number, value: string | null) {
   const lines = answer.split("\n");
@@ -42,8 +45,8 @@ export function PredictionInput({ answer, onChange, disabled }: {
       <div className="prediction-lines">
         {lines.map((line, index) => (
           <div className="prediction-line" key={index}>
-            <label htmlFor={`${id}-${index}`}>{index + 1}</label>
-            <input
+            <Label htmlFor={`${id}-${index}`}>{index + 1}</Label>
+            <Input
               id={`${id}-${index}`}
               ref={(input) => { inputs.current[index] = input; }}
               aria-label={`예상 출력 ${index + 1}번째 줄`}
@@ -74,7 +77,7 @@ export function PredictionInput({ answer, onChange, disabled }: {
                 onChange(nextAnswer);
               }}
             />
-            <button
+            <Button
               type="button"
               aria-label={`예상 출력 ${index + 1}번째 줄 삭제`}
               disabled={disabled || lines.length === 1}
@@ -82,14 +85,14 @@ export function PredictionInput({ answer, onChange, disabled }: {
                 focus.current = { index: Math.max(0, index - 1), caret: 0 };
                 onChange(replaceOutputLine(answer, index, null));
               }}
-            >삭제</button>
+            >삭제</Button>
           </div>
         ))}
       </div>
       <div className="prediction-actions">
-        <button type="button" disabled={disabled || !remaining} onClick={() => addLine(lines.length - 1)}>
+        <Button type="button" disabled={disabled || !remaining} onClick={() => addLine(lines.length - 1)}>
           출력 줄 추가
-        </button>
+        </Button>
         <span>{answer.length.toLocaleString()} / 4,000자</span>
       </div>
     </div>

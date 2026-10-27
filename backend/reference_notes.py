@@ -4,12 +4,11 @@ import binascii
 import hashlib
 import io
 import json
-import os
 import re
 import zipfile
 from urllib.parse import urlsplit
 from PIL import Image, ImageOps, UnidentifiedImageError
-from . import ai, db, ontology, service, usage
+from . import ai_settings, ai, db, ontology, service, usage, resources
 from .note_schema import KnowledgeProposal, ReviewedKnowledgeProposal, ReferenceReviewFeedback, ConceptLookup, NoteQuoteRepair, ReferenceInput
 
 IMAGE_PATH = re.compile(r'/api/reference-images/([a-f0-9]{32})')
@@ -76,9 +75,13 @@ def save(owner, data):
             c.execute('UPDATE reference_notes SET title=?,body=?,metadata=?,revision=?,updated_at=? WHERE owner=? AND id=?',
                       (data.title, data.body, metadata, revision, now, owner, data.id))
             c.execute("UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind='note' AND origin_id=? AND state='active'", (owner, data.id))
+            c.execute("""UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind IN ('interpretation','practice')
+                AND json_extract(metadata,'$.resource_id') IN (SELECT id FROM resources WHERE owner=? AND note_id=?)
+                AND state='active'""", (owner, owner, data.id))
         else:
             c.execute('INSERT INTO reference_notes VALUES (?,?,?,?,?,?,0,?,?)',
                       (data.id, owner, data.title, data.body, metadata, revision, now, now))
+        resources.link_note(c, owner, data.id, previous['created_at'] if previous else now)
         snapshot = {**data.model_dump(), 'revision': revision}
         c.execute('INSERT INTO reference_note_versions VALUES (?,?,?,?,?)', (owner, data.id, revision, service.dump(snapshot), now))
     return view(owner, data.id)
@@ -97,6 +100,9 @@ def archive(owner, note_id, archived):
         # Restoring a note does not silently reapprove its old graph evidence.
         c.execute("UPDATE knowledge_sources SET state=? WHERE owner=? AND kind='note' AND origin_id=?",
                   ('deleted' if archived else 'stale', owner, note_id))
+        c.execute("""UPDATE knowledge_sources SET state=? WHERE owner=? AND kind IN ('interpretation','practice')
+            AND json_extract(metadata,'$.resource_id') IN (SELECT id FROM resources WHERE owner=? AND note_id=?)""",
+            ('deleted' if archived else 'stale', owner, owner, note_id))
         if not archived:
             revision = note['revision'] + 1
             c.execute('UPDATE reference_notes SET revision=? WHERE owner=? AND id=?', (revision, owner, note_id))
@@ -168,7 +174,7 @@ def begin_proposal(owner, note_id, revision):
     note = owned(owner, note_id)
     if note['revision'] != revision or note['archived']:
         raise service.Error('저장된 최신 노트에서 개념을 정리해주세요.', 409)
-    if not ai.available():
+    if not ai.available(owner):
         raise service.Error('AI가 연결되지 않았습니다. 직접 개념을 입력해 등록할 수 있습니다.', 503)
     service.rate('reference-proposal:' + owner, 10, 3600)
     with db.connect(write=True) as c:
@@ -182,7 +188,7 @@ def begin_proposal(owner, note_id, revision):
             return previous['id'], False
         key = service.uid()
         c.execute('INSERT INTO knowledge_proposals VALUES (?,?,?,?,?,NULL,?,?,?,?)',
-                  (owner, key, note_id, revision, 'running', '', os.environ.get('AI_MODEL', ''), 'reference-ontology-v4', service.now()))
+                  (owner, key, note_id, revision, 'running', '', ai_settings.model_name(owner), 'reference-ontology-v4', service.now()))
     return key, True
 
 
@@ -209,15 +215,9 @@ Never invent evidence. Do not change the note or any concept, assertion, or revi
         item.quote = quote
 
 
-def propose(owner, key):
-    row = proposal_view(owner, key)
-    version = db.one('SELECT data FROM reference_note_versions WHERE owner=? AND note_id=? AND revision=?',
-                     (owner, row['note_id'], row['revision']))
-    note = json.loads(version['data'])
-    token = usage.scope.set((owner, None))
-    try:
-        candidates = ontology.concepts(owner)
-        data = ai.generate(KnowledgeProposal, '''Extract a SMALL concept graph in Korean from this user-authored reference note.
+def extract(owner, note):
+    candidates = ontology.concepts(owner)
+    instruction = '''Extract a SMALL concept graph in Korean from this user-authored reference note.
 Use the existing Concept/Alias/Claim/typed relation/Evidence ontology. Keys are local unique IDs.
 Every concept and assertion needs an EXACT short quote substring of note.body, never invented quotes.
 Copy raw Markdown including ** markers, whitespace, punctuation and typos; never quote rendered or corrected prose.
@@ -233,16 +233,20 @@ scope preserves conditions and exceptions. Only propose relations justified by t
 An assertion's disposition is supports or refutes: for refutes, text names the proposition being
 challenged and quote is the contrary evidence. Preserve conflicting claims instead of overwriting them.
 The user will explicitly review and approve; your output itself is not source evidence.
-The note may be about any subject, not necessarily programming.''', {'note': note, 'existing_concepts': candidates})
-        repair_proposal_quotes(data, note['body'])
-        ontology.validate_proposal(owner, data, note['body'])
-        # Search across the owner's labels/aliases before the semantic review, beyond the initial 200 rows.
-        known = {c['id']: c for c in candidates}
-        for candidate in data.concepts:
-            for match in ontology.concept_matches(owner, ConceptLookup(pref_label=candidate.pref_label, aliases=candidate.aliases)):
-                known[match['concept']['id']] = match['concept']
-        candidates = list(known.values())
-        data = ai.generate(ReviewedKnowledgeProposal, '''Independently review this note AND the extracted graph in Korean.
+The note may be about any subject, not necessarily programming.'''
+    if 'authorship' in note:
+        instruction = instruction.replace('user-authored reference note', 'reviewed learning material')
+        instruction += '\nThis material is authored by ' + note['authorship'] + '. Its statements and quotations are interpreted learning material, not independently verified original-source evidence. Use interpretation or question basis, never source.'
+    data = ai.generate(KnowledgeProposal, instruction, {'note': note, 'existing_concepts': candidates})
+    repair_proposal_quotes(data, note['body'])
+    ontology.validate_proposal(owner, data, note['body'])
+    # Search across the owner's labels/aliases before the semantic review, beyond the initial 200 rows.
+    known = {c['id']: c for c in candidates}
+    for candidate in data.concepts:
+        for match in ontology.concept_matches(owner, ConceptLookup(pref_label=candidate.pref_label, aliases=candidate.aliases)):
+            known[match['concept']['id']] = match['concept']
+    candidates = list(known.values())
+    data = ai.generate(ReviewedKnowledgeProposal, '''Independently review this note AND the extracted graph in Korean.
 Do not assume that a statement is true because the learner wrote it or because extraction copied it.
 Check factual definitions, logical contradictions, conditions, exceptions, claim strength, and relationship directions.
 Use established subject knowledge to detect errors, but never claim to have browsed, read a cited book,
@@ -276,11 +280,25 @@ or anything merely useful for comparison. Such items must remain separate concep
 Return no match when only related concepts exist; never pad the list to three. Names alone never prove identity.
 Never fabricate IDs or change the candidate definition to fit a match. The learner must explicitly choose to reuse it.
 Do not rewrite the original note. Return the full candidate graph plus review and matches.''',
-            {'note': note, 'candidate_graph': data.model_dump(), 'existing_concepts': candidates})
-        repair_proposal_quotes(data, note['body'])
-        ontology.validate_proposal(owner, data, note['body'])
-        if any(issue.quote not in note['body'] for issue in data.review.issues):
-            raise service.Error('AI 검토의 지적 문장이 노트 본문과 일치하지 않습니다. 다시 검토해주세요.', 422)
+        {'note': note, 'candidate_graph': data.model_dump(), 'existing_concepts': candidates})
+    repair_proposal_quotes(data, note['body'])
+    ontology.validate_proposal(owner, data, note['body'])
+    if any(issue.quote not in note['body'] for issue in data.review.issues):
+        raise service.Error('AI 검토의 지적 문장이 노트 본문과 일치하지 않습니다. 다시 검토해주세요.', 422)
+    if 'authorship' in note:
+        for item in [*data.concepts, *data.assertions]:
+            if item.basis == 'source': item.basis = 'interpretation'
+    return data
+
+
+def propose(owner, key):
+    row = proposal_view(owner, key)
+    version = db.one('SELECT data FROM reference_note_versions WHERE owner=? AND note_id=? AND revision=?',
+                     (owner, row['note_id'], row['revision']))
+    note = json.loads(version['data'])
+    token = usage.scope.set((owner, key))
+    try:
+        data = extract(owner, note)
         db.execute("UPDATE knowledge_proposals SET state='ready',data=? WHERE owner=? AND id=?", (data.model_dump_json(), owner, key))
     except (ai.AIError, service.Error) as error:
         db.execute("UPDATE knowledge_proposals SET state='failed',error=? WHERE owner=? AND id=?", (str(error), owner, key))
@@ -454,7 +472,7 @@ def answer_review(owner, review_id, request):
                                          'assistance': 'notes_available', 'mastery': None}), service.now()))
         c.execute("UPDATE reference_reviews SET turns=?,revision=revision+1,state='running',error='' WHERE owner=? AND id=?",
                   (service.dump(turns), owner, review_id))
-        if not ai.available():
+        if not ai.available(owner):
             c.execute("UPDATE reference_reviews SET state='failed',error='설명을 저장했습니다. AI 연결 후 꼬리 질문을 다시 요청해주세요.' WHERE owner=? AND id=?", (owner, review_id))
             return False
     return True

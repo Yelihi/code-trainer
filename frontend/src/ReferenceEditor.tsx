@@ -2,6 +2,9 @@ import { useRef, useState } from 'react';
 import { api, errorMessage } from './api';
 import { Markdown } from './Markdown';
 import { ErrorNotice } from './App';
+import { Button } from './components/ui/button';
+import { Textarea } from './components/ui/textarea';
+import { Input } from './components/ui/input';
 
 export function ReferenceEditor({ value, onChange, disabled = false, onUploading }: { value: string; onChange: (value: string) => void; disabled?: boolean; onUploading: (busy: boolean) => void }) {
   const input = useRef<HTMLTextAreaElement>(null);
@@ -47,18 +50,18 @@ export function ReferenceEditor({ value, onChange, disabled = false, onUploading
   return <section className={`reference-editor mode-${mode}`} aria-label="노트 본문 에디터">
     <div className="reference-editor-toolbar">
       <div className="reference-formatting" role="group" aria-label="본문 서식">
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('## ', '', '소제목')} title="소제목">H2</button>
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('**', '**', '강조할 내용')} aria-label="굵게"><strong>B</strong></button>
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('*', '*', '기울일 내용')} aria-label="기울임"><em>I</em></button>
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n- ', '', '목록')} aria-label="목록">≡</button>
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n> ', '', '인용문')} aria-label="인용">“ ”</button>
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('[', '](https://)', '링크 이름')} aria-label="링크">↗</button>
-        <button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n```\n', '\n```\n', '코드 또는 예시')} aria-label="코드 블록">{'<>'}</button>
-        <button type="button" disabled={disabled || uploading} onClick={() => fileInput.current?.click()}>사진 첨부</button>
-        <input ref={fileInput} hidden type="file" aria-label="첨부할 이미지" accept="image/png,image/jpeg,image/webp" multiple onChange={e => void upload(Array.from(e.target.files ?? []))} />
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('## ', '', '소제목')} title="소제목">H2</Button>
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('**', '**', '강조할 내용')} aria-label="굵게"><strong>B</strong></Button>
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('*', '*', '기울일 내용')} aria-label="기울임"><em>I</em></Button>
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n- ', '', '목록')} aria-label="목록">≡</Button>
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n> ', '', '인용문')} aria-label="인용">“ ”</Button>
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('[', '](https://)', '링크 이름')} aria-label="링크">링크</Button>
+        <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n```\n', '\n```\n', '코드 또는 예시')} aria-label="코드 블록">{'<>'}</Button>
+        <Button type="button" disabled={disabled || uploading} onClick={() => fileInput.current?.click()}>사진 첨부</Button>
+        <Input ref={fileInput} hidden type="file" aria-label="첨부할 이미지" accept="image/png,image/jpeg,image/webp" multiple onChange={e => void upload(Array.from(e.target.files ?? []))} />
       </div>
       <div className="reference-editor-modes" role="group" aria-label="에디터 보기">
-        {([['write', '작성'], ['split', '함께 보기'], ['preview', '미리보기']] as const).map(([key, label]) => <button type="button" key={key} aria-pressed={mode === key} onClick={() => setMode(key)}>{label}</button>)}
+        {([['write', '작성'], ['split', '함께 보기'], ['preview', '미리보기']] as const).map(([key, label]) => <Button type="button" key={key} aria-pressed={mode === key} onClick={() => setMode(key)}>{label}</Button>)}
       </div>
     </div>
     <ErrorNotice error={error} />
@@ -66,7 +69,7 @@ export function ReferenceEditor({ value, onChange, disabled = false, onUploading
     <div className="reference-editor-body"
       onDragOver={e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
       onDrop={e => { if (e.dataTransfer.files.length) { e.preventDefault(); void upload(Array.from(e.dataTransfer.files)); } }}>
-      {mode !== 'preview' && <textarea ref={input} aria-label="노트 본문" value={value} disabled={disabled || uploading} maxLength={60000}
+      {mode !== 'preview' && <Textarea ref={input} aria-label="노트 본문" value={value} disabled={disabled || uploading} maxLength={60000}
         placeholder={'오늘 이해한 내용을 자유롭게 적어보세요.\n\n## 핵심 내용\n\n## 내 생각과 예시\n\n## 남은 질문\n\n사진을 붙여넣거나 이곳에 끌어다 놓을 수 있습니다.'}
         onChange={e => onChange(e.target.value)}
         onPaste={e => { const files = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/')); if (files.length) { e.preventDefault(); void upload(files); } }}

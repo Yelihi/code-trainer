@@ -1,7 +1,7 @@
 import asyncio
 import time
 import uuid
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from urllib.parse import urlsplit
 from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
@@ -9,7 +9,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
-from .github_schema import GitHubConnection, GitHubRepository, GitHubSource, GitHubPublish, GitHubRecovery
+from typing import Literal
+from . import resources, interpretations, worksheets, practice_records
+from .worksheet_schema import WorksheetInput
+from .practice_record_schema import PracticeRecordInput
+from . import ai_settings
+from .ai_settings_schema import AISettingsInput, AISettingsRevision
+from . import materials, material_proposals, material_knowledge, spaced_reviews
+from . import insights, insight_adoptions, insight_schedule
+from .insight_schema import InsightRequest, InsightChoice, ExplorationNotes, InsightScheduleInput
+from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
+from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
+from .interpretation_schema import InterpretationInput
+from .resource_schema import ResourceInput
+from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
 
@@ -19,9 +32,13 @@ async def lifespan(app):
     access.validate_config()
     service.initialize()
     collector = asyncio.create_task(feeds.poll())
+    scheduler = asyncio.create_task(insight_schedule.poll())
     try:
         yield
     finally:
+        scheduler.cancel()
+        with suppress(asyncio.CancelledError):
+            await scheduler
         await feeds.stop(collector)
 
 
@@ -144,8 +161,24 @@ def logout(request: Request, current=Depends(user)):
 
 
 @app.get('/api/health')
-def health():
-    return service.health()
+def health(request: Request):
+    current = user(request) if access.enabled() else service.session(request.cookies.get('trainer_session', ''))['user']
+    return service.health(current['id'] if current else None)
+
+
+@app.get('/api/ai/settings')
+def ai_connection(current=Depends(user)):
+    return ai_settings.status(current['id'])
+
+
+@app.put('/api/ai/settings')
+def ai_connect(body: AISettingsInput, current=Depends(user)):
+    return ai_settings.save(current['id'], body)
+
+
+@app.delete('/api/ai/settings')
+def ai_disconnect(body: AISettingsRevision, current=Depends(user)):
+    return ai_settings.disconnect(current['id'], body.revision)
 
 
 @app.get('/api/github/connection')
@@ -167,6 +200,16 @@ def github_disconnect(current=Depends(user)):
 def github_check(body: GitHubRepository, current=Depends(user)):
     service.rate('github-check:' + current['id'], 30)
     return github_sharing.check(current['id'], body.url)
+
+
+@app.get('/api/github/default-repository')
+def github_default(current=Depends(user)):
+    return {'repository': github_sharing.default_repository(current['id'])}
+
+
+@app.put('/api/github/default-repository')
+def github_save_default(body: GitHubDefaultRepository, current=Depends(user)):
+    return github_sharing.save_default(current['id'], body)
 
 
 @app.post('/api/github/preview')
@@ -320,6 +363,126 @@ def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
     return ontology.concept_matches(current['id'], body)
 
 
+@app.get('/api/resources')
+def resource_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1),
+                  kind: Literal['all', 'text', 'url', 'note'] = 'all', current=Depends(user)):
+    return resources.listing(current['id'], q, page, kind)
+
+
+@app.get('/api/worksheets')
+def worksheet_list(page: int = Query(default=1, ge=1), interpretation_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
+    return worksheets.listing(current['id'], page, interpretation_id)
+
+
+@app.post('/api/worksheets', status_code=202)
+def worksheet_start(body: WorksheetInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = worksheets.begin(current['id'], body)
+    if fresh:
+        tasks.add_task(worksheets.generate, result['id'])
+    return result
+
+
+@app.get('/api/worksheets/{identifier}/practice')
+def practice_record_view(identifier: str, current=Depends(user)):
+    return practice_records.view(current['id'], identifier)
+
+
+@app.post('/api/worksheets/{identifier}/practice')
+def practice_record_save(identifier: str, body: PracticeRecordInput, current=Depends(user)):
+    return practice_records.save(current['id'], identifier, body)
+
+
+@app.get('/api/worksheets/{identifier}/practice/versions/{revision}')
+def practice_record_version(identifier: str, revision: int, current=Depends(user)):
+    return practice_records.version(current['id'], identifier, revision)
+
+
+@app.get('/api/worksheets/{identifier}')
+def worksheet_view(identifier: str, current=Depends(user)):
+    return worksheets.view(current['id'], identifier)
+
+
+@app.get('/api/interpretations')
+def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
+    return interpretations.listing(current['id'], page, resource_id)
+
+
+@app.post('/api/material-reviews/{identifier}/knowledge')
+def material_knowledge_register(identifier: str, body: RegisterKnowledge, current=Depends(user)):
+    return material_knowledge.register(current['id'], identifier, body)
+
+
+@app.get('/api/material-reviews/{identifier}/proposals')
+def material_proposal_list(identifier: str, current=Depends(user)):
+    return material_proposals.listing(current['id'], identifier)
+
+
+@app.post('/api/material-reviews/{identifier}/proposals', status_code=202)
+def material_proposal_start(identifier: str, body: MaterialProposalInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = material_proposals.begin(current['id'], identifier, body)
+    if fresh: tasks.add_task(material_proposals.generate, result['id'])
+    return result
+
+
+@app.get('/api/material-proposals/{identifier}')
+def material_proposal_view(identifier: str, current=Depends(user)):
+    return material_proposals.view(current['id'], identifier)
+
+
+@app.get('/api/materials/{kind}/{origin_id}')
+def material_status(kind: MaterialKind, origin_id: str, revision: int = Query(ge=1), current=Depends(user)):
+    return materials.status(current['id'], kind, origin_id, revision)
+
+
+@app.post('/api/materials/{kind}/{origin_id}/review')
+def material_review(kind: MaterialKind, origin_id: str, body: MaterialReviewInput, current=Depends(user)):
+    return materials.mark(current['id'], kind, origin_id, body.revision)
+
+
+@app.get('/api/material-reviews')
+def material_reviews(page: int = Query(default=1, ge=1), current=Depends(user)):
+    return materials.listing(current['id'], page)
+
+
+@app.get('/api/material-reviews/{identifier}')
+def material_review_detail(identifier: str, current=Depends(user)):
+    return materials.detail(current['id'], identifier)
+
+
+@app.post('/api/interpretations', status_code=202)
+def interpretation_start(body: InterpretationInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = interpretations.begin(current['id'], body)
+    if fresh:
+        tasks.add_task(interpretations.generate, result['id'])
+    return result
+
+
+@app.get('/api/interpretations/{identifier}')
+def interpretation_view(identifier: str, current=Depends(user)):
+    return interpretations.view(current['id'], identifier)
+
+
+@app.get('/api/interpretations/{identifier}/code')
+def interpretation_code(identifier: str, section_id: str = Query(pattern=r'^s[1-6]$'), current=Depends(user)):
+    from . import code_practice
+    return code_practice.listing(current['id'], identifier, section_id)
+
+
+@app.post('/api/resources')
+def resource_register(body: ResourceInput, current=Depends(user)):
+    return resources.register(current['id'], body)
+
+
+@app.get('/api/resources/{resource_id}')
+def resource_view(resource_id: str, current=Depends(user)):
+    return resources.view(current['id'], resource_id)
+
+
+@app.get('/api/resources/{resource_id}/versions/{revision}')
+def resource_version(resource_id: str, revision: int, current=Depends(user)):
+    return resources.version(current['id'], resource_id, revision)
+
+
 @app.get('/api/reference-notes')
 def reference_list(current=Depends(user), q: str = Query(default='', max_length=160),
                    page: int = Query(default=1, ge=1), archived: bool = False):
@@ -439,6 +602,73 @@ def source_document(source_id: str, current=Depends(user)):
 @app.patch('/api/admin/reports/{report_id}')
 def review_report(report_id: str, body: ReportUpdate, current=Depends(user)):
     return service.review_report(current, report_id, body)
+
+
+@app.get('/api/insights/schedule')
+def insight_schedule_status(current=Depends(user)):
+    return insight_schedule.status(current['id'])
+
+
+@app.put('/api/insights/schedule')
+def insight_schedule_configure(body: InsightScheduleInput, current=Depends(user)):
+    return insight_schedule.configure(current['id'], body)
+
+
+@app.post('/api/insights/{identifier}/choice')
+def insight_choice(identifier: str, body: InsightChoice, current=Depends(user)):
+    return insight_adoptions.choose(current['id'], identifier, body.index, body.action)
+
+
+@app.get('/api/explorations')
+def exploration_list(page: int = Query(1, ge=1), current=Depends(user)):
+    return insight_adoptions.listing(current['id'], page)
+
+
+@app.get('/api/explorations/{identifier}')
+def exploration_read(identifier: str, current=Depends(user)):
+    return insight_adoptions.read(current['id'], identifier)
+
+
+@app.put('/api/explorations/{identifier}')
+def exploration_save(identifier: str, body: ExplorationNotes, current=Depends(user)):
+    return insight_adoptions.save(current['id'], identifier, body)
+
+
+@app.get('/api/insights')
+def insight_status(current=Depends(user)):
+    return insights.status(current['id'])
+
+
+@app.post('/api/insights')
+def insight_generate(body: InsightRequest, tasks: BackgroundTasks, current=Depends(user)):
+    job, fresh = insights.begin(current['id'], body.request_id)
+    if fresh: tasks.add_task(insights.generate, job['id'])
+    return job
+
+
+@app.get('/api/spaced-reviews')
+def spaced_review_queue(current=Depends(user)):
+    return spaced_reviews.queue(current['id'])
+
+
+@app.post('/api/spaced-reviews')
+def spaced_review_enroll(body: ReviewEnrollment, current=Depends(user)):
+    return spaced_reviews.enroll(current['id'], body.kind, body.origin_id, body.revision)
+
+
+@app.get('/api/spaced-reviews/source/{kind}/{identifier}')
+def spaced_review_status(kind: ReviewKind, identifier: str, revision: int = Query(ge=1), current=Depends(user)):
+    return {'review': spaced_reviews.find(current['id'], kind, identifier, revision)}
+
+
+@app.get('/api/spaced-reviews/{identifier}')
+def spaced_review_get(identifier: str, current=Depends(user)):
+    return spaced_reviews.view(current['id'], identifier)
+
+
+@app.post('/api/spaced-reviews/{identifier}/responses')
+def spaced_review_respond(identifier: str, body: ReviewResponse, current=Depends(user)):
+    return spaced_reviews.respond(current['id'], identifier, body)
 
 
 @app.get('/api/me/reviews')

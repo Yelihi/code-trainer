@@ -1,3 +1,12 @@
+import { Explorations, ExplorationRoute } from './Explorations';
+import { DeepInside } from './DeepInside';
+import { SpacedReviewRoute } from './SpacedReviews';
+import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
+import { PracticeEntry } from './Navigation';
+import { InterpretationCode } from './InterpretationCode';
+import { Interpretations, InterpretationDetail } from './Interpretations';
+import { WorksheetDetail } from './Worksheets';
+import { PracticeRecordRoute } from './PracticeRecords';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -9,18 +18,34 @@ import { Reviews, Operations } from './Reviews';
 import { FeedInbox } from './FeedInbox';
 import { Foundations, FoundationLesson } from './Foundations';
 import { LearningMap } from './LearningMap';
+import { Library, ResourceRegister, ResourceDetail } from './Library';
 import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
 import { ReferenceReview } from './ReferenceReview';
 import { GitHubSettings, GitHubShare } from './GitHubSharing';
+import { AISettings } from './AISettings';
+import './shadcn.css';
 import './styles.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/', element: <Home /> },
+  { path: '/explore', element: <Interpretations /> },
+  { path: '/interpretations/:id', element: <InterpretationDetail /> },
+  { path: '/interpretations/:id/code/:sectionId', element: <InterpretationCode /> },
+  { path: '/explore/practice', element: <PracticeEntry /> },
+  { path: '/worksheets/:id', element: <WorksheetDetail /> },
+  { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },
+  { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
+  { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
+  { path: '/apply', element: <DeepInside /> },
+  { path: '/apply/explorations', element: <Explorations /> },
+  { path: '/apply/explorations/:id', element: <ExplorationRoute /> },
+  { path: '/settings/ai', element: <AISettings /> },
   { path: '/inbox', element: <FeedInbox /> },
   { path: '/create', element: <Create /> },
   { path: '/learn/:id', element: <Context /> },
   { path: '/learn/:id/units/:unitId', element: <Lesson /> },
   { path: '/practice/:id', element: <Practice /> },
+  { path: '/reviews/material/:id', element: <SpacedReviewRoute /> },
   { path: '/reviews', element: <Reviews /> },
   { path: '/reviews/:id', element: <Practice review /> },
   { path: '/admin/operations', element: <Operations /> },
@@ -31,6 +56,10 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/knowledge', element: <LearningMap /> },
   { path: '/settings/github', element: <GitHubSettings /> },
   { path: '/github/share', element: <GitHubShare /> },
+  { path: '/library', element: <Library /> },
+  { path: '/library/new/reference', element: <ResourceRegister /> },
+  { path: '/library/:id', element: <ResourceDetail /> },
+  { path: '/library/:id/edit', element: <ResourceRegister /> },
   { path: '/references', element: <ReferenceNotes /> },
   { path: '/references/new', element: <ReferenceNoteRoute /> },
   { path: '/references/:id', element: <ReferenceNoteRoute /> },

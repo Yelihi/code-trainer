@@ -3,6 +3,9 @@ import { Markdown } from './Markdown';
 import { ErrorNotice } from './App';
 import { errorMessage } from './api';
 import { suggestionBlock, type Proposal, type ReferenceNote } from './referenceTypes';
+import { Button } from './components/ui/button';
+import { Label } from './components/ui/label';
+import { Checkbox } from './components/ui/checkbox';
 
 export function ReferenceContentReview({ note, proposal, pending, onApply, onEdit }: {
   note: ReferenceNote; proposal: Proposal; pending: boolean; onApply: (issues: number[]) => Promise<void>; onEdit: () => void;
@@ -29,9 +32,9 @@ export function ReferenceContentReview({ note, proposal, pending, onApply, onEdi
           <div className="reference-replacement"><h5>AI 추천 문장</h5>{issue.replacement ? <blockquote><Markdown language="">{issue.replacement}</Markdown></blockquote> : <p className="muted">바로 교체할 문장이 아직 준비되지 않았습니다.</p>}</div>
         </div>
         <dl><dt>검토 이유</dt><dd><Markdown language="">{issue.explanation}</Markdown></dd><dt>수정·확인 안내</dt><dd><Markdown language="">{issue.suggestion}</Markdown></dd></dl>
-        {current && <><label className="reference-replacement-choice"><input type="checkbox" checked={checked.includes(i)} disabled={pending || !!blocked} onChange={e => setChecked(e.target.checked ? [...checked, i] : checked.filter(n => n !== i))} /><span>{i + 1}번 추천 문장을 본문에 반영</span></label>{blocked && <p className="muted">{blocked}</p>}</>}
+        {current && <><Label className="reference-replacement-choice" htmlFor={`reference-choice-${i}`}><Checkbox id={`reference-choice-${i}`} className="size-[18px] shrink-0" checked={checked.includes(i)} disabled={pending || !!blocked} onCheckedChange={value => setChecked(value === true ? [...checked, i] : checked.filter(n => n !== i))} /><span>{i + 1}번 추천 문장을 본문에 반영</span></Label>{blocked && <p className="muted">{blocked}</p>}</>}
       </article>;
     })}
-    {review.issues.length > 0 && <footer><p>체크만으로 본문이 바뀌지는 않습니다. 선택한 변경을 반영하면 새 버전으로 저장되며, 이전 본문은 버전 기록에 남습니다. 이후 새 본문을 다시 검토해주세요.</p><ErrorNotice error={error} /><div className="reference-actions"><button type="button" className="primary" disabled={pending || !current || checked.length === 0} onClick={() => void apply()}>{pending ? '처리 중…' : `선택한 변경 ${checked.length}개 반영`}</button><button type="button" disabled={pending} onClick={onEdit}>본문 직접 수정</button></div></footer>}
+    {review.issues.length > 0 && <footer><p>체크만으로 본문이 바뀌지는 않습니다. 선택한 변경을 반영하면 새 버전으로 저장되며, 이전 본문은 버전 기록에 남습니다. 이후 새 본문을 다시 검토해주세요.</p><ErrorNotice error={error} /><div className="reference-actions"><Button type="button" className="primary" disabled={pending || !current || checked.length === 0} onClick={() => void apply()}>{pending ? '처리 중…' : `선택한 변경 ${checked.length}개 반영`}</Button><Button type="button" disabled={pending} onClick={onEdit}>본문 직접 수정</Button></div></footer>}
   </section>;
 }

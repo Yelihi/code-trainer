@@ -13,6 +13,7 @@ type ReviewItem = { exercise_id: string; title: string; context_title: string; k
 export function Reviews() {
   const { data, error, reload } = useResource<{ items: ReviewItem[]; due_count: number }>('/me/reviews');
   const { data: materials, error: materialError, reload: reloadMaterials } = useResource<{ items: SpacedReview[]; due_count: number }>('/spaced-reviews');
+  const { data: authored } = useResource<{ items: { problem_id: string; title: string; due_at: string; due: boolean; archived: boolean }[] }>('/manual-problems/reviews');
   const [busy, setBusy] = useState('');
   const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export function Reviews() {
     {data && materials && <ReviewCurves codes={data.items} materials={materials.items} />}
     <section className="review-section"><h2>자료 복습 {materials?.due_count ?? 0}개</h2><p>해석·내 답변·노트에서 직접 복습에 추가할 수 있습니다. 스스로 설명 가능하면 3·7·14일 뒤, 다시 확인이 필요하면 다음 날 살펴봅니다.</p><ErrorNotice error={materialError} />{materialError && <Button onClick={reloadMaterials}>자료 일정 다시 불러오기</Button>}{!materials && !materialError && <LoadingSkeleton layout="list" label="자료 복습을 불러오는 중…" />}
       {materials && <>{!materials.items.length && <div className="empty-state">복습에 추가한 자료가 없습니다.<Link className="button" to="/explore">해석 살펴보기</Link></div>}{materials.items.some(x => x.due) && <h3>기한이 된 자료 · 미완료</h3>}<div className="list">{materials.items.filter(x => x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div>{materials.items.some(x => !x.due) && <h3>예정 · 다시 확인할 자료</h3>}<div className="list">{materials.items.filter(x => !x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div></>}
-    </section><section className="review-section"><h2>코드 복습</h2>
+    </section><section className="review-section"><h2>직접 만든 문제 복습 · {authored?.items.filter(item => item.due && !item.archived).length ?? 0}개</h2><p>풀이를 저장하고 자기 평가한 문제가 이곳에 나타납니다.</p><div className="list">{authored?.items.filter(item => !item.archived).map(item => <article className="list-row review-row" key={item.problem_id}><div><h3>{item.title}</h3><p>{item.due ? '복습할 시간 · ' : '예정 · '}{timestamp(item.due_at)}</p></div><Link className="button" to={'/problem-books/problems/' + item.problem_id + '/solve'}>{item.due ? '다시 풀기' : '문제 보기'}</Link></article>)}</div></section><section className="review-section"><h2>코드 복습</h2>
     <p className="page-intro">이전 풀이를 보지 않고 다시 해결해보세요. 기존 코드와 진도는 그대로 보관됩니다.</p>
     <p className="muted">첫 통과 다음 날부터 시작합니다. 도움 없이 통과하면 3일·7일·14일 뒤, 실패하거나 도움을 참고하면 다음 날 다시 연습합니다. 앱 밖에서 받은 도움은 기록하지 않습니다.</p>
     <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}

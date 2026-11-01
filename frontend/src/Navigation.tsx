@@ -12,6 +12,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
   ] },
   { label: '탐구하기', items: [
     { label: '해석하기', to: '/explore', paths: ['/', '/explore', '/interpretations/*', '/learn/*', '/create'] },
+    { label: '문제집', to: '/problem-books', paths: ['/problem-books/*'] },
     { label: '실습하기', to: '/explore/practice', paths: ['/explore/practice', '/foundations/*', '/practice/*', '/worksheets/*'] },
     { label: '다시 검토', to: '/reviews', paths: ['/reviews/*', '/reference-reviews/*'] },
     { label: '나의 기록', to: '/me', paths: ['/me'] },

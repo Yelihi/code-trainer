@@ -1,0 +1,29 @@
+.problem-books-page { max-width: 1080px; }
+.problem-books-page .reference-page-heading { margin-bottom: 36px; }
+.problem-books-filter { display: grid; gap: 8px; max-width: 240px; margin-bottom: 30px; }
+.problem-books-list { border-top: 1px solid var(--line); }
+.problem-bank-row { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+.problem-bank-row .problem-book-row { flex: 1; border-bottom: 0; }
+.problem-book-row, .problem-book-contents li, .problem-selected li, .problem-available > div { display: flex; justify-content: space-between; align-items: center; gap: 24px; border-bottom: 1px solid var(--line); padding: 20px 4px; }
+.problem-book-row { color: var(--text); text-decoration: none; }
+.problem-book-row:hover, .problem-book-row:focus-visible { background: var(--panel); }
+.problem-book-row h2, .problem-book-contents h2 { font-size: 19px; margin: 6px 0; }
+.problem-book-row p, .problem-book-contents p { margin: 0; color: var(--muted); }
+.problem-book-row small, .problem-book-contents small { color: var(--muted); }
+.problem-form form, .problem-book-editor { display: grid; gap: 26px; max-width: 900px; margin-top: 32px; }
+.problem-form form > label, .problem-book-editor > label { display: grid; gap: 9px; }
+.problem-form-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.problem-form-pair label { display: grid; gap: 9px; }
+.problem-form textarea, .problem-book-editor textarea { line-height: 1.65; }
+.problem-book-editor section { border-top: 1px solid var(--line); padding-top: 24px; }
+.problem-selected, .problem-book-contents { padding-left: 0; list-style: none; }
+.problem-selected li > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.problem-prompt, .problem-answer, .problem-comparison, .problem-history { border-top: 1px solid var(--line); padding-top: 28px; margin-top: 32px; }
+.problem-answer { display: grid; gap: 20px; }
+.problem-answer > button { justify-self: start; }
+.problem-compare-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.problem-compare-columns > div { min-width: 0; padding: 20px; background: var(--panel); }
+.problem-compare-columns pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.problem-comparison .reference-actions { margin-top: 20px; }
+@media (max-width: 680px) { .problem-form-pair, .problem-compare-columns { grid-template-columns: 1fr; } .problem-book-row, .problem-book-contents li, .problem-selected li { align-items: flex-start; flex-direction: column; gap: 10px; } }
+@media (max-width: 680px) { .problem-bank-row { flex-wrap: wrap; padding-bottom: 18px; } .problem-bank-row .problem-book-row { flex-basis: 100%; } }

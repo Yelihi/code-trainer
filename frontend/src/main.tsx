@@ -6,6 +6,7 @@ import { PracticeEntry } from './Navigation';
 import { InterpretationCode } from './InterpretationCode';
 import { Interpretations, InterpretationDetail } from './Interpretations';
 import { WorksheetDetail } from './Worksheets';
+import { ProblemBookCatalog, ProblemBank, ProblemEditor, BookEditor, BookDetail, SolveProblem } from './ProblemBooks';
 import { PracticeRecordRoute } from './PracticeRecords';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -34,6 +35,14 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/explore/practice', element: <PracticeEntry /> },
   { path: '/worksheets/:id', element: <WorksheetDetail /> },
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },
+  { path: '/problem-books', element: <ProblemBookCatalog /> },
+  { path: '/problem-books/new', element: <BookEditor /> },
+  { path: '/problem-books/problems', element: <ProblemBank /> },
+  { path: '/problem-books/problems/new', element: <ProblemEditor /> },
+  { path: '/problem-books/problems/:id/edit', element: <ProblemEditor /> },
+  { path: '/problem-books/problems/:id/solve', element: <SolveProblem /> },
+  { path: '/problem-books/:id/edit', element: <BookEditor /> },
+  { path: '/problem-books/:id', element: <BookDetail /> },
   { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
   { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
   { path: '/apply', element: <DeepInside /> },

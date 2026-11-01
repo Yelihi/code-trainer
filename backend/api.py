@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources, interpretations, worksheets, practice_records
+from . import resources, interpretations, worksheets, practice_records, problem_books
+from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput
 from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
@@ -367,6 +368,91 @@ def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
 def resource_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1),
                   kind: Literal['all', 'text', 'url', 'note'] = 'all', current=Depends(user)):
     return resources.listing(current['id'], q, page, kind)
+
+
+@app.get('/api/problem-books/catalog')
+def problem_book_catalog(current=Depends(user)):
+    return problem_books.catalog(current['id'])
+
+
+@app.get('/api/problem-books')
+def manual_book_list(current=Depends(user)):
+    return problem_books.books(current['id'])
+
+
+@app.post('/api/problem-books')
+def manual_book_create(body: BookInput, current=Depends(user)):
+    return problem_books.save_book(current['id'], body)
+
+
+@app.get('/api/problem-books/{identifier}')
+def manual_book_view(identifier: str, current=Depends(user)):
+    return problem_books.book(current['id'], identifier)
+
+
+@app.put('/api/problem-books/{identifier}')
+def manual_book_update(identifier: str, body: BookInput, current=Depends(user)):
+    return problem_books.save_book(current['id'], body, identifier)
+
+
+@app.post('/api/problem-books/{identifier}/archive')
+def manual_book_archive(identifier: str, current=Depends(user)):
+    return problem_books.archive(current['id'], 'manual_books', identifier)
+
+
+@app.get('/api/manual-problems')
+def manual_problem_list(current=Depends(user)):
+    return problem_books.problems(current['id'])
+
+
+@app.post('/api/manual-problems')
+def manual_problem_create(body: ProblemInput, current=Depends(user)):
+    return problem_books.save_problem(current['id'], body)
+
+
+@app.get('/api/manual-problems/reviews')
+def manual_problem_review_list(current=Depends(user)):
+    return problem_books.review_queue(current['id'])
+
+
+@app.get('/api/manual-problems/{identifier}')
+def manual_problem_view(identifier: str, current=Depends(user)):
+    return problem_books.problem(current['id'], identifier)
+
+
+@app.put('/api/manual-problems/{identifier}')
+def manual_problem_update(identifier: str, body: ProblemInput, current=Depends(user)):
+    return problem_books.save_problem(current['id'], body, identifier)
+
+
+@app.post('/api/manual-problems/{identifier}/archive')
+def manual_problem_archive(identifier: str, current=Depends(user)):
+    return problem_books.archive(current['id'], 'manual_problems', identifier)
+
+
+@app.get('/api/manual-problems/{identifier}/solution')
+def manual_problem_solution(identifier: str, current=Depends(user)):
+    return problem_books.solution(current['id'], identifier)
+
+
+@app.get('/api/manual-problems/{identifier}/attempts')
+def manual_problem_attempts(identifier: str, current=Depends(user)):
+    return problem_books.attempts(current['id'], identifier)
+
+
+@app.get('/api/manual-problems/{identifier}/attempts/{attempt_id}/snapshot')
+def manual_problem_attempt_snapshot(identifier: str, attempt_id: str, current=Depends(user)):
+    return problem_books.attempt_snapshot(current['id'], identifier, attempt_id)
+
+
+@app.post('/api/manual-problems/{identifier}/attempts')
+def manual_problem_attempt(identifier: str, body: AttemptInput, current=Depends(user)):
+    return problem_books.attempt(current['id'], identifier, body)
+
+
+@app.post('/api/manual-problems/{identifier}/attempts/{attempt_id}/assessment')
+def manual_problem_assess(identifier: str, attempt_id: str, body: AssessmentInput, current=Depends(user)):
+    return problem_books.assess(current['id'], identifier, attempt_id, body)
 
 
 @app.get('/api/worksheets')

@@ -9,7 +9,7 @@ class ProblemBooksTest(unittest.TestCase):
     tearDown = test_app.AppTest.tearDown
 
     def create_problem(self, title='문제'):
-        return problem_books.save_problem(self.owner, ProblemInput(title=title, kind='code', language='cpp', prompt='구현하세요', answer='int main() {}'))
+        return problem_books.save_problem(self.owner, ProblemInput(title=title, kind='text', language='cpp', prompt='구현하세요', answer='int main() {}'))
 
     def test_reuse_order_owner_and_versioned_attempt(self):
         first, second = self.create_problem('첫째'), self.create_problem('둘째')
@@ -54,3 +54,75 @@ class ProblemBooksTest(unittest.TestCase):
         self.assertEqual(saved['problem']['answer'], 'int main() {}')
         self.assertEqual(saved['attempt']['answer'], '풀이')
         with self.assertRaises(service.Error): problem_books.attempt_snapshot('someone-else', row['id'], attempt['id'])
+
+    def test_code_requires_verified_answer_and_records_sandbox_result(self):
+        draft = {'title': '합계', 'kind': 'code', 'language': 'python', 'prompt': '두 수의 합을 출력하세요.',
+                 'answer': 'a,b=map(int,input().split());print(a+b)', 'cases': [
+                     {'stdin': '1 2\n', 'expected': '3\n', 'public': True},
+                     {'stdin': '4 5\n', 'expected': '9\n', 'public': False}]}
+        created = self.client.post('/api/manual-problems', json=draft).json()
+        self.assertFalse(created['verified'])
+        self.assertEqual(self.client.post('/api/problem-books', json={'title': '합계', 'problem_ids': [created['id']]}).status_code, 409)
+        self.assertEqual(self.client.post(f"/api/manual-problems/{created['id']}/execute", json={
+            'action': 'submit', 'code': draft['answer'], 'problem_revision': 1, 'request_id': 'early-run'}).status_code, 409)
+        with patch.object(problem_books.runner, 'pin_runtime', return_value='sha256:' + 'a' * 64), \
+                patch.object(problem_books.runner, 'run', return_value=[{'status': 'ok', 'stdout': '3\n', 'stderr': '', 'exit_code': 0},
+                                                                         {'status': 'ok', 'stdout': '9\n', 'stderr': '', 'exit_code': 0}]) as run:
+            checked = self.client.post('/api/manual-problems/verify', json={'id': created['id'], 'problem': {**draft, 'revision': 1}}).json()
+        self.assertEqual(checked['result']['status'], 'passed')
+        self.assertTrue(checked['problem']['verified'])
+        self.assertEqual(run.call_args.kwargs['image_id'], 'sha256:' + 'a' * 64)
+        visible = self.client.get('/api/manual-problems/' + created['id']).json()
+        self.assertEqual(len(visible['cases']), 1)
+        self.assertNotIn('answer', visible)
+        self.assertEqual(self.client.post('/api/problem-books', json={'title': '합계', 'problem_ids': [created['id']]}).status_code, 200)
+        with patch.object(problem_books.runner, 'run', return_value=[{'status': 'ok', 'stdout': '3\n', 'stderr': '', 'exit_code': 0},
+                                                                      {'status': 'ok', 'stdout': '0\n', 'stderr': '', 'exit_code': 0}]):
+            response = self.client.post(f"/api/manual-problems/{created['id']}/execute", json={
+                'action': 'submit', 'code': draft['answer'], 'problem_revision': 2, 'request_id': 'code-submit'})
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertEqual(payload['result']['status'], 'failed')
+        self.assertEqual(payload['attempt']['assessment'], 'retry')
+        self.assertNotIn('expected', payload['result']['tests'][1])
+        self.assertEqual(len(self.client.get(f"/api/manual-problems/{created['id']}/attempts").json()['items']), 1)
+        self.assertEqual(self.client.get(f"/api/manual-problems/{created['id']}/solution").status_code, 200)
+        with patch.object(problem_books.runner, 'run', return_value=[{'status': 'ok', 'stdout': '3\n', 'stderr': '', 'exit_code': 0}]) as preview:
+            run_result = self.client.post(f"/api/manual-problems/{created['id']}/execute", json={
+                'action': 'run', 'code': draft['answer'], 'problem_revision': 2, 'request_id': 'code-preview'}).json()
+        self.assertEqual(run_result['result']['status'], 'passed')
+        self.assertIsNone(run_result['attempt'])
+        self.assertEqual(preview.call_args.args[2], ['1 2\n'])
+        self.assertEqual(len(self.client.get(f"/api/manual-problems/{created['id']}/attempts").json()['items']), 1)
+        with patch.object(problem_books.runner, 'run', return_value=[{'status': 'ok', 'stdout': '3\n', 'stderr': '', 'exit_code': 0},
+                                                                      {'status': 'ok', 'stdout': '9\n', 'stderr': '', 'exit_code': 0}]):
+            passed = self.client.post(f"/api/manual-problems/{created['id']}/execute", json={
+                'action': 'submit', 'code': draft['answer'], 'problem_revision': 2, 'request_id': 'code-pass'}).json()
+        self.assertEqual(passed['result']['status'], 'passed')
+        self.assertEqual(passed['attempt']['assessment'], 'understood')
+        self.assertEqual(len(self.client.get(f"/api/manual-problems/{created['id']}/attempts").json()['items']), 2)
+        self.assertFalse(self.client.put(f"/api/manual-problems/{created['id']}", json={**draft, 'revision': 2}).json()['verified'])
+
+    def test_failed_verification_remains_draft_and_preview_does_not_record(self):
+        draft = {'title': '출력', 'kind': 'code', 'language': 'python', 'prompt': '수를 출력하세요.', 'answer': 'print(1)',
+                 'cases': [{'stdin': '', 'expected': '2', 'public': True}, {'stdin': '', 'expected': '2', 'public': False}]}
+        with patch.object(problem_books.runner, 'pin_runtime', return_value='sha256:' + 'b' * 64), \
+                patch.object(problem_books.runner, 'run', return_value=[{'status': 'ok', 'stdout': '1\n', 'stderr': '', 'exit_code': 0}] * 2):
+            response = self.client.post('/api/manual-problems/verify', json={'problem': draft})
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertFalse(result['problem']['verified'])
+        self.assertEqual(result['result']['status'], 'failed')
+        identifier = result['problem']['id']
+        self.assertEqual(self.client.get('/api/manual-problems/' + identifier).json()['cases'], [draft['cases'][0]])
+        self.assertEqual(self.client.get('/api/manual-problems/' + identifier + '/attempts').json()['items'], [])
+
+    def test_legacy_code_problem_requires_new_cases_before_solving(self):
+        row = problem_books.save_problem(self.owner, ProblemInput(title='기존 코드', kind='code', language='cpp', prompt='작성', answer='int main() {}'))
+        with db.connect(write=True) as c:
+            c.execute('UPDATE manual_problem_versions SET data=json_remove(data, "$.cases", "$.verified", "$.image_id") WHERE problem_id=?', (row['id'],))
+        restored = problem_books.problem(self.owner, row['id'])
+        self.assertEqual(restored['cases'], [])
+        self.assertFalse(restored['verified'])
+        self.assertEqual(self.client.post(f"/api/manual-problems/{row['id']}/execute", json={
+            'action': 'run', 'code': 'int main() {}', 'problem_revision': 1, 'request_id': 'legacy-run'}).status_code, 409)

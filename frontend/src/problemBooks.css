@@ -19,6 +19,21 @@
 .problem-code-answer .cm-editor { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .problem-code-answer .cm-editor.cm-focused { outline: 2px solid var(--ring); outline-offset: 2px; }
 .problem-code-answer small { color: var(--muted); text-align: right; }
+.problem-test-cases { display: grid; gap: 22px; border-top: 1px solid var(--line); padding-top: 28px; }
+.problem-test-heading, .problem-test-row-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.problem-test-heading h2, .problem-test-row-heading h3 { margin: 0 0 8px; }
+.problem-test-heading p { margin: 0; color: var(--muted); }
+.problem-test-row { display: grid; gap: 16px; padding: 20px; background: var(--panel); border-radius: 8px; }
+.problem-test-row .problem-form-pair > label { display: grid; gap: 9px; min-width: 0; }
+.problem-test-public { display: flex; align-items: center; gap: 10px; justify-self: start; }
+.problem-verification { display: grid; gap: 16px; padding: 20px; background: var(--panel); border-radius: 8px; }
+.problem-verification h3 { margin: 0; }
+.problem-verification ol { display: grid; gap: 16px; margin: 0; padding-left: 24px; }
+.problem-verification li strong { display: block; margin-bottom: 8px; }
+.problem-test-output { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.problem-test-output > div { min-width: 0; }
+.problem-test-output span { color: var(--muted); }
+.problem-test-output pre, .problem-execution-error { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; padding: 12px; background: var(--bg); }
 .problem-book-editor section { border-top: 1px solid var(--line); padding-top: 24px; }
 .problem-selected, .problem-book-contents { padding-left: 0; list-style: none; }
 .problem-selected li > div { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -31,3 +46,4 @@
 .problem-comparison .reference-actions { margin-top: 20px; }
 @media (max-width: 680px) { .problem-form-pair, .problem-compare-columns { grid-template-columns: 1fr; } .problem-book-row, .problem-book-contents li, .problem-selected li { align-items: flex-start; flex-direction: column; gap: 10px; } }
 @media (max-width: 680px) { .problem-bank-row { flex-wrap: wrap; padding-bottom: 18px; } .problem-bank-row .problem-book-row { flex-basis: 100%; } }
+@media (max-width: 680px) { .problem-test-heading { flex-direction: column; } .problem-test-output { grid-template-columns: 1fr; } }

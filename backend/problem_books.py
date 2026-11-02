@@ -3,8 +3,14 @@ import json
 from datetime import datetime, timedelta
 from typing import Literal
 from pydantic import Field, model_validator
-from . import db, service
+from . import db, service, runner
 from .schema import Model, Language
+
+
+class TestCase(Model):
+    stdin: str = Field(default='', max_length=6000)
+    expected: str = Field(max_length=6000)
+    public: bool = True
 
 
 class ProblemInput(Model):
@@ -13,6 +19,7 @@ class ProblemInput(Model):
     language: Language | None = None
     prompt: str = Field(min_length=1, max_length=20000)
     answer: str = Field(min_length=1, max_length=20000)
+    cases: list[TestCase] = Field(default_factory=list, max_length=8)
     explanation: str = Field(default='', max_length=20000)
     source_name: str = Field(default='', max_length=255)
     source_location: str = Field(default='', max_length=160)
@@ -25,7 +32,21 @@ class ProblemInput(Model):
             raise ValueError('제목, 문제, 정답을 입력해주세요.')
         if self.kind == 'code' and self.language is None:
             raise ValueError('코드 문제의 언어를 선택해주세요.')
+        if self.kind == 'text' and self.cases:
+            raise ValueError('서술형 문제에는 실행 사례를 넣을 수 없습니다.')
         return self
+
+
+class VerifyInput(Model):
+    problem: ProblemInput
+    id: str | None = Field(default=None, pattern=r'^[a-f0-9]{32}$')
+
+
+class CodeExecutionInput(Model):
+    code: str = Field(min_length=1, max_length=24000)
+    problem_revision: int = Field(ge=1)
+    request_id: str = Field(min_length=8, max_length=80)
+    action: Literal['run', 'submit']
 
 
 class BookInput(Model):
@@ -71,6 +92,8 @@ def initialize(c):
         problem_revision INTEGER NOT NULL, answer TEXT NOT NULL, assessment TEXT,
         request_id TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(owner,request_id),
         FOREIGN KEY(problem_id,problem_revision) REFERENCES manual_problem_versions(problem_id,revision))''')
+    if 'result' not in {column['name'] for column in c.execute('PRAGMA table_info(manual_problem_attempts)')}:
+        c.execute('ALTER TABLE manual_problem_attempts ADD COLUMN result TEXT')
     c.execute('''CREATE TABLE IF NOT EXISTS manual_problem_reviews (
         owner TEXT NOT NULL REFERENCES users(id), problem_id TEXT NOT NULL REFERENCES manual_problems(id),
         due_at TEXT NOT NULL, streak INTEGER NOT NULL, PRIMARY KEY(owner,problem_id))''')
@@ -91,8 +114,12 @@ def problem(owner, identifier, revision=None, reveal=False):
         if not version:
             raise service.Error('문제 버전을 찾을 수 없습니다.', 404)
         data = json.loads(version['data'])
+        data.setdefault('cases', [])
+        data.setdefault('verified', False)
         if not reveal:
             data.pop('answer'); data.pop('explanation')
+            data['cases'] = [case for case in data['cases'] if case['public']]
+        data.pop('image_id', None)
         return dict(id=identifier, revision=revision, current_revision=row['revision'], archived=bool(row['archived']), **data)
 
 
@@ -117,9 +144,45 @@ def save_problem(owner, body, identifier=None):
                 raise service.Error('새 문제의 버전을 확인해주세요.', 422)
             identifier, revision = service.uid(), 1
             c.execute('INSERT INTO manual_problems VALUES (?,?,?,0,?,?)', (identifier, owner, revision, service.now(), service.now()))
-        data = body.model_dump(exclude={'revision'})
+        data = {**body.model_dump(exclude={'revision'}), 'verified': False, 'image_id': None}
         c.execute('INSERT INTO manual_problem_versions VALUES (?,?,?,?)', (identifier, revision, service.dump(data), service.now()))
     return problem(owner, identifier, reveal=True)
+
+
+def checks(language, code, cases, image_id):
+    results = runner.run(language, code, [case['stdin'] for case in cases], image_id=image_id)
+    items = []
+    for index, case in enumerate(cases):
+        result = results[index] if index < len(results) else None
+        items.append({'passed': bool(result and result['status'] == 'ok' and service.normalized(result['stdout']) == service.normalized(case['expected'])),
+                      'status': result['status'] if result else 'not_run', 'actual': result['stdout'] if result else '',
+                      'expected': case['expected'], 'stdin': case['stdin'], 'public': case['public']})
+    failure = next((result for result in results if result['status'] != 'ok'), None)
+    return {'status': failure['status'] if failure else 'passed' if all(item['passed'] for item in items) else 'failed',
+            'stderr': failure['stderr'] if failure else '', 'tests': items}
+
+
+def verify(owner, body):
+    if body.problem.kind != 'code':
+        raise service.Error('코드형 문제만 실행할 수 있습니다.', 422)
+    saved = save_problem(owner, body.problem, body.id)
+    if len(saved['cases']) < 2 or not any(case['public'] for case in saved['cases']):
+        return {'problem': saved, 'result': {'status': 'incomplete', 'stderr': '공개 사례를 포함해 실행 사례를 2개 이상 추가해주세요.', 'tests': []}}
+    try:
+        service.rate('execute:' + owner, 30)
+        image_id = runner.pin_runtime()
+        result = checks(saved['language'], saved['answer'], saved['cases'], image_id)
+    except runner.Unavailable as error:
+        return {'problem': saved, 'result': {'status': 'unavailable', 'stderr': str(error), 'tests': []}}
+    if result['status'] == 'passed':
+        with db.connect(write=True) as c:
+            row = owned(c, 'manual_problems', owner, saved['id'])
+            if row['revision'] != saved['revision']:
+                raise service.Error('검증 중 문제가 수정되었습니다. 다시 검증해주세요.', 409)
+            c.execute('UPDATE manual_problem_versions SET data=json_set(data, "$.verified", json("true"), "$.image_id", ?) WHERE problem_id=? AND revision=?',
+                      (image_id, saved['id'], saved['revision']))
+        saved['verified'] = True
+    return {'problem': saved, 'result': result}
 
 
 def book(owner, identifier):
@@ -173,10 +236,12 @@ def save_book(owner, body, identifier=None):
             item = owned(c, 'manual_problems', owner, key)
             if item['archived']:
                 raise service.Error('보관된 문제는 문제집에 담을 수 없습니다.', 409)
+            data = json.loads(c.execute('SELECT data FROM manual_problem_versions WHERE problem_id=? AND revision=?', (key,item['revision'])).fetchone()['data'])
             if body.language:
-                data = json.loads(c.execute('SELECT data FROM manual_problem_versions WHERE problem_id=? AND revision=?', (key,item['revision'])).fetchone()['data'])
                 if data['language'] and data['language'] != body.language:
                     raise service.Error('문제집과 문제의 언어가 다릅니다.', 422)
+            if data['kind'] == 'code' and not data.get('verified'):
+                raise service.Error('코드 문제의 정답을 검증한 뒤 문제집에 담아주세요.', 409)
         if identifier:
             old = owned(c, 'manual_books', owner, identifier)
             if old['revision'] != body.revision:
@@ -198,18 +263,20 @@ def save_book(owner, body, identifier=None):
 
 def attempts(owner, identifier):
     problem(owner, identifier)
-    return {'items': [dict(r) for r in db.all('SELECT id,problem_revision,answer,assessment,created_at FROM manual_problem_attempts WHERE owner=? AND problem_id=? ORDER BY created_at DESC,id DESC', (owner, identifier))]}
+    return {'items': [{**dict(r), 'result': json.loads(r['result']) if r['result'] else None} for r in db.all('SELECT id,problem_revision,answer,assessment,result,created_at FROM manual_problem_attempts WHERE owner=? AND problem_id=? ORDER BY created_at DESC,id DESC', (owner, identifier))]}
 
 
 def attempt_snapshot(owner, identifier, attempt_id):
-    row = db.one('SELECT problem_revision,answer,assessment,created_at FROM manual_problem_attempts WHERE owner=? AND problem_id=? AND id=?', (owner, identifier, attempt_id))
+    row = db.one('SELECT problem_revision,answer,assessment,result,created_at FROM manual_problem_attempts WHERE owner=? AND problem_id=? AND id=?', (owner, identifier, attempt_id))
     if not row:
         raise service.Error('풀이를 찾을 수 없습니다.', 404)
-    return {'attempt': row, 'problem': problem(owner, identifier, row['problem_revision'], reveal=True)}
+    return {'attempt': {**row, 'result': json.loads(row['result']) if row['result'] else None}, 'problem': problem(owner, identifier, row['problem_revision'], reveal=True)}
 
 
 def attempt(owner, identifier, body):
     payload = problem(owner, identifier, body.problem_revision)
+    if payload['kind'] == 'code':
+        raise service.Error('코드형 문제는 실행 후 제출해주세요.', 409)
     if payload['archived'] or payload['current_revision'] != body.problem_revision:
         raise service.Error('최신 문제를 다시 열어주세요.', 409)
     with db.connect(write=True) as c:
@@ -219,8 +286,53 @@ def attempt(owner, identifier, body):
                 raise service.Error('같은 저장 요청의 내용이 다릅니다.', 409)
             return dict(receipt)
         clock = service.now(); key = service.uid()
-        c.execute('INSERT INTO manual_problem_attempts VALUES (?,?,?,?,?,?,?,?)', (key,owner,identifier,body.problem_revision,body.answer,None,body.request_id,clock))
+        c.execute('INSERT INTO manual_problem_attempts(id,owner,problem_id,problem_revision,answer,assessment,request_id,created_at) VALUES (?,?,?,?,?,?,?,?)',
+                  (key,owner,identifier,body.problem_revision,body.answer,None,body.request_id,clock))
     return {'id': key, 'problem_id': identifier, 'problem_revision': body.problem_revision, 'answer': body.answer, 'assessment': None, 'created_at': clock}
+
+
+def execute_code(owner, identifier, body):
+    payload = problem(owner, identifier, body.problem_revision)
+    if payload['kind'] != 'code' or not payload['verified']:
+        raise service.Error('검증된 코드 문제가 아닙니다.', 409)
+    if payload['archived'] or payload['current_revision'] != body.problem_revision:
+        raise service.Error('최신 문제를 다시 열어주세요.', 409)
+    with db.connect() as c:
+        version = c.execute('SELECT data FROM manual_problem_versions WHERE problem_id=? AND revision=?', (identifier, body.problem_revision)).fetchone()
+        stored = json.loads(version['data'])
+        if body.action == 'submit':
+            receipt = c.execute('SELECT * FROM manual_problem_attempts WHERE owner=? AND request_id=?', (owner, body.request_id)).fetchone()
+            if receipt:
+                if (receipt['problem_id'], receipt['answer'], receipt['problem_revision']) != (identifier, body.code, body.problem_revision):
+                    raise service.Error('같은 제출 요청의 내용이 다릅니다.', 409)
+                return {'result': json.loads(receipt['result']), 'attempt': {**dict(receipt), 'result': json.loads(receipt['result'])}}
+    cases = stored['cases'] if body.action == 'submit' else [case for case in stored['cases'] if case['public']]
+    service.rate('execute:' + owner, 30)
+    result = checks(stored['language'], body.code, cases, stored['image_id'])
+    if body.action == 'run':
+        return {'result': result, 'attempt': None}
+    result['tests'] = [item if item['public'] else {'passed': item['passed'], 'status': item['status'], 'public': False} for item in result['tests']]
+    result['stderr'] = result['stderr'] if result['status'].startswith('compile_') else ''
+    assessment = 'understood' if result['status'] == 'passed' else 'retry'
+    with db.connect(write=True) as c:
+        row = owned(c, 'manual_problems', owner, identifier)
+        if row['revision'] != body.problem_revision or row['archived']:
+            raise service.Error('실행 중 문제가 수정되었습니다. 다시 열어주세요.', 409)
+        receipt = c.execute('SELECT * FROM manual_problem_attempts WHERE owner=? AND request_id=?', (owner, body.request_id)).fetchone()
+        if receipt:
+            if (receipt['problem_id'], receipt['answer'], receipt['problem_revision']) != (identifier, body.code, body.problem_revision):
+                raise service.Error('같은 제출 요청의 내용이 다릅니다.', 409)
+            return {'result': json.loads(receipt['result']), 'attempt': {**dict(receipt), 'result': json.loads(receipt['result'])}}
+        clock, key = service.now(), service.uid()
+        c.execute('INSERT INTO manual_problem_attempts(id,owner,problem_id,problem_revision,answer,assessment,request_id,created_at,result) VALUES (?,?,?,?,?,?,?,?,?)',
+                  (key, owner, identifier, body.problem_revision, body.code, assessment, body.request_id, clock, service.dump(result)))
+        old = c.execute('SELECT streak FROM manual_problem_reviews WHERE owner=? AND problem_id=?', (owner, identifier)).fetchone()
+        streak = min(old['streak'] + 1, 3) if old and assessment == 'understood' else 0
+        due = (datetime.fromisoformat(clock) + timedelta(days=(1, 3, 7, 14)[streak])).isoformat()
+        c.execute('INSERT INTO manual_problem_reviews VALUES (?,?,?,?) ON CONFLICT(owner,problem_id) DO UPDATE SET due_at=excluded.due_at,streak=excluded.streak',
+                  (owner, identifier, due, streak))
+    return {'result': result, 'attempt': {'id': key, 'problem_id': identifier, 'problem_revision': body.problem_revision, 'answer': body.code,
+                                          'assessment': assessment, 'created_at': clock, 'result': result}}
 
 
 def assess(owner, identifier, attempt_id, body):

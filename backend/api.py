@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books
-from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput
+from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
 from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
 from . import ai_settings
@@ -410,6 +410,11 @@ def manual_problem_create(body: ProblemInput, current=Depends(user)):
     return problem_books.save_problem(current['id'], body)
 
 
+@app.post('/api/manual-problems/verify')
+def manual_problem_verify(body: VerifyInput, current=Depends(user)):
+    return problem_books.verify(current['id'], body)
+
+
 @app.get('/api/manual-problems/reviews')
 def manual_problem_review_list(current=Depends(user)):
     return problem_books.review_queue(current['id'])
@@ -448,6 +453,11 @@ def manual_problem_attempt_snapshot(identifier: str, attempt_id: str, current=De
 @app.post('/api/manual-problems/{identifier}/attempts')
 def manual_problem_attempt(identifier: str, body: AttemptInput, current=Depends(user)):
     return problem_books.attempt(current['id'], identifier, body)
+
+
+@app.post('/api/manual-problems/{identifier}/execute')
+def manual_problem_execute(identifier: str, body: CodeExecutionInput, current=Depends(user)):
+    return problem_books.execute_code(current['id'], identifier, body)
 
 
 @app.post('/api/manual-problems/{identifier}/attempts/{attempt_id}/assessment')

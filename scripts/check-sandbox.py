@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from backend import runner, service
+from backend import runner, service, problem_books
 from backend.sample import sample
 from backend.schema import Case
 
@@ -21,6 +21,11 @@ for language, code in programs.items():
     result = runner.run(language, code, [''])[0]
     assert result['status'] == 'ok' and result['stdout'].strip() == '42', (language, result)
     print('PASS compile/run:', language, flush=True)
+
+manual_cases = [{'stdin': '', 'expected': '42\n', 'public': True}, {'stdin': '', 'expected': '42', 'public': False}]
+assert problem_books.checks('python', programs['python'], manual_cases, None)['status'] == 'passed'
+assert problem_books.checks('python', 'print(41)', manual_cases, None)['status'] == 'failed'
+print('PASS authored problem reference checks', flush=True)
 
 functions = {
     'javascript': ('function twice(n) { return n * 2; }', 'console.log(twice(21));'),

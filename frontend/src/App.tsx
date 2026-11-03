@@ -1,4 +1,5 @@
 import { Navigation } from './Navigation';
+import { QuickQuestion } from './Questions';
 import { NativeSelect } from './components/ui/native-select';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
@@ -74,7 +75,7 @@ export function App() {
     <header className="topbar">
       <Button ref={menuToggle} className="icon-button menu-toggle" aria-label={menu ? '메뉴 닫기' : '메뉴 열기'} aria-controls="workspace-navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}>☰</Button>
       <Link className="brand" to="/">code<span>trainer</span><span className="version">{session?.auth_mode === 'access' ? 'PRIVATE' : 'LOCAL'}</span></Link>
-      <div className="account">{session?.user && <><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span><Button className="text-button" onClick={logout}>로그아웃</Button></>}</div>
+      <div className="account">{session?.user && <><QuickQuestion /><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span><Button className="text-button" onClick={logout}>로그아웃</Button></>}</div>
     </header>
     <aside id="workspace-navigation" className={`sidebar ${menu ? 'open' : ''}`}>
       <Navigation isAdmin={!!session?.user?.admin} onNavigate={closeMenu} />

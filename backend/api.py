@@ -102,6 +102,7 @@ async def local_boundary(request: Request, call_next):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'no-referrer'
     if request.url.path == '/api/framework-preview-frame' and response.status_code == 200:
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['Content-Security-Policy'] = "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'"
     else:
         response.headers['X-Frame-Options'] = 'DENY'

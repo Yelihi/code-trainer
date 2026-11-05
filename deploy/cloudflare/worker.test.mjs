@@ -27,6 +27,10 @@ test('private origin, authentication, CSRF, identity forwarding and upstream fai
   const exported = await call('/api/reference-notes/note/export', { headers });
   assert.equal(exported.headers.get('content-disposition'), 'attachment; filename="reference-note.zip"');
   assert.equal(exported.headers.get('cache-control'), 'private, no-store');
+  env.CODE_TRAINER_API.fetch = () => new Response('<html>frame</html>', { headers: { 'content-type': 'text/html' } });
+  const frame = await call('/api/framework-preview-frame', { headers });
+  assert.equal(frame.headers.get('x-frame-options'), 'SAMEORIGIN');
+  assert.match(frame.headers.get('content-security-policy'), /connect-src 'none'; frame-ancestors 'self'/);
   env.CODE_TRAINER_API.fetch = () => new Response(null, { status: 302, headers: { location: 'https://evil.example' } });
   assert.equal((await call('/api/session', { headers })).status, 502);
   env.CODE_TRAINER_API.fetch = () => { throw new Error('disconnected'); };

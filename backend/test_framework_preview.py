@@ -35,6 +35,6 @@ class FrameworkPreviewTest(unittest.TestCase):
         response = self.client.get('/api/framework-preview-frame')
         self.assertEqual(response.status_code, 200)
         self.assertIn("connect-src 'none'", response.headers['content-security-policy'])
-        self.assertNotIn('x-frame-options', response.headers)
+        self.assertEqual(response.headers['x-frame-options'], 'SAMEORIGIN')
         self.client.post('/api/logout', json={})
         self.assertEqual(self.client.get('/api/framework-preview-frame').status_code, 401)

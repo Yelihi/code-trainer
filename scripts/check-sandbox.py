@@ -32,6 +32,9 @@ for framework, code in frameworks.items():
     rendered = json.loads(result['stdout']) if result['status'] == 'ok' else {}
     assert result['status'] == 'ok' and f'{framework.capitalize()} 42' in rendered['html'] and rendered['client'], (framework, result)
     print('PASS component render:', framework, flush=True)
+browser_only = runner.run('react', 'const title = window.location.hostname; export default function App() { return <h1>{title}</h1>; }', [''])[0]
+assert browser_only['status'] == 'ok' and json.loads(browser_only['stdout'])['client'] and 'window is not defined' in browser_only['stderr'], browser_only
+print('PASS browser-only component compilation', flush=True)
 
 manual_cases = [{'stdin': '', 'expected': '42\n', 'public': True}, {'stdin': '', 'expected': '42', 'public': False}]
 assert problem_books.checks('python', programs['python'], manual_cases, None)['status'] == 'passed'

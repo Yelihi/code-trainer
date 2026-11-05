@@ -77,7 +77,7 @@ function SettingsForm({ initial, onReload }: { initial: Settings; onReload: () =
         <div className="ai-connection-fields"><div><Label htmlFor="ai-model">모델 ID</Label><Input id="ai-model" value={model} onChange={event => { setModel(event.target.value); setMessage(''); }} required maxLength={200} disabled={busy} spellCheck={false} autoComplete="off" /></div>
         <div><Label htmlFor="ai-key">{data.source === 'personal' ? '새 API 키' : 'API 키'}</Label><Input id="ai-key" type="password" value={key} onChange={event => { setKey(event.target.value); setMessage(''); }} required maxLength={1000} disabled={busy} spellCheck={false} autoComplete="off" /></div></div>
         <p className="ai-key-hint">저장된 키는 다시 표시하지 않습니다. 입력칸이 비어 있어도 현재 연결은 유지되며, 모델을 바꿔 저장할 때는 키를 다시 입력해야 합니다.</p>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Button className="primary" disabled={busy || !data.storage_ready || !data.provider_url || !key || !model}>{busy ? '처리 중…' : 'AI 연결 저장'}</Button>
           {(data.source === 'personal' || data.source === 'environment') && <Button type="button" disabled={busy} onClick={() => void disconnect()}>AI 연결 해제</Button>}
         </div>

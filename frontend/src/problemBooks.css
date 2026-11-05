@@ -36,7 +36,7 @@
 .problem-test-output pre, .problem-execution-error { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; padding: 12px; background: var(--bg); }
 .problem-book-editor section { border-top: 1px solid var(--line); padding-top: 24px; }
 .problem-selected, .problem-book-contents { padding-left: 0; list-style: none; }
-.problem-selected li > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.problem-selected li > div { display: flex; flex-wrap: wrap; gap: 12px; }
 .problem-prompt, .problem-answer, .problem-comparison, .problem-history { border-top: 1px solid var(--line); padding-top: 28px; margin-top: 32px; }
 .problem-answer { display: grid; gap: 20px; }
 .problem-answer > button { justify-self: start; }

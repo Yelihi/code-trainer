@@ -394,7 +394,7 @@ button.text-button,
 .navigation-group nav { gap: 2px; }
 .sidebar nav a.active .navigation-badge { color: inherit; }
 .brain-hero { gap: 32px; }
-.brain-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.brain-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .brain-journey { list-style: none; margin: 0; padding: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
 .brain-journey li { display: flex; gap: 18px; align-items: baseline; padding: 14px 0; }
 .brain-journey li + li { border-top: 1px solid var(--line); }
@@ -624,7 +624,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 }
 .notice button {
   font-size: var(--text-caption);
-  margin: 4px;
+  margin: 6px;
 }
 .narrow-page {
   max-width: 920px;
@@ -894,7 +894,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
   margin-top: 26px;
 }
 .confirm-card button {
-  margin: 5px;
+  margin: 6px;
   font-size: var(--text-caption);
 }
 .icon-button {
@@ -935,7 +935,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
   border-radius: 9px;
   background: #100c1e;
   padding: 4px;
-  gap: 4px;
+  gap: 8px;
 }
 .stage-tabs button {
   flex: 1;
@@ -1071,7 +1071,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .run-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 12px;
   padding: 12px 16px;
   border-block: 1px solid var(--line);
   background: #110c20;
@@ -1315,6 +1315,8 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .exercise-navigation {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   border-top: 1px solid var(--line);
   padding-top: 20px;
   margin-top: 25px;
@@ -1694,7 +1696,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 }
 .review-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .review-actions button {
@@ -1946,11 +1948,11 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .visual-caption { min-height: 96px; border-top: 1px solid var(--line); padding-top: 15px; }
 .visual-caption strong { font-size: var(--text-body); }
 .visual-caption p { color: var(--muted); font-size: var(--text-body); margin: 6px 0 15px; }
-.visual-controls { display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; }
+.visual-controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; }
 .visual-controls button { padding: 7px 10px; }
 .foundation-sources { display: flex; line-height: var(--leading-body); flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 22px; font-size: var(--text-caption); color: var(--muted); }
 .foundation-sources a { text-decoration: underline; text-underline-offset: 3px; }
-.foundation-steps { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 28px; gap: 6px; }
+.foundation-steps { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 28px; gap: 8px; }
 .foundation-steps button { flex: 1; background: transparent; border: none; border-radius: 0; border-bottom: 2px solid transparent; padding: 15px 6px; }
 .foundation-steps button[aria-pressed="true"] { color: var(--green); border-bottom-color: var(--green); }
 .foundation-work > h2 { font-size: var(--text-section); }
@@ -1971,7 +1973,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .foundation-editor h3 { font-size: var(--text-subheading); display: flex; justify-content: space-between; align-items: center; }
 .foundation-editor small { color: var(--muted); font-weight: var(--weight-regular); }
 .foundation-editor .cm-editor { border: 1px solid var(--line); border-radius: 5px; overflow: hidden; font-size: var(--text-code); }
-.foundation-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.foundation-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
 .foundation-result { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-top: 18px; }
 .foundation-result h3 { margin-top: 0; font-size: var(--text-subheading); }
 .foundation-check { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -2116,7 +2118,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 
 .foundation-start-note { margin: 24px 0; }
 .foundation-filters { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; margin: 26px 0 36px; }
-.foundation-filter-groups { display: flex; flex-wrap: wrap; gap: 8px; }
+.foundation-filter-groups { display: flex; flex-wrap: wrap; gap: 12px; }
 .foundation-filter-groups button { min-height: 38px; padding: 7px 13px; font-size: var(--text-body); }
 .foundation-filter-groups button[aria-pressed="true"] { border-color: var(--green); color: var(--green); background: #52d7b712; }
 .foundation-filters label { display: grid; gap: 6px; color: var(--muted); font-size: var(--text-caption); }
@@ -2124,7 +2126,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .foundation-empty { padding: 22px; color: var(--muted); }
 .foundation-card > small a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .foundation-card { display: flex; flex-direction: column; }
-.foundation-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.foundation-card-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .foundation-card-actions > * { flex: 1; text-align: center; white-space: nowrap; }
 .foundation-concept-link { margin-top: 14px; font-size: var(--text-caption); align-self: start; }
 .foundation-card > small { margin-top: auto; }

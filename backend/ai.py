@@ -146,6 +146,8 @@ def generate(model, instruction, data, kind=None):
     phase = '개념 분리 · 학습 순서' if model is CurriculumDraft else '단원별 세트 생성'
     if model.__name__ == 'InsightBundle':
         phase = 'Deep Inside · 탐구 제안'
+    if model.__name__ == 'DailyFeedQuestion':
+        phase = '오늘의 질문 · 포스팅'
     if model.__name__ == 'InterpretationDraft':
         phase = '원문 해석 · 개념 문서'
     if model.__name__ == 'WorksheetDraft':

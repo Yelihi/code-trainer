@@ -25,16 +25,6 @@ export function suggestionBlock(body: string, issue: NoteIssue) {
   if (!issue.quote || start < 0 || body.indexOf(issue.quote, start + 1) >= 0) return '원문 위치를 하나로 정할 수 없습니다. 본문에서 직접 수정해주세요.';
   return '';
 }
-export function registrationBlock(proposalId: string, proposal: Proposal | null, revision: number) {
-  if (!proposalId) return '';
-  if (!proposal) return 'AI 검토 결과를 불러오는 중입니다. 불러오지 못하면 페이지를 새로고침해주세요.';
-  if (proposal.state === 'running') return 'AI가 본문과 후보를 검토 중입니다. 완료되면 등록할 수 있습니다.';
-  if (proposal.revision !== revision) return '본문이 변경되어 이전 검토를 사용할 수 없습니다. 새 본문에서 AI 후보 생성·내용 검토를 다시 진행해주세요.';
-  if (proposal.state === 'failed') return 'AI 검토가 실패해 등록할 수 없습니다. 위 오류를 확인한 뒤 AI 후보 생성·내용 검토를 다시 진행해주세요.';
-  if (!proposal.review) return '내용 검토 전의 후보입니다. AI 후보 생성·내용 검토를 다시 진행해주세요.';
-  if (proposal.review.issues.length) return `본문에 수정·확인 사항 ${proposal.review.issues.length}개가 남아 있습니다. 위 제안을 반영하거나 직접 수정하고, 저장한 본문을 다시 검토해주세요.`;
-  return '';
-}
 export function clearReferenceDraft(key: string) {
   try { localStorage.removeItem(key); } catch { /* Browser storage failure must not hide a successful server save. */ }
 }

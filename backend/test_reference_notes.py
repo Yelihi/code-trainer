@@ -219,7 +219,7 @@ class ReferenceNotesTest(unittest.TestCase):
             self.assertEqual(note['body'][location['start']:location['end']], evidence['quote'])
         self.assertEqual(reference_notes.owned(self.owner, note['id'])['body'], note['body'])
 
-    def test_review_quote_repair_preserves_content_issues_and_registration_block(self):
+    def test_review_quote_repair_preserves_content_issues_as_advice(self):
         note, _ = self.note(body='스택은 **먼저** 들어간 항목을 꺼낸다.')
         data = KnowledgeProposal.model_validate(self.graph_data(note))
         reviewed = ReviewedKnowledgeProposal(**data.model_dump(), review={'summary': '정의 수정 필요', 'issues': [{
@@ -235,8 +235,9 @@ class ReferenceNotesTest(unittest.TestCase):
         self.assertEqual(proposal['state'], 'ready')
         expected['review']['issues'][0]['quote'] = note['body']
         self.assertEqual(reviewed.model_dump(), expected)
-        self.assertEqual(self.register(note, proposal['data'], proposal_id=proposal['id'])[0].status_code, 409)
-        self.assertEqual(db.all('SELECT * FROM knowledge_concepts'), [])
+        self.assertEqual(self.register(note, proposal['data'], proposal_id=proposal['id'])[0].status_code, 200)
+        provenance = json.loads(db.one('SELECT provenance FROM knowledge_registrations')['provenance'])
+        self.assertEqual(provenance['review']['issues'], expected['review']['issues'])
         self.assertEqual(reference_notes.owned(self.owner, note['id'])['body'], note['body'])
 
     def test_quote_repair_is_bounded_and_invalid_or_incomplete_repairs_fail_closed(self):
@@ -254,8 +255,8 @@ class ReferenceNotesTest(unittest.TestCase):
                 proposal = reference_notes.proposal_view(self.owner, result.json()['id'])
                 self.assertEqual(proposal['state'], 'failed')
                 self.assertIsNone(proposal['data'])
-                self.assertEqual(self.register(note)[0].status_code, 409)
         self.assertEqual(db.all('SELECT * FROM knowledge_concepts'), [])
+        self.assertEqual(self.register(note)[0].status_code, 200)
         with patch.object(ai, 'generate') as generate:
             self.assertEqual(self.register(note, data.model_dump())[0].status_code, 422)
             generate.assert_not_called()
@@ -273,28 +274,24 @@ class ReferenceNotesTest(unittest.TestCase):
             with self.assertRaisesRegex(ai.AIError, '저장된 노트는 유지됩니다'):
                 ai.generate(NoteQuoteRepair, 'test', {'body': '내용', 'validation_failures': ['quote_not_in_body']})
 
-    def test_review_requires_note_correction_and_new_review_before_registration(self):
+    def test_review_issues_are_advisory_and_stale_proposals_still_rejected(self):
         note, payload = self.note(body='스택은 먼저 들어간 항목을 먼저 꺼내는 FIFO 구조다.')
         issue = {'kind': 'correction_needed', 'quote': note['body'],
                  'explanation': '스택과 큐의 순서가 뒤바뀌었습니다.', 'suggestion': '스택은 마지막에 들어간 항목을 먼저 꺼내는 LIFO 구조다.', 'replacement': ''}
         proposal = self.reviewed_proposal(note, [issue])
         self.assertEqual(proposal['state'], 'ready')
         self.assertEqual(proposal['review']['issues'], [issue])
-        for extra in ({}, {'proposal_id': proposal['id']}):
-            self.assertEqual(self.register(note, proposal['data'], **extra)[0].status_code, 409)
-        self.assertEqual(db.all('SELECT * FROM knowledge_sources'), [])
+        self.assertEqual(self.register(note, proposal['data'], proposal_id=proposal['id'])[0].status_code, 200)
+        provenance = json.loads(db.one('SELECT provenance FROM knowledge_registrations')['provenance'])
+        self.assertEqual(provenance['review']['issues'], [issue])
         self.assertEqual(reference_notes.owned(self.owner, note['id'])['body'], note['body'])
         with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate') as generate:
             again = self.client.post(f"/api/reference-notes/{note['id']}/proposals", json={'revision': 1})
             self.assertEqual(again.json()['id'], proposal['id'])
             generate.assert_not_called()
         updated = self.client.post('/api/reference-notes', json={**payload, 'revision': 1, 'body': issue['suggestion']}).json()
-        self.assertEqual(self.register(updated)[0].status_code, 409)
-        clean = self.reviewed_proposal(updated)
-        self.assertEqual(self.register(updated, clean['data'], proposal_id=proposal['id'])[0].status_code, 409)
-        self.assertEqual(self.register(updated, clean['data'], proposal_id=clean['id'])[0].status_code, 200)
-        provenance = json.loads(db.one('SELECT provenance FROM knowledge_registrations')['provenance'])
-        self.assertEqual(provenance['review'], clean['review'])
+        self.assertEqual(self.register(updated, proposal_id=proposal['id'])[0].status_code, 409)
+        self.assertEqual(self.register(updated)[0].status_code, 200)
         self.assertEqual(self.client.get('/api/reference-proposals/' + proposal['id']).json()['review']['issues'], [issue])
 
     def test_apply_selected_suggestions_versions_note_and_retries_without_overwriting(self):
@@ -320,7 +317,7 @@ class ReferenceNotesTest(unittest.TestCase):
         replay = self.client.post(endpoint, json={'revision': 1, 'issues': [1]})
         self.assertEqual(replay.json()['revision'], 2)
         self.assertEqual(len(replay.json()['versions']), 2)
-        self.assertEqual(self.register(next_note)[0].status_code, 409)
+        self.assertEqual(self.register(next_note)[0].status_code, 200)
         self.assertEqual(self.client.post(endpoint, json={'revision': 1, 'issues': [0]}).status_code, 409)
         self.assertEqual(self.client.post(endpoint, json={'revision': 2, 'issues': [1]}).status_code, 409)
         self.client.post('/api/reference-notes', json={k: next_note[k] for k in ('id','title','body','metadata','revision')} | {'body': next_note['body'] + '\n직접 편집'})
@@ -380,7 +377,7 @@ class ReferenceNotesTest(unittest.TestCase):
         self.assertTrue(fresh)
         self.assertNotEqual(key, proposal['id'])
 
-    def test_uncertain_and_fabricated_review_quotes_do_not_pass(self):
+    def test_uncertain_and_fabricated_review_quotes_do_not_block_manual_graph(self):
         for quote in ('알 수 없는 최신 연구 주장이다.', '노트에 없는 인용'):
             with self.subTest(quote=quote):
                 note, _ = self.note(body='알 수 없는 최신 연구 주장이다.')
@@ -388,23 +385,22 @@ class ReferenceNotesTest(unittest.TestCase):
                          'explanation': '주장의 조건과 근거를 확인해야 합니다.', 'suggestion': '원문의 실험 조건과 출처를 확인해 보완하세요.', 'replacement': ''}
                 proposal = self.reviewed_proposal(note, [issue])
                 self.assertEqual(proposal['state'], 'ready' if quote == note['body'] else 'failed')
-                self.assertEqual(self.register(note)[0].status_code, 409)
-        self.assertEqual(db.all('SELECT * FROM knowledge_concepts'), [])
+                self.assertEqual(self.register(note)[0].status_code, 200)
+        self.assertEqual(len(db.all('SELECT * FROM knowledge_sources')), 2)
 
-    def test_review_failure_does_not_publish_extraction_and_running_cannot_register(self):
+    def test_review_failure_does_not_publish_extraction_or_block_manual_entry(self):
         note, _ = self.note()
         data = KnowledgeProposal.model_validate(self.graph_data(note))
         with patch.object(ai, 'available', return_value=True):
             key, _ = reference_notes.begin_proposal(self.owner, note['id'], 1)
-            self.assertEqual(self.register(note)[0].status_code, 409)
+            self.assertEqual(self.register(note, proposal_id=key)[0].status_code, 409)
             with patch.object(ai, 'generate', side_effect=[data, ai.AIError('검토 요청 실패')]):
                 reference_notes.propose(self.owner, key)
         proposal = reference_notes.proposal_view(self.owner, key)
         self.assertEqual(proposal['state'], 'failed')
         self.assertIsNone(proposal['data'])
-        self.assertEqual(self.register(note)[0].status_code, 409)
-        clean = self.reviewed_proposal(note)
-        self.assertEqual(self.register(note, clean['data'], proposal_id=clean['id'])[0].status_code, 200)
+        self.assertEqual(self.register(note, proposal_id=key)[0].status_code, 409)
+        self.assertEqual(self.register(note)[0].status_code, 200)
 
     def test_review_corrects_extraction_without_changing_source_and_revalidates_graph(self):
         note, _ = self.note()
@@ -425,18 +421,18 @@ class ReferenceNotesTest(unittest.TestCase):
             result = self.client.post(f"/api/reference-notes/{another['id']}/proposals", json={'revision': 1})
         self.assertEqual(reference_notes.proposal_view(self.owner, result.json()['id'])['state'], 'failed')
 
-    def test_legacy_or_previous_version_review_cannot_approve_current_note(self):
+    def test_legacy_proposal_without_review_can_register_but_old_version_cannot(self):
         note, payload = self.note()
         key = service.uid()
         db.execute('INSERT INTO knowledge_proposals VALUES (?,?,?,?,?,?,?,?,?,?)',
                    (self.owner, key, note['id'], 1, 'ready', service.dump(self.graph_data(note)), '', 'test', 'reference-ontology-v1', service.now()))
         self.assertIsNone(reference_notes.proposal_view(self.owner, key)['review'])
-        for extra in ({}, {'proposal_id': key}):
-            self.assertEqual(self.register(note, **extra)[0].status_code, 409)
-        self.reviewed_proposal(note)
+        self.assertEqual(self.register(note, proposal_id=key)[0].status_code, 200)
+        provenance = json.loads(db.one('SELECT provenance FROM knowledge_registrations')['provenance'])
+        self.assertNotIn('review', provenance)
         updated = self.client.post('/api/reference-notes', json={**payload, 'revision': 1, 'body': note['body'] + '\n새로운 주장을 추가했다.'}).json()
-        self.assertEqual(self.register(updated)[0].status_code, 409)
-        self.assertEqual(db.all('SELECT * FROM knowledge_sources'), [])
+        self.assertEqual(self.register(updated, proposal_id=key)[0].status_code, 409)
+        self.assertEqual(self.register(updated)[0].status_code, 200)
 
     def test_concept_matches_search_all_owned_concepts_and_explain_name_matches(self):
         with db.connect(write=True) as c:

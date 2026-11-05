@@ -1,4 +1,4 @@
-"""Explicit registration of reviewed material through the shared ontology transaction."""
+"""Explicit registration of material through the shared ontology transaction."""
 import json
 from . import db, materials, ontology, practice_records, service
 
@@ -15,9 +15,8 @@ def register(owner, review_id, request):
                 raise service.Error('자료가 변경되거나 보관되었습니다. 최신 자료를 다시 확인해주세요.', 409)
             latest = c.execute('SELECT * FROM material_proposals WHERE owner=? AND review_id=? ORDER BY created_at DESC,id DESC LIMIT 1', (owner, review_id)).fetchone()
             if not latest or latest['id'] != request.proposal_id or latest['state'] != 'ready':
-                raise service.Error('현재 자료의 최신 후보 추출·검토를 완료해주세요.', 409)
-            review = json.loads(latest['data'])['review']
-            if review['issues']: raise service.Error('본문의 수정·확인 사항이 남아 있습니다. 새 자료를 저장하고 다시 검토해주세요.', 409)
+                raise service.Error('현재 자료의 최신 개념 후보를 준비해주세요.', 409)
+            review = json.loads(latest['data']).get('review') if latest['data'] else None
             if material['registration']:
                 raise service.Error('이 자료 버전은 이미 등록되었습니다.', 409)
             if any(item.basis == 'source' for item in [*request.data.concepts, *request.data.assertions]):
@@ -34,7 +33,8 @@ def register(owner, review_id, request):
                       (owner, identifier, material['kind'], material['origin_id'], material['revision'], material['title'],
                        material['body'], service.dump(metadata), 'active', service.now()))
             concepts = ontology.register(c, owner, identifier, material['body'], request.data)
-            provenance = dict(actor='user', proposal_id=latest['id'], model=latest['model'], prompt_version=latest['prompt_version'], review=review)
+            provenance = dict(actor='user', proposal_id=latest['id'], model=latest['model'], prompt_version=latest['prompt_version'])
+            if review is not None: provenance['review'] = review
             c.execute('INSERT INTO knowledge_registrations VALUES (?,?,?,?,?,?)',
                       (owner, request.request_id, identifier, payload, service.dump(provenance), service.now()))
             if material['kind'] == 'practice':

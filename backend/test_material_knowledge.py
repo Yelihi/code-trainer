@@ -68,7 +68,10 @@ class MaterialKnowledgeTest(unittest.TestCase):
         row = db.one('SELECT data FROM material_proposals WHERE id=?', (payload.proposal_id,)); data = json.loads(row['data'])
         data['review']['issues'] = [dict(kind='needs_verification', quote=data['concepts'][0]['quote'], explanation='확인 필요', suggestion='근거 비교', replacement='')]
         db.execute('UPDATE material_proposals SET data=? WHERE id=?', (json.dumps(data), payload.proposal_id))
-        with self.assertRaises(service.Error): material_knowledge.register(self.owner, other['id'], payload)
+        registered = material_knowledge.register(self.owner, other['id'], payload)
+        self.assertIsNotNone(registered['registration'])
+        provenance = json.loads(db.one('SELECT provenance FROM knowledge_registrations WHERE request_id=?', (payload.request_id,))['provenance'])
+        self.assertEqual(provenance['review']['issues'], data['review']['issues'])
 
     def test_raw_and_learner_edits_invalidate_only_related_evidence(self):
         review, raw, request = self.prepared('practice')

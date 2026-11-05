@@ -367,8 +367,8 @@ def knowledge_concept_matches(body: ConceptLookup, current=Depends(user)):
 
 @app.get('/api/resources')
 def resource_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1),
-                  kind: Literal['all', 'text', 'url', 'note'] = 'all', current=Depends(user)):
-    return resources.listing(current['id'], q, page, kind)
+                  kind: Literal['all', 'text', 'url', 'note'] = 'all', archived: bool = False, current=Depends(user)):
+    return resources.listing(current['id'], q, page, kind, archived)
 
 
 @app.get('/api/problem-books/catalog')
@@ -622,6 +622,11 @@ def resource_register(body: ResourceInput, current=Depends(user)):
 @app.get('/api/resources/{resource_id}')
 def resource_view(resource_id: str, current=Depends(user)):
     return resources.view(current['id'], resource_id)
+
+
+@app.post('/api/resources/{resource_id}/archive')
+def resource_archive(resource_id: str, body: ArchiveInput, current=Depends(user)):
+    return resources.archive(current['id'], resource_id, body.archived)
 
 
 @app.get('/api/resources/{resource_id}/versions/{revision}')

@@ -1,5 +1,5 @@
 export type RawKind = 'text' | 'url';
-export type ResourceVersion = { revision: number; name: string; content: string | null; created_at?: string };
+export type ResourceVersion = { revision: number; name: string; url?: string | null; content: string | null; created_at?: string };
 export type Resource = ResourceVersion & {
   id: string; note_id: string | null; kind: RawKind | 'note'; url: string | null;
   state: 'ready' | 'fetching' | 'failed'; error: string; updated_at: string; archived: number;

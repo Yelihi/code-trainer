@@ -229,6 +229,72 @@ class ResourceRegistrationTest(unittest.TestCase):
         detail = self.client.get('/api/resources/' + failed['id']).json()
         self.assertEqual(detail['url'], 'http://127.0.0.1/private')
 
+    def test_correct_url_preserves_history_and_only_switches_after_success(self):
+        from unittest.mock import patch
+        from . import source
+        old_url = 'https://example.com/roundup'
+        new_url = 'https://example.com/article'
+        with patch.object(source, 'fetch', return_value='목록에서 추출된 본문'):
+            first = self.register(kind='url', url=old_url, content='')
+        correction = {'resource_id': first['id'], 'revision': first['revision'],
+                      'kind': 'url', 'name': first['name'], 'url': new_url, 'content': ''}
+        with patch.object(source, 'fetch', side_effect=source.SourceError('수집 실패')):
+            failed = self.register(**correction)
+        self.assertEqual((failed['url'], failed['content'], failed['revision']),
+                         (old_url, '목록에서 추출된 본문', 1))
+        self.assertEqual(failed['state'], 'failed')
+        with patch.object(source, 'fetch', return_value='목록에서 추출된 본문'):
+            corrected = self.register(**correction)
+        self.assertEqual((corrected['id'], corrected['url'], corrected['revision']), (first['id'], new_url, 2))
+        self.assertEqual([v['revision'] for v in corrected['versions']], [2, 1])
+        self.assertEqual(db.one('SELECT url FROM resource_versions WHERE resource_id=? AND revision=1', (first['id'],))['url'], old_url)
+        self.assertEqual(db.one('SELECT url FROM resource_versions WHERE resource_id=? AND revision=2', (first['id'],))['url'], new_url)
+
+    def test_correct_url_rejects_stale_or_duplicate_target(self):
+        from unittest.mock import patch
+        from . import source
+        with patch.object(source, 'fetch', return_value='원문 본문'):
+            first = self.register(kind='url', url='https://example.com/one', content='')
+            second = self.register(kind='url', url='https://example.com/two', content='')
+        body = {'request_id': service.uid(), 'resource_id': first['id'], 'revision': 0,
+                'kind': 'url', 'name': first['name'], 'url': 'https://example.com/new'}
+        self.assertEqual(self.client.post('/api/resources', json=body).status_code, 409)
+        duplicate = {**body, 'request_id': service.uid(), 'revision': 1, 'url': second['url']}
+        self.assertEqual(self.client.post('/api/resources', json=duplicate).status_code, 409)
+        self.assertEqual(self.client.get('/api/resources/' + first['id']).json()['url'], first['url'])
+
+    def test_delete_and_restore_resource_preserve_snapshots_and_owner(self):
+        original = self.register()
+        endpoint = f"/api/resources/{original['id']}/archive"
+        deleted = self.client.post(endpoint, json={'archived': True})
+        self.assertEqual(deleted.status_code, 200, deleted.text)
+        self.assertTrue(deleted.json()['archived'])
+        self.assertEqual(self.client.get('/api/resources').json()['total'], 0)
+        self.assertEqual(self.client.get('/api/resources?archived=true').json()['items'][0]['id'], original['id'])
+        self.assertEqual(self.client.get(f"/api/resources/{original['id']}/versions/1").json()['content'], original['content'])
+        self.assertEqual(self.client.post('/api/resources', json={'request_id': service.uid(), 'resource_id': original['id'],
+                         'revision': 1, 'kind': 'text', 'name': '수정', 'content': '수정 본문'}).status_code, 409)
+        restored = self.client.post(endpoint, json={'archived': False})
+        self.assertEqual(restored.status_code, 200, restored.text)
+        self.assertFalse(restored.json()['archived'])
+        self.assertEqual(self.client.get('/api/resources').json()['total'], 1)
+        db.execute('INSERT INTO users VALUES (?,?,?,0)', ('other', 'other', 'unused'))
+        db.execute('UPDATE sessions SET user_id=?', ('other',))
+        self.assertEqual(self.client.post(endpoint, json={'archived': True}).status_code, 404)
+
+    def test_delete_note_from_library_uses_note_archive(self):
+        note_id = service.uid()
+        self.client.post('/api/reference-notes', json={'id': note_id, 'revision': 0, 'title': '노트', 'body': '내가 쓴 본문', 'metadata': {}})
+        resource_id = db.one('SELECT id FROM resources WHERE note_id=?', (note_id,))['id']
+        endpoint = f'/api/resources/{resource_id}/archive'
+        deleted = self.client.post(endpoint, json={'archived': True})
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual((deleted.json()['id'], deleted.json()['kind'], deleted.json()['archived']), (resource_id, 'note', 1))
+        self.assertEqual(db.one('SELECT archived FROM reference_notes WHERE id=?', (note_id,))['archived'], 1)
+        self.assertEqual(self.client.get('/api/resources').json()['total'], 0)
+        self.assertEqual(self.client.post(endpoint, json={'archived': False}).status_code, 200)
+        self.assertEqual(db.one('SELECT archived FROM reference_notes WHERE id=?', (note_id,))['archived'], 0)
+
     def test_owned_listing_note_save_and_versions(self):
         from . import resources
         own = self.register()

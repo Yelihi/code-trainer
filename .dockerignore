@@ -1,6 +1,7 @@
 **
 !backend/
 !backend/*.py
+!backend/framework_frame.html
 !requirements.txt
 !deploy/
 !deploy/requirements.txt

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { ReferenceContentReview } from './ReferenceContentReview';
 import { api, errorMessage } from './api';
 import { ErrorNotice, useApp } from './App';
-import { clearReferenceDraft, registrationBlock, bases, relations, type Assertion, type Candidate, type Concept, type Proposal, type ProposalData, type ReferenceNote } from './referenceTypes';
+import { clearReferenceDraft, bases, relations, type Assertion, type Candidate, type Concept, type Proposal, type ProposalData, type ReferenceNote } from './referenceTypes';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
@@ -86,12 +86,12 @@ function KnowledgeEditor(props: NoteKnowledgeProps | MaterialKnowledgeProps) {
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   async function register() {
-    const blocked = reviewBlocked;
+    const blocked = candidateBlocked;
     if (blocked) { setError(blocked); return; }
     if (data?.concepts.some(c => !decisions[c.key])) { setError('각 개념의 등록 방식을 먼저 선택해주세요.'); return; }
     setBusy(true); setError('');
     try {
-      const body = { revision: source.revision, request_id: requestId, proposal_id: proposal?.state === 'ready' ? proposal.id : null, data };
+      const body = { revision: source.revision, request_id: requestId, proposal_id: proposal?.state === 'ready' && proposal.revision === source.revision ? proposal.id : null, data };
       if (isMaterial) { await api(`/material-reviews/${source.id}/knowledge`, 'POST', body); clearReferenceDraft(draftKey); props.onRegistered(); }
       else { const result = await api<ReferenceNote>(`/reference-notes/${source.id}/knowledge`, 'POST', body); clearReferenceDraft(draftKey); props.onNoteChange(result); }
     }
@@ -105,19 +105,19 @@ function KnowledgeEditor(props: NoteKnowledgeProps | MaterialKnowledgeProps) {
       props.onNoteApplied(next);
     } finally { setBusy(false); }
   }
-  const pending = busy || proposal?.state === 'running';
+  const pending = busy;
   const undecided = data?.concepts.filter(c => !decisions[c.key]).length ?? 0;
-  const reviewBlocked = isMaterial && (props.material.state !== 'eligible' || proposal?.state !== 'ready') ? props.material.reason || '현재 자료의 추출·검토를 완료해주세요.' : registrationBlock(proposalId, proposal, source.revision);
+  const candidateBlocked = isMaterial && (props.material.state !== 'eligible' || proposal?.state !== 'ready') ? props.material.reason || '현재 자료의 개념 후보를 준비해주세요.' : '';
   if (source.registration?.version === source.revision && source.registration.state === 'active') return <section className="reference-connected"><span className="eyebrow">CONNECTED</span><h2>개념 지도에 등록했습니다.</h2><p>이 {isMaterial ? '자료' : '노트'} v{source.revision}의 근거와 연결을 보관하고 있습니다.</p><Link className="button" to="/knowledge">지식 그래프 열기</Link></section>;
   return <section className="reference-knowledge">
     <div className="section-heading"><div><span className="eyebrow">CONNECT WITH INTENTION</span><h2>개념 지도에 연결하기</h2></div><span className="reference-version">{isMaterial ? '자료' : '노트'} v{source.revision}</span></div>
     <p>기존 개념, 새로운 주장과 관계를 검토하고 직접 등록하세요. 후보를 준비하는 것만으로 지도에 추가되지는 않습니다.</p>
     {source.registration && <p className="notice">이전 등록은 v{source.registration.version}입니다. 변경된 근거를 확인해 새 버전을 등록해주세요.</p>}
-    {!isMaterial && <div className="reference-actions"><Button disabled={pending} onClick={() => void analyze()}>{pending ? '개념 추출·검토 중…' : 'AI로 후보 생성·내용 검토'}</Button><Button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] }, {}, {}, {})}>직접 개념 입력</Button></div>}
+    {!isMaterial && <div className="reference-actions"><Button disabled={pending || proposal?.state === 'running'} onClick={() => void analyze()}>{pending || proposal?.state === 'running' ? '개념 추출·검토 중…' : 'AI로 후보 생성·내용 검토'}</Button><Button disabled={pending} onClick={() => change({ concepts: [blankConcept('c1')], assertions: [] }, {}, {}, {})}>직접 개념 입력</Button></div>}
     <ErrorNotice error={error || proposal?.error || ''} />
     {proposal?.state === 'running' && <p role="status" className="notice">개념과 근거를 추출한 뒤, 별도 검토로 본문과 후보의 정확성을 살피고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
     {!isMaterial && proposal?.review && <ReferenceContentReview key={proposal.id + ':' + source.revision} note={props.note} proposal={proposal} pending={!!pending} onApply={applySuggestions} onEdit={props.onEdit} />}
-    {proposal?.state === 'ready' && !proposal.review && <p className="notice">내용 검토 기능 적용 전의 후보입니다. AI 후보를 다시 생성해 검토해주세요.</p>}
+    {proposal?.state === 'ready' && !proposal.review && <p className="notice">AI 본문 검토가 없는 후보입니다. 개념의 정의와 근거를 직접 확인해 등록할 수 있습니다.</p>}
     {data && <form onSubmit={e => { e.preventDefault(); void register(); }}>
       <Label className="reference-concept-search">기존 개념 검색<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="개념명 · 정의 · 별칭으로 찾기" maxLength={160} /></Label>
       <fieldset disabled={!!pending}><legend>개념과 근거</legend>
@@ -156,8 +156,9 @@ function KnowledgeEditor(props: NoteKnowledgeProps | MaterialKnowledgeProps) {
         <Button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: isMaterial ? 'interpretation' : 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</Button>
       </fieldset>
       {undecided > 0 && <p className="notice" role="status">개념 {undecided}개의 등록 방식을 선택해주세요. 기존 개념 연결 또는 별개 개념 추가를 선택하면 등록할 수 있습니다.</p>}
-      {reviewBlocked && <div className="notice reference-registration-block" id="reference-registration-block" role="status"><strong>{undecided === 0 ? '개념 선택은 완료됐지만 본문 검토가 남아 있습니다.' : '본문 검토도 완료해야 등록할 수 있습니다.'}</strong><p>{reviewBlocked}</p>{!isMaterial && proposal?.review && <Button type="button" onClick={() => document.getElementById('reference-content-review')?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>본문 검토 확인하기 ↑</Button>}</div>}
-      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>{proposal?.review ? '검토 후 직접 변경한 후보는 등록 전에 다시 확인해주세요.' : 'AI 검토 없이 직접 입력한 내용입니다. 정의와 근거를 확인해주세요.'}</small></p><Button className="primary" aria-describedby={reviewBlocked ? "reference-registration-block" : undefined} disabled={!!pending || !!reviewBlocked || undecided > 0}>검토한 내용으로 개념 지도에 추가하기</Button></div>
+      {proposal?.review?.issues.length ? <p className="notice" role="status">AI가 본문에서 확인할 내용 {proposal.review.issues.length}개를 찾았습니다. 등록은 가능하며, 추가할 정의와 근거는 직접 확인해주세요.</p> : null}
+      {candidateBlocked && <div className="notice reference-registration-block" id="reference-registration-block" role="status"><strong>개념 후보를 준비한 뒤 등록할 수 있습니다.</strong><p>{candidateBlocked}</p></div>}
+      <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>추가할 개념의 정의와 근거를 확인해주세요.</small></p><Button className="primary" aria-describedby={candidateBlocked ? "reference-registration-block" : undefined} disabled={!!pending || !!candidateBlocked || undecided > 0}>선택한 개념을 지식 그래프에 추가하기</Button></div>
     </form>}
   </section>;
 }

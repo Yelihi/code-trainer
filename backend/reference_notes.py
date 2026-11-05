@@ -265,7 +265,7 @@ suggestion explains the change or what to verify; replacement contains only the 
 Never invent facts, sources, or evidence to fill uncertainty. If a faithful replacement requires missing information,
 use replacement="" and explain what the learner must verify. Do not silently drop the uncertain claim.
 kind=needs_verification for a material factual assertion whose correctness depends on unavailable evidence or missing conditions;
-explain what to check rather than inventing a definitive correction. The user must revise the note before registration.
+explain what to check rather than inventing a definitive correction. The review is advisory; the user decides what to register.
 Do not flag clearly labeled open questions, personal impressions, or harmless wording as factual errors.
 Existing graph concepts are context, not authoritative truth. Do not add issues just because the note has no external citations.
 review.summary explains the scope and any extraction corrections. Empty issues means no issue detected, NOT verified truth.
@@ -357,9 +357,9 @@ def register(owner, note_id, request):
         proposal = proposal_view(owner, request.proposal_id)
         if proposal['note_id'] != note_id or proposal['revision'] != request.revision or proposal['state'] != 'ready':
             raise service.Error('현재 노트 버전의 후보를 사용해주세요.', 409)
-        if not proposal['review']:
-            raise service.Error('내용 검토 전의 후보입니다. AI 후보를 다시 생성해주세요.', 409)
-        provenance.update(model=proposal['model'], prompt_version=proposal['prompt_version'], review=proposal['review'])
+        provenance.update(model=proposal['model'], prompt_version=proposal['prompt_version'])
+        if proposal['review'] is not None:
+            provenance['review'] = proposal['review']
     with db.connect(write=True) as c:
         replay = c.execute('SELECT payload FROM knowledge_registrations WHERE owner=? AND request_id=?',
                            (owner, request.request_id)).fetchone()
@@ -370,18 +370,6 @@ def register(owner, note_id, request):
         current = c.execute('SELECT revision,archived FROM reference_notes WHERE owner=? AND id=?', (owner, note_id)).fetchone()
         if current['revision'] != request.revision or current['archived']:
             raise service.Error('노트가 변경되었습니다. 최신 내용을 확인해주세요.', 409)
-        # Check persisted review even when a caller omits proposal_id or switches to manual entry.
-        latest = c.execute('SELECT * FROM knowledge_proposals WHERE owner=? AND note_id=? ORDER BY created_at DESC LIMIT 1',
-                           (owner, note_id)).fetchone()
-        if latest:
-            review = json.loads(latest['data']).get('review') if latest['data'] else None
-            if latest['revision'] != request.revision:
-                raise service.Error('수정한 노트의 AI 검토를 다시 진행한 뒤 등록해주세요.', 409)
-            if latest['state'] != 'ready' or not review:
-                raise service.Error('AI 내용 검토가 완료되지 않았습니다. 검토를 완료한 뒤 등록해주세요.', 409)
-            if review['issues']:
-                raise service.Error('본문의 수정·확인 사항이 남아 있습니다. 본문을 수정하고 저장한 뒤 AI 검토를 다시 진행해주세요.', 409)
-            provenance.update(proposal_id=latest['id'], model=latest['model'], prompt_version=latest['prompt_version'], review=review)
         existing = c.execute("SELECT id FROM knowledge_sources WHERE owner=? AND kind='note' AND origin_id=? AND version=?", (owner, note_id, request.revision)).fetchone()
         if existing:
             raise service.Error('이 노트 버전은 이미 등록되었습니다. 내용을 수정한 뒤 새 버전을 등록해주세요.', 409)

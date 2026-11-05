@@ -10,6 +10,10 @@ class InterpretationInput(Model):
     revision: int = Field(ge=1)
 
 
+class InterpretationRetryInput(Model):
+    request_id: str = Field(min_length=8, max_length=80)
+
+
 class InterpretationSection(Model):
     id: str = Field(pattern=r'^s[1-6]$')
     title: str = Field(min_length=1, max_length=160)

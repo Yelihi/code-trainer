@@ -30,6 +30,7 @@
 .interpretation-entry p, .interpretation-provenance p, .interpretation-questions > p { color: var(--muted); }
 .interpretation-entry-actions { display: grid; gap: 16px; flex-shrink: 0; max-width: 340px; }
 .interpretation-list-links { display: flex; justify-content: flex-end; gap: 24px; margin-bottom: 28px; }
+.interpretation-detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .interpretation-page { max-width: 1050px; }
 .interpretation-provenance { border: 1px solid var(--line); padding: 16px 24px; background: var(--panel); margin: 28px 0; }
 .interpretation-provenance p { margin-bottom: 0; font-size: 14px; }

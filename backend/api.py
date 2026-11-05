@@ -22,7 +22,7 @@ from . import insights, insight_adoptions, insight_schedule
 from .insight_schema import InsightRequest, InsightChoice, ExplorationNotes, InsightScheduleInput
 from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
-from .interpretation_schema import InterpretationInput
+from .interpretation_schema import InterpretationInput, InterpretationRetryInput
 from .resource_schema import ResourceInput
 from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
@@ -563,8 +563,8 @@ def worksheet_view(identifier: str, current=Depends(user)):
 
 
 @app.get('/api/interpretations')
-def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), current=Depends(user)):
-    return interpretations.listing(current['id'], page, resource_id)
+def interpretation_list(page: int = Query(default=1, ge=1), resource_id: str | None = Query(default=None, pattern=r'^[a-f0-9]{32}$'), archived: bool = False, current=Depends(user)):
+    return interpretations.listing(current['id'], page, resource_id, archived)
 
 
 @app.post('/api/material-reviews/{identifier}/knowledge')
@@ -613,8 +613,21 @@ def material_review_detail(identifier: str, current=Depends(user)):
 def interpretation_start(body: InterpretationInput, tasks: BackgroundTasks, current=Depends(user)):
     result, fresh = interpretations.begin(current['id'], body)
     if fresh:
-        tasks.add_task(interpretations.generate, result['id'])
+        tasks.add_task(interpretations.generate, result['id'], result['attempt'])
     return result
+
+
+@app.post('/api/interpretations/{identifier}/retry', status_code=202)
+def interpretation_retry(identifier: str, body: InterpretationRetryInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = interpretations.retry(current['id'], identifier, body.request_id)
+    if fresh:
+        tasks.add_task(interpretations.generate, result['id'], result['attempt'])
+    return result
+
+
+@app.post('/api/interpretations/{identifier}/archive')
+def interpretation_archive(identifier: str, body: ArchiveInput, current=Depends(user)):
+    return interpretations.archive(current['id'], identifier, body.archived)
 
 
 @app.get('/api/interpretations/{identifier}')

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useResource } from './App';
@@ -34,7 +35,12 @@ export function QuickQuestion() {
 
 function DailyQuestion({ onSaved }: { onSaved: () => void }) {
   const { data, error: loadError, reload } = useResource<Daily>('/questions/daily');
-  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [expanded, setExpanded] = useState(false);
+  const recommendation = data?.recommendation;
+  const firstSentence = recommendation?.text.match(/^.*?[.!?](?=\s|$)/)?.[0];
+  const preview = recommendation && recommendation.text.length > 145 && firstSentence && firstSentence.length >= 30 ? firstSentence : recommendation?.text;
+  const hasMore = preview !== recommendation?.text;
+  useEffect(() => setExpanded(false), [recommendation?.id]);
   useEffect(() => {
     if (!data) return;
     const nextMidnight = Date.parse(data.day + 'T15:00:00Z');
@@ -48,15 +54,30 @@ function DailyQuestion({ onSaved }: { onSaved: () => void }) {
     return () => window.clearInterval(timer);
   }, [data, reload]);
   async function save() {
-    if (!data?.recommendation || busy) return;
+    if (!recommendation || busy) return;
     setBusy(true); setError('');
-    try { await api('/questions/daily/save', 'POST', { recommendation_id: data.recommendation.id }); reload(); onSaved(); }
+    try { await api('/questions/daily/save', 'POST', { recommendation_id: recommendation.id }); reload(); onSaved(); }
     catch (cause) { setError(errorMessage(cause)); reload(); }
     finally { setBusy(false); }
   }
-  return <section className="daily-question" aria-labelledby="daily-question-heading"><div className="daily-question-heading"><div><span className="eyebrow">DAILY QUESTION</span><h2 id="daily-question-heading">오늘의 추천 질문</h2></div><span>{data?.day.replaceAll('-', '.')}</span></div>
+  return <section className="daily-question" aria-labelledby="daily-question-heading">
+    <div className="daily-question-heading"><h2 id="daily-question-heading">오늘의 질문</h2>{data && <time dateTime={data.day}>{data.day.replaceAll('-', '.')}</time>}</div>
     <ErrorNotice error={error || loadError} />{loadError && <Button onClick={reload}>추천 다시 불러오기</Button>}
-    {data?.recommendation ? <><p className="daily-question-source">{data.recommendation.source_kind === 'feed' ? '구독 포스팅' : 'Deep Inside'} · {data.recommendation.source_title}</p>{data.recommendation.state === 'ready' ? <><p className="daily-question-text">{data.recommendation.text}</p>{data.recommendation.evidence && <p className="daily-question-evidence">본문 근거 · {data.recommendation.evidence}</p>}</> : <p role="status">{data.recommendation.state === 'failed' ? data.recommendation.error : '포스팅 본문에서 개념 질문을 준비하고 있습니다…'}</p>}<div className="reference-actions">{data.recommendation.state === 'ready' && (data.recommendation.saved_question_id ? <Link className="button" to={'/questions/' + data.recommendation.saved_question_id}>저장한 질문 열기</Link> : <Button className="primary" disabled={busy} onClick={() => void save()}>{busy ? '저장 중…' : '질문함에 저장'}</Button>)}{data.recommendation.source_kind === 'feed' ? <a className="button" href={data.recommendation.source_url} target="_blank" rel="noreferrer">포스팅 보기</a> : <Link className="button" to="/apply">Deep Inside 보기</Link>}</div><small>저장하지 않으면 다음 날 추천을 다시 고릅니다.</small></> : data && <><p>{data.reason}</p><div className="reference-actions"><Link className="button" to="/inbox">포스팅 보기</Link><Link className="button" to="/apply">Deep Inside 보기</Link></div></>}
+    {recommendation ? <>
+      <p className="daily-question-source"><span>{recommendation.source_kind === 'feed' ? '구독 포스팅' : 'Deep Inside'}</span><span aria-hidden="true">·</span>{recommendation.source_title}</p>
+      {recommendation.state === 'ready'
+        ? <div><p className={`daily-question-text${expanded ? '' : ' is-condensed'}`} aria-live="polite">{expanded ? recommendation.text : preview}</p>{recommendation.text.length > 145 && <Button type="button" variant="ghost" className={`daily-question-expand${hasMore ? '' : ' only-mobile'}`} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? '질문 접기' : '질문 전체 보기'} <ChevronDown aria-hidden="true" size={16} /></Button>}</div>
+        : <p className="daily-question-status" role="status">{recommendation.state === 'failed' ? recommendation.error : '본문에서 질문을 만들고 있습니다…'}</p>}
+      <div className="reference-actions daily-question-actions">
+        {recommendation.state === 'ready' && (recommendation.saved_question_id
+          ? <Link className="button" to={'/questions/' + recommendation.saved_question_id}>저장한 질문 열기</Link>
+          : <Button className="primary" disabled={busy} onClick={() => void save()}>{busy ? '저장 중…' : '질문함에 저장'}</Button>)}
+        {recommendation.source_kind === 'feed'
+          ? <a className="button" href={recommendation.source_url} target="_blank" rel="noreferrer">포스팅 보기</a>
+          : <Link className="button" to="/apply">Deep Inside 보기</Link>}
+      </div>
+      {recommendation.state === 'ready' && recommendation.evidence && <details className="daily-question-source-detail"><summary>질문의 본문 근거 <ChevronDown aria-hidden="true" size={16} /></summary><p>{recommendation.evidence}</p></details>}
+    </> : data && <><p className="daily-question-status">{data.reason}</p><div className="reference-actions"><Link className="button" to="/inbox">포스팅 보기</Link><Link className="button" to="/apply">Deep Inside 보기</Link></div></>}
   </section>;
 }
 

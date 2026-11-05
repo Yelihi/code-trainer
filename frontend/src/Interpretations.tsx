@@ -15,7 +15,7 @@ type Document = { title: string; summary: string; concepts: string[]; sections: 
   examples: string[]; extensions: string[]; questions: string[];
 }[] };
 type Interpretation = { id: string; resource_id: string; revision: number; current_revision: number; source_name: string;
-  state: 'queued' | 'running' | 'ready' | 'failed' | 'interrupted'; error: string; document: Document | null; created_at: string; model: string };
+  state: 'queued' | 'running' | 'ready' | 'failed' | 'interrupted'; error: string; document: Document | null; created_at: string; model: string; archived: number };
 type History = { items: (Pick<Interpretation, 'id' | 'resource_id' | 'revision' | 'source_name' | 'state' | 'created_at'> & { title: string })[]; total: number; page: number; pages: number };
 const states = { queued: '해석 대기', running: '해석 중', ready: '해석 완료', failed: '해석 실패', interrupted: '해석 중단' };
 
@@ -60,16 +60,16 @@ export function Interpretations() {
 }
 function InterpretationList() {
   const [params, setParams] = useSearchParams();
-  const resourceId = params.get('resource') ?? '', page = libraryPage(params.get('page'));
-  const { data, error, reload } = useResource<History>(`/interpretations?page=${page}${resourceId ? '&resource_id=' + encodeURIComponent(resourceId) : ''}`);
+  const resourceId = params.get('resource') ?? '', page = libraryPage(params.get('page')), archived = params.get('archived') === 'true';
+  const { data, error, reload } = useResource<History>(`/interpretations?page=${page}&archived=${archived}${resourceId ? '&resource_id=' + encodeURIComponent(resourceId) : ''}`);
   return <main className="page reference-page library-page"><div className="breadcrumb"><Link to="/library">자료 보관함</Link><span>/</span> 해석하기</div>
     <header className="reference-page-heading"><div><span className="eyebrow">READ. QUESTION. UNDERSTAND.</span><h1>읽은 것을 이해의 구조로.</h1><p>원문에서 출발한 개념과 질문을 다시 펼쳐보세요.<br />각 해석은 시작할 때 선택한 원문 버전을 기억합니다.</p></div><Link className="button primary" to="/library">해석할 자료 선택</Link></header>
-    <div className="interpretation-list-links">{resourceId && <Link to="/explore">전체 해석 보기</Link>}<Link to="/">기존 코딩 학습 과정</Link></div>
+    <div className="interpretation-list-links">{resourceId && <Link to="/explore">전체 해석 보기</Link>}<Link className="button" to={archived ? `/explore${resourceId ? '?resource=' + resourceId : ''}` : `/explore?archived=true${resourceId ? '&resource=' + resourceId : ''}`}>{archived ? '해석 목록' : '삭제한 해석'}</Link><Link to="/">기존 코딩 학습 과정</Link></div>
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="해석 문서를 불러오는 중…" />}
-    {data && <><div className="reference-list-caption"><span>{resourceId ? '선택한 자료의 해석 기록' : '나의 해석 문서'}</span><span>{data.total}개의 기록</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <section className="reference-empty"><h2>아직 해석한 자료가 없습니다.</h2><p>보관함에서 원문을 열고 해석을 시작해보세요.<br />언어 선택 없이 개념과 질문부터 살펴볼 수 있습니다.</p><Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원문 살펴보기</Link></section>}
-      {data.pages > 1 && <nav className="pagination" aria-label="해석 기록 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), page: String(data.page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), page: String(data.page + 1) })}>다음</Button></nav>}</>}
+    {data && <><div className="reference-list-caption"><span>{archived ? '삭제한 해석' : resourceId ? '선택한 자료의 해석 기록' : '나의 해석 문서'}</span><span>{data.total}개의 기록</span></div>
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <section className="reference-empty"><h2>{archived ? '삭제한 해석이 없습니다.' : '아직 해석한 자료가 없습니다.'}</h2><p>{archived ? '삭제한 해석은 이곳에서 복원할 수 있습니다.' : '보관함에서 원문을 열고 해석을 시작해보세요.'}</p>{!archived && <Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원문 살펴보기</Link>}</section>}
+      {data.pages > 1 && <nav className="pagination" aria-label="해석 기록 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), ...(archived ? { archived: 'true' } : {}), page: String(data.page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), ...(archived ? { archived: 'true' } : {}), page: String(data.page + 1) })}>다음</Button></nav>}</>}
   </main>;
 }
 
@@ -78,8 +78,38 @@ export function InterpretationDetail() {
   return <Detail key={userId + ':' + id} id={id!} />;
 }
 function Detail({ id }: { id: string }) {
-  const [data, setData] = useState<Interpretation | null>(null), [error, setError] = useState(''), [reload, setReload] = useState(0);
+  const [data, setData] = useState<Interpretation | null>(null), [error, setError] = useState(''), [reload, setReload] = useState(0), [busy, setBusy] = useState(false);
   const { hash } = useLocation();
+  const { userId, health } = useApp();
+  const navigate = useNavigate();
+  const retryKey = `interpretation-retry:${userId}:${id}`;
+  async function retry() {
+    if (busy) return;
+    setBusy(true); setError('');
+    let requestId: string | null = null;
+    try { requestId = localStorage.getItem(retryKey); } catch { /* The request can still proceed without storage. */ }
+    if (!requestId) {
+      requestId = crypto.randomUUID();
+      try { localStorage.setItem(retryKey, requestId); } catch { /* Server deduplicates an in-flight retry. */ }
+    }
+    try {
+      const result = await api<Interpretation>(`/interpretations/${id}/retry`, 'POST', { request_id: requestId });
+      try { localStorage.removeItem(retryKey); } catch { /* The response is already confirmed. */ }
+      setData(result); setReload(n => n + 1);
+    } catch (e) { setError(errorMessage(e)); }
+    finally { setBusy(false); }
+  }
+  async function changeArchive(archived: boolean) {
+    if (busy || !data) return;
+    if (archived && !window.confirm('이 해석 자료를 목록에서 삭제할까요? 연결된 질문지와 복습 기록은 보존되며, 삭제한 해석에서 복원할 수 있습니다.')) return;
+    setBusy(true); setError('');
+    try {
+      const result = await api<Interpretation>(`/interpretations/${id}/archive`, 'POST', { archived });
+      setData(result);
+      navigate(archived ? '/explore' : '/explore?archived=true');
+    } catch (e) { setError(errorMessage(e)); }
+    finally { setBusy(false); }
+  }
   useEffect(() => {
     // Cross-page section links arrive before the fetched document is rendered.
     if (data?.document && /^#s[1-6]$/.test(hash)) document.getElementById(hash.slice(1))?.scrollIntoView();
@@ -101,11 +131,11 @@ function Detail({ id }: { id: string }) {
   return <main className="page reference-page interpretation-page"><div className="breadcrumb"><Link to="/explore">해석하기</Link><span>/</span> 개념 문서</div>
     <ErrorNotice error={error} />{error && <Button onClick={() => setReload(n => n + 1)}>상태 다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="editor" label="해석 문서를 불러오는 중…" />}
-    {data && <><header className="reference-page-heading"><div><span className="eyebrow">{states[data.state]} · AI INTERPRETATION</span><h1>{data.document?.title ?? data.source_name}</h1><p>원문 v{data.revision} 기준 · {timestamp(data.created_at)}</p></div><Link className="button" to={'/library/' + data.resource_id}>원문과 버전 보기</Link></header>
+    {data && <><header className="reference-page-heading"><div><span className="eyebrow">{data.archived ? '삭제한 해석' : states[data.state]} · AI INTERPRETATION</span><h1>{data.document?.title ?? data.source_name}</h1><p>원문 v{data.revision} 기준 · {timestamp(data.created_at)}</p></div><div className="interpretation-detail-actions"><Link className="button" to={'/library/' + data.resource_id}>원문과 버전 보기</Link><Button disabled={busy || data.state === 'queued' || data.state === 'running'} onClick={() => void changeArchive(!data.archived)}>{data.archived ? '해석 복원' : '해석 자료 삭제'}</Button></div></header>
       <aside className="interpretation-provenance"><strong>{data.source_name} · 본문 v{data.revision}</strong><p>AI가 작성한 해석입니다. 인용한 원문과 비교하며 읽어보세요.{data.current_revision !== data.revision && ` 원문에는 더 최신인 v${data.current_revision}가 있습니다. 이 문서는 v${data.revision} 해석을 그대로 보존합니다.`}</p></aside>
-      {data.state === 'ready' && <div className="interpretation-retry"><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></div>}
+      {data.state === 'ready' && !data.archived && <div className="interpretation-retry"><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></div>}
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
-      {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고, 같은 원문 v{data.revision}에서 새 해석을 시도합니다.</p><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></section>}
+      {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>같은 원문 v{data.revision}에서 이 해석 자료를 다시 생성합니다.</p>{!data.archived && <Button className="primary" disabled={busy || !health?.ai} onClick={() => void retry()}>{busy ? '요청 중…' : '이 해석에서 다시 시도'}</Button>}</section>}
       {data.document && <InterpretationDocument document={data.document} interpretationId={data.id} />}
       {data.state === 'ready' && data.document && <MaterialReview kind="interpretation" id={data.id} revision={data.revision} />}
       {data.state === 'ready' && data.document && <InterpretationPractice interpretationId={data.id} />}

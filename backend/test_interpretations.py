@@ -109,6 +109,18 @@ class InterpretationsTest(unittest.TestCase):
         self.assertEqual(saved['state'], 'ready')
         self.assertEqual(saved['document']['sections'][0]['source_quotes'], [code, '결과는 3입니다.'])
 
+    def test_quote_spacing_is_replaced_with_exact_source_without_accepting_new_words(self):
+        source = resources.register(self.owner, ResourceInput(request_id=service.uid(), kind='text',
+            name='줄바꿈이 있는 원문', content='첫 번째 줄입니다.\n\n  두 번째 줄입니다.'))
+        job, _ = self.start(source)
+        draft = {**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0],
+            'source_quotes': ['첫 번째 줄입니다. 두 번째 줄입니다.']}]}
+        with patch.object(ai, 'generate', return_value=InterpretationDraft.model_validate(draft)):
+            interpretations.generate(job['id'])
+        saved = interpretations.view(self.owner, job['id'])
+        self.assertEqual(saved['state'], 'ready')
+        self.assertEqual(saved['document']['sections'][0]['source_quotes'], ['첫 번째 줄입니다.\n\n  두 번째 줄입니다.'])
+
     def test_concurrent_first_requests_reserve_only_one_job_and_worker(self):
         raw = self.raw()
         def begin(key):
@@ -141,21 +153,54 @@ class InterpretationsTest(unittest.TestCase):
         job, _ = self.start(raw)
         def late(*args):
             service.initialize()
+            with patch.object(ai, 'available', return_value=True):
+                retried, fresh = interpretations.retry(self.owner, job['id'], 'retry-after-restart')
+            self.assertTrue(fresh)
+            self.assertEqual((retried['id'], retried['attempt']), (job['id'], 2))
             return InterpretationDraft.model_validate(DOCUMENT)
         with patch.object(ai, 'generate', side_effect=late):
             interpretations.generate(job['id'])
         interrupted = interpretations.view(self.owner, job['id'])
-        self.assertEqual(interrupted['state'], 'interrupted')
+        self.assertEqual(interrupted['state'], 'queued')
         self.assertIsNone(interrupted['document'])
-        retry, fresh = self.start(raw)
-        self.assertTrue(fresh)
-        self.assertNotEqual(retry['id'], job['id'])
-        self.assertEqual(retry['revision'], 1)
+        self.assertEqual(interrupted['revision'], 1)
+        with patch.object(ai, 'generate', return_value=InterpretationDraft.model_validate(DOCUMENT)) as generate:
+            interpretations.generate(job['id'], 1)
+            generate.assert_not_called()
         with patch.object(ai, 'generate', side_effect=RuntimeError('private secret')):
-            interpretations.generate(retry['id'])
-        failed = interpretations.view(self.owner, retry['id'])
+            interpretations.generate(job['id'], 2)
+        failed = interpretations.view(self.owner, job['id'])
         self.assertEqual(failed['state'], 'failed')
         self.assertNotIn('private secret', failed['error'])
+        with patch.object(ai, 'available', return_value=False):
+            replay, fresh = interpretations.retry(self.owner, job['id'], 'retry-after-restart')
+        self.assertFalse(fresh)
+        self.assertEqual(replay['id'], job['id'])
+        self.assertEqual(interpretations.listing(self.owner, 1)['total'], 1)
+
+    def test_retry_and_archive_api_preserve_identity_and_history(self):
+        raw = self.raw()
+        invalid = {**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0], 'source_quotes': ['원문에 없는 주장']}]}
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', return_value=InterpretationDraft.model_validate(invalid)):
+            response = self.client.post('/api/interpretations', json={'request_id': 'initial-api', 'resource_id': raw['id'], 'revision': 1})
+        identifier = response.json()['id']
+        self.assertEqual(response.json()['state'], 'queued')
+        self.assertEqual(interpretations.view(self.owner, identifier)['state'], 'failed')
+        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', return_value=InterpretationDraft.model_validate(DOCUMENT)) as generate:
+            response = self.client.post(f'/api/interpretations/{identifier}/retry', json={'request_id': 'retry-api-one'})
+            self.assertEqual(response.status_code, 202, response.text)
+            self.assertEqual(response.json()['id'], identifier)
+            self.assertEqual(generate.call_count, 1)
+            replay = self.client.post(f'/api/interpretations/{identifier}/retry', json={'request_id': 'retry-api-one'})
+            self.assertEqual(replay.json()['id'], identifier)
+            self.assertEqual(generate.call_count, 1)
+        self.assertEqual(interpretations.view(self.owner, identifier)['state'], 'ready')
+        self.assertEqual(self.client.post(f'/api/interpretations/{identifier}/archive', json={'archived': True}).status_code, 200)
+        self.assertEqual(self.client.get('/api/interpretations').json()['total'], 0)
+        self.assertEqual(self.client.get('/api/interpretations?archived=true').json()['total'], 1)
+        self.assertEqual(self.client.get(f'/api/interpretations/{identifier}').json()['document'], DOCUMENT)
+        self.assertEqual(self.client.post(f'/api/interpretations/{identifier}/archive', json={'archived': False}).status_code, 200)
+        self.assertEqual(self.client.get('/api/interpretations').json()['total'], 1)
 
     def test_owned_api_no_generation_on_reads_or_replay_and_empty_source(self):
         raw = self.raw()

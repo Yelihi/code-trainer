@@ -81,6 +81,8 @@ def initialize(c):
     for name in ('state', 'error', 'evidence'):
         if name not in columns:
             c.execute(f"ALTER TABLE daily_question_recommendations ADD COLUMN {name} TEXT NOT NULL DEFAULT '{'ready' if name == 'state' else ''}'")
+    c.execute('''UPDATE daily_question_recommendations SET saved_question_id=NULL WHERE saved_question_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM question_memos WHERE question_memos.id=daily_question_recommendations.saved_question_id)''')
     c.execute("""DELETE FROM daily_question_recommendations WHERE source_kind='feed'
         AND saved_question_id IS NULL AND text LIKE '‘%’을 읽고 직접 확인할 점은 무엇인가요?'""")
     c.execute('CREATE INDEX IF NOT EXISTS daily_question_history ON daily_question_recommendations(owner,source_kind,source_id)')

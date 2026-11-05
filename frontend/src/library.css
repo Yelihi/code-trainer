@@ -18,11 +18,13 @@
 .library-drop-overlay strong { font-size: var(--text-section); }
 .library-drop-overlay span { color: var(--muted); }
 .library-notes-link { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); }
-.library-source { overflow-wrap: anywhere; font-size: 14px; }
+.library-source { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 24px 0; overflow-wrap: anywhere; font-size: 14px; }
+.library-source span { min-width: 0; color: var(--muted); }
 .library-detail h1 { overflow-wrap: anywhere; }
 .library-versions { padding-top: 28px; margin-top: 32px; border-top: 1px solid var(--border); }
 .library-versions h2 { font-size: 18px; }
 .library-versions > p { color: var(--muted); font-size: 13px; }
+.library-version-url { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .interpretation-entry { margin: 32px 0; padding: 28px; border: 1px solid var(--line); background: var(--panel); display: flex; justify-content: space-between; align-items: center; gap: 24px; }
 .interpretation-entry h2 { margin: 8px 0; font-size: 24px; }
 .interpretation-entry p, .interpretation-provenance p, .interpretation-questions > p { color: var(--muted); }

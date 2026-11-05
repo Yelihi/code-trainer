@@ -11,11 +11,13 @@ def initialize(c):
     c.execute('''CREATE TABLE IF NOT EXISTS resources (
         id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id),
         kind TEXT NOT NULL CHECK(kind IN ('source','note')), origin_id TEXT NOT NULL,
-        note_id TEXT, created_at TEXT NOT NULL,
+        note_id TEXT, created_at TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0,
         UNIQUE(owner,kind,origin_id), UNIQUE(owner,id),
         CHECK((kind='source' AND note_id IS NULL) OR
               (kind='note' AND note_id IS NOT NULL AND note_id=origin_id)),
         FOREIGN KEY(owner,note_id) REFERENCES reference_notes(owner,id))''')
+    if 'archived' not in {row['name'] for row in c.execute('PRAGMA table_info(resources)')}:
+        c.execute('ALTER TABLE resources ADD COLUMN archived INTEGER NOT NULL DEFAULT 0')
     c.execute('''CREATE TABLE IF NOT EXISTS resource_versions (
         owner TEXT NOT NULL, resource_id TEXT NOT NULL, revision INTEGER NOT NULL CHECK(revision>0),
         kind TEXT NOT NULL, name TEXT NOT NULL, url TEXT, content TEXT, created_at TEXT NOT NULL,
@@ -91,7 +93,7 @@ CURRENT = '''SELECT r.id,r.owner,r.note_id,r.created_at,
          ELSE COALESCE(g.state,CASE WHEN r.kind='note' OR v.content IS NOT NULL THEN 'ready' ELSE 'failed' END) END AS state,
     CASE WHEN g.state='fetching' AND g.lease_until < strftime('%s','now') THEN '수집이 중단되었습니다. 다시 가져오기를 눌러주세요.'
          ELSE COALESCE(g.error,'') END AS error,
-    COALESCE(n.archived,0) AS archived
+    COALESCE(n.archived,r.archived) AS archived
     FROM resources r
     LEFT JOIN resource_registrations g ON g.owner=r.owner AND g.resource_id=r.id
     LEFT JOIN reference_notes n ON n.owner=r.owner AND n.id=r.note_id
@@ -129,15 +131,15 @@ def version(owner, resource_id, revision):
             data = json.loads(row['data'])
             return {'revision': data['revision'], 'name': data['title'], 'content': data['body']}
     else:
-        row = db.one('SELECT revision,name,content,created_at FROM resource_versions WHERE owner=? AND resource_id=? AND revision=?', (owner, resource_id, revision))
+        row = db.one('SELECT revision,name,url,content,created_at FROM resource_versions WHERE owner=? AND resource_id=? AND revision=?', (owner, resource_id, revision))
         if row:
             return row
     raise service.Error('자료 버전을 찾을 수 없습니다.', 404)
 
 
-def listing(owner, query, page, kind):
-    where = " WHERE owner=? AND archived=0 AND (name LIKE ? OR content LIKE ? OR url LIKE ?)"
-    args = [owner, '%' + query + '%', '%' + query + '%', '%' + query + '%']
+def listing(owner, query, page, kind, archived=False):
+    where = " WHERE owner=? AND archived=? AND (name LIKE ? OR content LIKE ? OR url LIKE ?)"
+    args = [owner, int(archived), '%' + query + '%', '%' + query + '%', '%' + query + '%']
     if kind != 'all':
         where += ' AND kind=?'
         args.append(kind)
@@ -147,6 +149,30 @@ def listing(owner, query, page, kind):
         page = min(page, pages)
         rows = c.execute('WITH current AS (' + CURRENT + ') SELECT id,note_id,name,kind,url,revision,state,error,updated_at,substr(content,1,180) AS excerpt FROM current' + where + ' ORDER BY updated_at DESC,id LIMIT 20 OFFSET ?', (*args, (page - 1) * 20))
         return {'items': [dict(r) for r in rows], 'total': total, 'page': page, 'pages': pages}
+
+
+def archive(owner, resource_id, archived):
+    from . import reference_notes, service
+    with db.connect(write=True) as c:
+        row = view(owner, resource_id, c)
+        if row['note_id']:
+            note_id = row['note_id']
+        else:
+            note_id = None
+            active = c.execute('SELECT active_request,lease_until FROM resource_registrations WHERE owner=? AND resource_id=?',
+                               (owner, resource_id)).fetchone()
+            if active and active['active_request'] and active['lease_until'] > time.time():
+                raise service.Error('원문을 가져오는 중입니다. 완료된 뒤 다시 시도해주세요.', 409)
+            if bool(row['archived']) != archived:
+                c.execute('UPDATE resources SET archived=? WHERE owner=? AND id=?', (int(archived), owner, resource_id))
+                c.execute("""UPDATE knowledge_sources SET state=? WHERE owner=? AND kind IN ('interpretation','practice')
+                    AND json_extract(metadata,'$.resource_id')=?""", ('deleted' if archived else 'stale', owner, resource_id))
+                c.execute('''UPDATE feed_choices SET registered=? WHERE owner=? AND post_id IN
+                    (SELECT post_id FROM resource_feed_posts WHERE owner=? AND resource_id=?)''',
+                    (0 if archived else 1, owner, owner, resource_id))
+            return view(owner, resource_id, c)
+    reference_notes.archive(owner, note_id, archived)
+    return view(owner, resource_id)
 
 
 def register(owner, data):
@@ -175,8 +201,12 @@ def register(owner, data):
                 raise service.Error('이미 이 글의 원문을 가져오고 있습니다. 잠시 후 확인해주세요.', 409)
         resource_id = data.resource_id
         existing = view(owner, resource_id, c) if resource_id else None
-        if existing and (existing['kind'] != data.kind or existing['note_id'] or (data.kind == 'url' and existing['url'] != data.url)):
-            raise service.Error('자료 종류와 원본 URL은 변경할 수 없습니다.', 409)
+        if existing and (existing['kind'] != data.kind or existing['note_id']):
+            raise service.Error('자료 종류는 변경할 수 없습니다.', 409)
+        if existing and existing['archived']:
+            raise service.Error('삭제된 자료입니다. 보관함에서 복원한 뒤 다시 저장해주세요.', 409)
+        if existing and data.kind == 'url' and existing['url'] != data.url and existing['revision'] != data.revision:
+            raise service.Error('다른 화면에서 원문이 변경되었습니다. 최신 자료를 확인한 뒤 URL을 다시 수정해주세요.', 409)
         if data.kind == 'url' and resource_id:
             registered = c.execute('SELECT resource_id FROM resource_registrations WHERE owner=? AND url=?', (owner, data.url)).fetchone()
             if registered and registered['resource_id'] != resource_id:
@@ -193,6 +223,8 @@ def register(owner, data):
             if match:
                 resource_id = match['resource_id']
                 existing = view(owner, resource_id, c)
+                if existing['archived']:
+                    raise service.Error('같은 URL의 삭제된 자료가 있습니다. 삭제된 자료에서 복원해주세요.', 409)
         if data.kind == 'text' and (existing['revision'] if existing else 0) != data.revision:
             raise service.Error('다른 화면에서 본문이 변경되었습니다. 작성한 내용을 보관하고 최신 버전을 확인해주세요.', 409)
         if not resource_id:
@@ -221,7 +253,7 @@ def register(owner, data):
         except Exception:
             error = '문서를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.'
     with db.connect(write=True) as c:
-        active = c.execute('SELECT active_request FROM resource_registrations WHERE owner=? AND resource_id=?', (owner, resource_id)).fetchone()
+        active = c.execute('SELECT active_request,url FROM resource_registrations WHERE owner=? AND resource_id=?', (owner, resource_id)).fetchone()
         if active['active_request'] != data.request_id:
             raise service.Error('더 최근의 수집 요청이 있습니다. 최신 자료를 확인해주세요.', 409)
         if data.feed_post_id and not c.execute('''SELECT 1 FROM resource_feed_posts
@@ -229,13 +261,20 @@ def register(owner, data):
             (owner, data.feed_post_id, resource_id, data.request_id)).fetchone():
             raise service.Error('이 글에 더 최근의 등록 요청이 있습니다. 대기 목록에서 확인해주세요.', 409)
         previous = c.execute('SELECT * FROM resource_versions WHERE owner=? AND resource_id=? ORDER BY revision DESC LIMIT 1', (owner, resource_id)).fetchone()
-        if not error and (not previous or previous['content'] != content):
+        if not error and data.kind == 'url' and active['url'] != data.url:
+            collision = c.execute('SELECT 1 FROM resource_registrations WHERE owner=? AND url=? AND resource_id<>?',
+                                  (owner, data.url, resource_id)).fetchone()
+            if collision:
+                error = '같은 URL이 다른 자료로 등록되었습니다. 기존 원문은 유지됩니다.'
+        if not error and (not previous or previous['content'] != content or previous['url'] != (data.url or None)):
             c.execute('INSERT INTO resource_versions VALUES (?,?,?,?,?,?,?,?)',
                       (owner, resource_id, previous['revision'] + 1 if previous else 1, data.kind, data.name, data.url or None, content, service.now()))
             c.execute("""UPDATE knowledge_sources SET state='stale' WHERE owner=? AND kind IN ('interpretation','practice')
                 AND json_extract(metadata,'$.resource_id')=? AND state='active'""", (owner, resource_id))
-        c.execute('''UPDATE resource_registrations SET state=?,error=?,active_request=NULL,lease_until=0,updated_at=?
-                     WHERE owner=? AND resource_id=?''', ('failed' if error else 'ready', error, service.now(), owner, resource_id))
+        c.execute('''UPDATE resource_registrations SET url=CASE WHEN ?='' AND ?='url' THEN ? ELSE url END,
+                     state=?,error=?,active_request=NULL,lease_until=0,updated_at=?
+                     WHERE owner=? AND resource_id=?''',
+                  (error, data.kind, data.url, 'failed' if error else 'ready', error, service.now(), owner, resource_id))
         if not error:
             c.execute('''INSERT INTO feed_choices(owner,post_id,registered)
                 SELECT owner,post_id,1 FROM resource_feed_posts WHERE owner=? AND resource_id=?

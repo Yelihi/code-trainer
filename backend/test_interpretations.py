@@ -81,6 +81,8 @@ class InterpretationsTest(unittest.TestCase):
         self.assertIsNone(interpretations.view(self.owner, job['id'])['document'])
         with self.assertRaises(ValidationError):
             InterpretationDraft.model_validate({**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0], 'prerequisites': ['s1']}]})
+        with self.assertRaises(ValidationError):
+            InterpretationDraft.model_validate({**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0], 'source_quotes': ['x' * 4001]}]})
         context, _ = sample()
         old = context.model_dump()
         for section in old['units'][0]['lesson']:

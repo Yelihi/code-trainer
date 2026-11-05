@@ -1,5 +1,6 @@
 """Actual Docker checks; never falls back to running submitted code on the host."""
 import sys
+import json
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -21,6 +22,16 @@ for language, code in programs.items():
     result = runner.run(language, code, [''])[0]
     assert result['status'] == 'ok' and result['stdout'].strip() == '42', (language, result)
     print('PASS compile/run:', language, flush=True)
+
+frameworks = {
+    'react': 'export default function App() { return <h1>React 42</h1>; }',
+    'vue': '<script setup>const value = 42</script><template><h1>Vue {{ value }}</h1></template>',
+}
+for framework, code in frameworks.items():
+    result = runner.run(framework, code, [''])[0]
+    rendered = json.loads(result['stdout']) if result['status'] == 'ok' else {}
+    assert result['status'] == 'ok' and f'{framework.capitalize()} 42' in rendered['html'] and rendered['client'], (framework, result)
+    print('PASS component render:', framework, flush=True)
 
 manual_cases = [{'stdin': '', 'expected': '42\n', 'public': True}, {'stdin': '', 'expected': '42', 'public': False}]
 assert problem_books.checks('python', programs['python'], manual_cases, None)['status'] == 'passed'

@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources, interpretations, worksheets, practice_records, problem_books, questions
+from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
 from .worksheet_schema import WorksheetInput
@@ -323,6 +323,11 @@ def progress(exercise_id: str, body: DraftInput, current=Depends(user)):
 @app.post('/api/exercises/{exercise_id}/execute')
 def execute(exercise_id: str, body: ExecutionInput, current=Depends(user)):
     return service.execute(current['id'], exercise_id, body)
+
+
+@app.post('/api/framework-preview')
+def preview_framework(body: framework_preview.PreviewInput, current=Depends(user)):
+    return framework_preview.render(current['id'], body)
 
 
 @app.get('/api/exercises/{exercise_id}/hints/{step}')

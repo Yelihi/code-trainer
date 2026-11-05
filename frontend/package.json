@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/build-framework-runtime.mjs",
     "dev": "vite --host 127.0.0.1",
+    "prebuild": "node scripts/build-framework-runtime.mjs",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -27,7 +29,8 @@
     "react-dom": "^19.1.1",
     "react-markdown": "10.1.0",
     "react-router-dom": "^7.8.0",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "vue": "3.5.44"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
@@ -35,6 +38,7 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.1",
+    "esbuild": "0.28.2",
     "eslint": "^9.34.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.3.0",

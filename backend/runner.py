@@ -13,6 +13,7 @@ from .execution import ExecutionRequest, ExecutionResponse, Runtime
 
 IMAGE = os.environ.get('TRAINER_IMAGE', 'code-trainer-runner:v1')
 LIMIT = 16384
+FRAMEWORK_LIMIT = 96000
 COMPILE_SECONDS = 20
 RUNTIMES = {
     'javascript': ('main.js', None, ['node', '/work/main.js']),
@@ -20,6 +21,10 @@ RUNTIMES = {
     'python': ('main.py', None, ['python3', '-I', '-B', '/work/main.py']),
     'cpp': ('main.cpp', ['g++', '-std=c++20', '-O0', '/work/main.cpp', '-o', '/work/main'], ['/work/main']),
     'rust': ('main.rs', ['rustc', '--edition=2021', '/work/main.rs', '-o', '/work/main'], ['/work/main']),
+}
+FRAMEWORK_RUNTIMES = {
+    'react': ('main.tsx', None, ['node', '/opt/framework-preview.cjs', 'react', '/work/main.tsx']),
+    'vue': ('App.vue', None, ['node', '/opt/framework-preview.cjs', 'vue', '/work/App.vue']),
 }
 # ponytail: one execution across the local app; use a bounded worker queue if concurrency is needed.
 slot = threading.Lock()
@@ -113,7 +118,7 @@ def cleanup():
         command(['rm', '-f', container])
 
 
-def capture(args, stdin='', seconds=3):
+def capture(args, stdin='', seconds=3, limit=LIMIT):
     process = subprocess.Popen(['docker', *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = [bytearray(), bytearray()]
     status = 'ok'
@@ -147,7 +152,7 @@ def capture(args, stdin='', seconds=3):
                     if not chunk:
                         poll.unregister(key.fileobj)
                     else:
-                        remaining = LIMIT - sum(map(len, output))
+                        remaining = limit - sum(map(len, output))
                         output[key.data].extend(chunk[:remaining])
                         if len(chunk) > remaining:
                             status = 'output_limit'
@@ -199,7 +204,7 @@ def run(language, code, inputs, image_id=None):
         created = True
         if command(['start', name]).returncode:
             raise Unavailable('격리 환경을 시작하지 못했습니다.')
-        filename, compiler, runtime = RUNTIMES[language]
+        filename, compiler, runtime = (RUNTIMES | FRAMEWORK_RUNTIMES)[language]
         # docker cp rejects read-only roots even with tmpfs; stream into the private tmpfs.
         copied = capture(['exec', '-i', name, 'python3', '-c',
             'import sys; open(sys.argv[1], "w").write(sys.stdin.read())', f'/work/{filename}'], code, seconds=5)
@@ -212,7 +217,8 @@ def run(language, code, inputs, image_id=None):
                 return [result]
         results = []
         for value in inputs:
-            result = capture(['exec', '-i', name, *runtime], value)
+            result = capture(['exec', '-i', name, *runtime], value,
+                             limit=FRAMEWORK_LIMIT if language in FRAMEWORK_RUNTIMES else LIMIT)
             if result['status'] == 'ok' and result['exit_code']:
                 result['status'] = 'memory_limit' if memory_limited(name) else 'runtime_error'
             results.append(result)

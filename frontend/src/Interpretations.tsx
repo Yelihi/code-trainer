@@ -103,6 +103,7 @@ function Detail({ id }: { id: string }) {
     {!data && !error && <LoadingSkeleton layout="editor" label="해석 문서를 불러오는 중…" />}
     {data && <><header className="reference-page-heading"><div><span className="eyebrow">{states[data.state]} · AI INTERPRETATION</span><h1>{data.document?.title ?? data.source_name}</h1><p>원문 v{data.revision} 기준 · {timestamp(data.created_at)}</p></div><Link className="button" to={'/library/' + data.resource_id}>원문과 버전 보기</Link></header>
       <aside className="interpretation-provenance"><strong>{data.source_name} · 본문 v{data.revision}</strong><p>AI가 작성한 해석입니다. 인용한 원문과 비교하며 읽어보세요.{data.current_revision !== data.revision && ` 원문에는 더 최신인 v${data.current_revision}가 있습니다. 이 문서는 v${data.revision} 해석을 그대로 보존합니다.`}</p></aside>
+      {data.state === 'ready' && <div className="interpretation-retry"><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></div>}
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고, 같은 원문 v{data.revision}에서 새 해석을 시도합니다.</p><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></section>}
       {data.document && <InterpretationDocument document={data.document} interpretationId={data.id} />}

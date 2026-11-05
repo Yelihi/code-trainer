@@ -4,6 +4,7 @@ import { SpacedReviewRoute } from './SpacedReviews';
 import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
 import { PracticeEntry } from './Navigation';
 import { InterpretationCode } from './InterpretationCode';
+import { FrameworkPractice } from './FrameworkPractice';
 import { Interpretations, InterpretationDetail } from './Interpretations';
 import { WorksheetDetail } from './Worksheets';
 import { ProblemBookCatalog, ProblemBank, ProblemEditor, BookEditor, BookDetail, SolveProblem } from './ProblemBooks';
@@ -33,6 +34,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/explore', element: <Interpretations /> },
   { path: '/interpretations/:id', element: <InterpretationDetail /> },
   { path: '/interpretations/:id/code/:sectionId', element: <InterpretationCode /> },
+  { path: '/framework-practice', element: <FrameworkPractice /> },
   { path: '/explore/practice', element: <PracticeEntry /> },
   { path: '/worksheets/:id', element: <WorksheetDetail /> },
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },

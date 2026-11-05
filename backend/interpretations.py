@@ -97,7 +97,7 @@ def generate(identifier):
                 'Use other source_quotes for the nearby original explanation that supports the code. '
                 'When a code block exceeds the quote limit, choose a meaningful exact contiguous excerpt and explain its context in body. '
                 'Keep explanations grounded; put additional knowledge ONLY in extensions and illustrative examples in examples. '
-                'Questions invite the learner to explain in their own words. Code is optional; no execution language is required.',
+                'Questions invite the learner to explain in their own words. Do not invent code when the source has none; no execution language is required.',
                 {'source_name': source['name'], 'revision': row['revision'], 'content': source['content']})
         finally:
             usage.scope.reset(token)

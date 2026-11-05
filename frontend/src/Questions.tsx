@@ -12,6 +12,7 @@ type LinkItem = { resource_id: string; excerpt: string };
 type Question = { id: string; text: string; context: string; status: 'open' | 'done'; links: LinkItem[]; note_id: string | null; revision: number; updated_at: string };
 type Guide = { id: string; state: string; error: string; question_revision: number; result: { title: string; reading: string; checks: string[]; practice: string; expected_output: string; source_ids: string[] } | null };
 type Resource = { id: string; name: string; revision: number; state: string };
+type Daily = { day: string; recommendation: { id: string; source_kind: 'feed' | 'deep_inside'; source_title: string; source_url: string; text: string; saved_question_id: string | null; state: 'queued' | 'running' | 'ready' | 'failed'; error: string; evidence: string } | null; reason: string };
 
 function LinkedSource({ id, index }: { id: string; index: number }) {
   const { data } = useResource<Resource>('/resources/' + id);
@@ -31,6 +32,34 @@ export function QuickQuestion() {
   return <div className="quick-question"><Button ref={trigger} onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="quick-question-panel">질문 적기</Button>{open && <div id="quick-question-panel" className="quick-question-panel" onKeyDown={e => { if (e.key === 'Escape') { setOpen(false); trigger.current?.focus(); } }}><form onSubmit={e => { e.preventDefault(); void save(); }}><Label htmlFor="quick-question-input">지금 궁금한 것은 무엇인가요?</Label><Input ref={input} id="quick-question-input" value={text} maxLength={500} onChange={e => setText(e.target.value)} placeholder="질문 한 줄을 남겨두세요" /><ErrorNotice error={error} /><div className="reference-actions"><Button className="primary" disabled={busy || !text.trim()}>{busy ? '저장 중…' : '질문 저장'}</Button><Button type="button" onClick={() => { setOpen(false); trigger.current?.focus(); }}>닫기</Button></div></form></div>}</div>;
 }
 
+function DailyQuestion({ onSaved }: { onSaved: () => void }) {
+  const { data, error: loadError, reload } = useResource<Daily>('/questions/daily');
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  useEffect(() => {
+    if (!data) return;
+    const nextMidnight = Date.parse(data.day + 'T15:00:00Z');
+    const timer = window.setTimeout(reload, Math.max(1000, nextMidnight - Date.now() + 1000));
+    window.addEventListener('focus', reload);
+    return () => { window.clearTimeout(timer); window.removeEventListener('focus', reload); };
+  }, [data, reload]);
+  useEffect(() => {
+    if (!data?.recommendation || !['queued', 'running'].includes(data.recommendation.state)) return;
+    const timer = window.setInterval(reload, 2500);
+    return () => window.clearInterval(timer);
+  }, [data, reload]);
+  async function save() {
+    if (!data?.recommendation || busy) return;
+    setBusy(true); setError('');
+    try { await api('/questions/daily/save', 'POST', { recommendation_id: data.recommendation.id }); reload(); onSaved(); }
+    catch (cause) { setError(errorMessage(cause)); reload(); }
+    finally { setBusy(false); }
+  }
+  return <section className="daily-question" aria-labelledby="daily-question-heading"><div className="daily-question-heading"><div><span className="eyebrow">DAILY QUESTION</span><h2 id="daily-question-heading">오늘의 추천 질문</h2></div><span>{data?.day.replaceAll('-', '.')}</span></div>
+    <ErrorNotice error={error || loadError} />{loadError && <Button onClick={reload}>추천 다시 불러오기</Button>}
+    {data?.recommendation ? <><p className="daily-question-source">{data.recommendation.source_kind === 'feed' ? '구독 포스팅' : 'Deep Inside'} · {data.recommendation.source_title}</p>{data.recommendation.state === 'ready' ? <><p className="daily-question-text">{data.recommendation.text}</p>{data.recommendation.evidence && <p className="daily-question-evidence">본문 근거 · {data.recommendation.evidence}</p>}</> : <p role="status">{data.recommendation.state === 'failed' ? data.recommendation.error : '포스팅 본문에서 개념 질문을 준비하고 있습니다…'}</p>}<div className="reference-actions">{data.recommendation.state === 'ready' && (data.recommendation.saved_question_id ? <Link className="button" to={'/questions/' + data.recommendation.saved_question_id}>저장한 질문 열기</Link> : <Button className="primary" disabled={busy} onClick={() => void save()}>{busy ? '저장 중…' : '질문함에 저장'}</Button>)}{data.recommendation.source_kind === 'feed' ? <a className="button" href={data.recommendation.source_url} target="_blank" rel="noreferrer">포스팅 보기</a> : <Link className="button" to="/apply">Deep Inside 보기</Link>}</div><small>저장하지 않으면 다음 날 추천을 다시 고릅니다.</small></> : data && <><p>{data.reason}</p><div className="reference-actions"><Link className="button" to="/inbox">포스팅 보기</Link><Link className="button" to="/apply">Deep Inside 보기</Link></div></>}
+  </section>;
+}
+
 export function QuestionInbox() {
   const [params, setParams] = useSearchParams();
   const status = params.get('status') === 'done' ? 'done' : 'open', q = params.get('q') ?? '', page = Math.max(1, Math.floor(Number(params.get('page')) || 1));
@@ -39,6 +68,7 @@ export function QuestionInbox() {
   useEffect(() => setSearch(q), [q]);
   useEffect(() => { window.addEventListener('questions-changed', reload); return () => window.removeEventListener('questions-changed', reload); }, [reload]);
   return <main className="page questions-page"><div className="breadcrumb">등록하기 <span>/</span> 질문함</div><header className="reference-page-heading"><div><h1>궁금한 것을 남겨두세요.</h1><p>질문은 한 줄이면 충분합니다. 나중에 자료를 연결하고 직접 확인해보세요.</p></div></header>
+    <DailyQuestion onSaved={reload} />
     <form className="question-capture" onSubmit={e => { e.preventDefault(); setParams({ q: search, status }); }}><Label className="sr-only" htmlFor="question-search">질문 검색</Label><Input id="question-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="질문 찾기" /><Button>검색</Button></form>
     <div className="question-filters"><h2>{status === 'open' ? '남겨둔 질문' : '정리 완료'} · {data?.total ?? 0}</h2><div><Button aria-pressed={status === 'open'} onClick={() => setParams({ q, status: 'open' })}>열린 질문</Button><Button aria-pressed={status === 'done'} onClick={() => setParams({ q, status: 'done' })}>정리 완료</Button></div></div>
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}{data?.items.map(item => <Link className="question-row" key={item.id} to={'/questions/' + item.id}><span><strong>{item.text}</strong><small>{timestamp(item.updated_at)} · 연결 자료 {item.links.length}개{item.note_id ? ' · 노트 연결됨' : ''}</small></span><span>열기</span></Link>)}{data && !data.items.length && <p className="empty-state">{q ? '검색 결과가 없습니다.' : '아직 질문이 없습니다. 상단의 ‘질문 적기’로 시작하세요.'}</p>}{data && data.total > 30 && <nav className="question-pages" aria-label="질문 페이지"><Button disabled={page <= 1} onClick={() => setParams({ q, status, page: String(page - 1) })}>이전</Button><span>{page} / {Math.ceil(data.total / 30)}</span><Button disabled={page >= Math.ceil(data.total / 30)} onClick={() => setParams({ q, status, page: String(page + 1) })}>다음</Button></nav>}

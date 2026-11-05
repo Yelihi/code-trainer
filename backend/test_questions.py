@@ -1,7 +1,8 @@
 import unittest
+import json
 from unittest.mock import patch
 from . import db, questions, test_app
-from .questions import Guide
+from .questions import DailyFeedQuestion, Guide
 
 
 class QuestionsTest(unittest.TestCase):
@@ -64,3 +65,74 @@ class QuestionsTest(unittest.TestCase):
         with patch.object(questions.ai, 'generate', side_effect=change_source):
             questions.generate(job['id'])
         self.assertEqual(questions.latest_guide(self.owner, item['id'])['guide']['state'], 'stale')
+
+    def test_daily_feed_question_changes_next_day_and_only_saved_item_persists(self):
+        db.execute("INSERT INTO feed_sources(id,name,url) VALUES ('feed-preview','구독 글','https://example.com/rss')")
+        for index in (1, 2):
+            db.execute('''INSERT INTO feed_posts(id,guid,url,title,summary,published,collected,feed_id)
+                VALUES (?,?,?,?,?,?,?,?)''', (f'post-{index}', f'guid-{index}', f'https://example.com/{index}',
+                    f'포스팅 {index}', '요약', f'2026-11-0{index}T00:00:00+00:00', '2026-11-05T00:00:00+00:00', 'feed-preview'))
+        article = 'React의 상태가 컴포넌트 트리 밖에 있을 때 구독 범위를 줄일 수 있다. ' * 12
+        generated = DailyFeedQuestion(question='React 상태를 컴포넌트 밖에 둘 때 구독 범위와 렌더링 비용은 어떻게 달라질까요?',
+                                      evidence='React의 상태가 컴포넌트 트리 밖에 있을 때 구독 범위를 줄일 수 있다.')
+        with patch.object(questions, 'today', return_value='2026-11-05'), patch.object(questions.ai, 'available', return_value=True), \
+             patch.object(questions.source, 'fetch', return_value=article), patch.object(questions.ai, 'generate', return_value=generated) as generate:
+            first = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertEqual(first['source_kind'], 'feed')
+            self.assertEqual(first['state'], 'queued')
+            first = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertEqual(first['text'], generated.question)
+            self.assertEqual(first['evidence'], generated.evidence)
+            self.assertNotIn('kind', generate.call_args.kwargs)
+            self.assertEqual(self.client.get('/api/questions/daily').json()['recommendation']['id'], first['id'])
+            self.assertEqual(self.client.get('/api/questions').json()['total'], 0)
+            saved = self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).json()
+            self.assertEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).json()['id'], saved['id'])
+            self.assertEqual(self.client.get('/api/questions').json()['total'], 1)
+            self.assertEqual(self.client.request('DELETE', '/api/questions/' + saved['id'], json={}).status_code, 200)
+            self.assertIsNone(self.client.get('/api/questions/daily').json()['recommendation']['saved_question_id'])
+            self.assertNotEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).json()['id'], saved['id'])
+        with patch.object(questions, 'today', return_value='2026-11-06'), patch.object(questions.ai, 'available', return_value=True), \
+             patch.object(questions.source, 'fetch', return_value=article), patch.object(questions.ai, 'generate', return_value=generated):
+            second = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertNotEqual(second['source_title'], first['source_title'])
+            self.assertEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).status_code, 409)
+            self.assertEqual(self.client.get('/api/questions').json()['total'], 1)
+
+    def test_daily_deep_inside_reuses_existing_question_without_ai_call(self):
+        db.execute('''INSERT INTO insight_bundles(owner,id,context,data,fingerprint,model,created_at,expires_at)
+            VALUES (?,?,?,?,?,?,?,?)''', (self.owner, 'bundle-one', '{}', json.dumps({'suggestions': [
+                {'title': '상태 비교', 'question': '상태를 어디에 두어야 할까요?'}]}), 'fingerprint', 'test-model',
+                '2026-11-05T00:00:00+00:00', '2999-01-01T00:00:00+00:00'))
+        with patch.object(questions, 'today', return_value='2026-11-06'), patch.object(questions.insight_context, 'valid', return_value=True), patch.object(questions.ai, 'generate', side_effect=AssertionError('AI called')):
+            selected = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertEqual((selected['source_kind'], selected['text']), ('deep_inside', '상태를 어디에 두어야 할까요?'))
+            saved = self.client.post('/api/questions/daily/save', json={'recommendation_id': selected['id']}).json()
+            self.assertIn('상태 비교', saved['context'])
+
+    def test_daily_feed_rejects_question_without_article_evidence(self):
+        db.execute("INSERT INTO feed_sources(id,name,url) VALUES ('feed-preview','구독 글','https://example.com/rss')")
+        db.execute('''INSERT INTO feed_posts(id,guid,url,title,summary,published,collected,feed_id)
+            VALUES (?,?,?,?,?,?,?,?)''', ('post-one', 'guid-one', 'https://example.com/post', '제목', '글 링크: https://example.com/original',
+                                         '2026-11-05T00:00:00+00:00', '2026-11-05T00:00:00+00:00', 'feed-preview'))
+        article = '브라우저는 자바스크립트 작업이 끝나야 다음 화면을 그릴 수 있다. ' * 12
+        unsupported = DailyFeedQuestion(question='이 글은 무엇을 알려줄까요?', evidence='해당 본문에 없는 긴 문장입니다. 근거가 아닙니다.')
+        with patch.object(questions, 'today', return_value='2026-11-05'), patch.object(questions.ai, 'available', return_value=True), \
+             patch.object(questions.source, 'fetch', return_value=article) as fetch, patch.object(questions.ai, 'generate', return_value=unsupported):
+            item = self.client.get('/api/questions/daily').json()['recommendation']
+            fetch.assert_called_once_with('https://example.com/original')
+            self.assertEqual(item['state'], 'queued')
+            item = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertEqual(item['state'], 'failed')
+            self.assertEqual(item['text'], '')
+            self.assertEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': item['id']}).status_code, 409)
+
+    def test_daily_does_not_guess_from_feed_title_without_ai(self):
+        db.execute("INSERT INTO feed_sources(id,name,url) VALUES ('feed-preview','구독 글','https://example.com/rss')")
+        db.execute('''INSERT INTO feed_posts(id,guid,url,title,summary,published,collected,feed_id)
+            VALUES (?,?,?,?,?,?,?,?)''', ('post-one', 'guid-one', 'https://example.com/post', '매력적인 제목', '글 링크: https://example.com/original',
+                                         '2026-11-05T00:00:00+00:00', '2026-11-05T00:00:00+00:00', 'feed-preview'))
+        with patch.object(questions, 'today', return_value='2026-11-05'), patch.object(questions.ai, 'available', return_value=False):
+            result = self.client.get('/api/questions/daily').json()
+            self.assertIsNone(result['recommendation'])
+            self.assertIn('AI 연결', result['reason'])

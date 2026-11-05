@@ -15,7 +15,7 @@
 .graph-explorer { --graph-concept: #b998f7; --graph-foundation: #73d8bc; --graph-unit: #e9bb7f; }
 .graph-explorer .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .graph-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 18px; background: #131022; border: 1px solid var(--line); border-radius: 12px 12px 0 0; }
-.graph-view-switch { display: flex; gap: 4px; margin-right: auto; }
+.graph-view-switch { display: flex; gap: 8px; margin-right: auto; }
 .graph-view-switch button { background: transparent; border-color: transparent; padding: 8px 12px; font-size: var(--text-caption); color: var(--muted); }
 .graph-view-switch button[aria-pressed=true] { color: var(--text); background: #282138; border-color: #443553; }
 .graph-view-switch button span { font-variant-numeric: tabular-nums; color: #bd9bec; }
@@ -53,7 +53,7 @@
 .graph-node.active .node-core, .graph-node.connected .node-core, .graph-node:focus-visible .node-core { stroke-width: 2.2; filter: drop-shadow(0 0 9px color-mix(in srgb, var(--node-color) 40%, transparent)); }
 .graph-node.active .node-label, .graph-node.connected .node-label { fill: #fff; }
 .graph-node:focus-visible .node-core { stroke-dasharray: 3 2; }
-.graph-controls { position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 2px; border: 1px solid #4a3e5d; border-radius: 8px; padding: 4px; background: #141020f2; box-shadow: 0 5px 18px #0004; }
+.graph-controls { position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 8px; border: 1px solid #4a3e5d; border-radius: 8px; padding: 4px; background: #141020f2; box-shadow: 0 5px 18px #0004; }
 .graph-controls button { background: transparent; border: 0; padding: 6px 10px; min-width: 34px; min-height: 34px; font-size: 15px; }
 .graph-controls button:hover { background: #30233e; }
 .graph-controls button:last-child { border-left: 1px solid var(--line); border-radius: 0 5px 5px 0; font-size: 12px; margin-left: 4px; }

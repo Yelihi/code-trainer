@@ -3,7 +3,7 @@ import { NativeSelect } from './components/ui/native-select';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useBlocker, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { Markdown } from './Markdown';
@@ -39,7 +39,9 @@ export function ReferenceNotes() {
 
 export function ReferenceNoteRoute() {
   const { id } = useParams();
-  if (!id) return <NoteEditor key="new" initial={null} />;
+  const location = useLocation();
+  const prefill = location.state as { questionId?: string; questionText?: string } | null;
+  if (!id) return <NoteEditor key="new" initial={null} prefill={prefill} />;
   return <ExistingNote key={id} id={id} />;
 }
 
@@ -49,7 +51,7 @@ function ExistingNote({ id }: { id: string }) {
   return <NoteEditor initial={data} />;
 }
 
-function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
+function NoteEditor({ initial, prefill }: { initial: ReferenceNote | null; prefill?: { questionId?: string; questionText?: string } | null }) {
   const navigate = useNavigate();
   const { userId } = useApp();
   const [draftOwner] = useState(userId);
@@ -62,8 +64,8 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
   });
   const [note, setNote] = useState(initial);
   const [noteId] = useState(initial?.id ?? (restored?.id && /^[a-f0-9]{32}$/.test(restored.id) ? restored.id : newReferenceId()));
-  const [title, setTitle] = useState(restored?.title ?? initial?.title ?? '');
-  const [body, setBody] = useState(restored?.body ?? initial?.body ?? '');
+  const [title, setTitle] = useState(restored?.title ?? initial?.title ?? prefill?.questionText ?? '');
+  const [body, setBody] = useState(restored?.body ?? initial?.body ?? (prefill?.questionText ? `## 확인하려는 질문\n\n${prefill.questionText}\n\n## 내 설명\n\n` : ''));
   const [metadata, setMetadata] = useState(restored?.metadata ?? initial?.metadata ?? emptyMetadata);
   const [revision, setRevision] = useState(restored?.revision ?? initial?.revision ?? 0);
   const [tab, setTab] = useState<'write' | 'read' | 'connect'>(initial && !restored ? 'read' : 'write');
@@ -71,6 +73,7 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState(restored ? '이 브라우저에 남아 있던 임시 글을 복원했습니다.' : '');
+  const [linkFailed, setLinkFailed] = useState<string | null>(null);
   const [oldVersion, setOldVersion] = useState<{ revision: number; body: string; title: string } | null>(null);
   const allowNavigation = useRef(false);
   const snapshot = JSON.stringify({ title, body, metadata });
@@ -93,13 +96,25 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
     return () => { window.removeEventListener('beforeunload', warn); clearTimeout(timer); };
   }, [dirty, title, body, metadata, revision, storageKey, noteId]);
   function updateMetadata(patch: Partial<ReferenceMetadata>) { setMetadata(v => ({ ...v, ...patch })); }
+  async function linkQuestion(noteIdToLink: string) {
+    if (!prefill?.questionId) return;
+    const question = await api<{ revision: number; text: string; context: string; status: string; links: { resource_id: string; excerpt: string }[] }>(`/questions/${prefill.questionId}`);
+    const { revision: questionRevision, text, context, status, links } = question;
+    await api(`/questions/${prefill.questionId}`, 'PUT', { revision: questionRevision, text, context, status, links, note_id: noteIdToLink });
+    setLinkFailed(null);
+  }
   async function save() {
     setBusy(true); setError('');
     try {
       const result = await api<ReferenceNote>('/reference-notes', 'POST', { id: noteId, title, body, metadata, revision });
+      let linked = true;
+      if (prefill?.questionId && !initial) {
+        try { await linkQuestion(result.id); }
+        catch { linked = false; setLinkFailed(result.id); }
+      }
       setNote(result); setTitle(result.title); setBody(result.body); setMetadata(result.metadata); setRevision(result.revision);
-      clearReferenceDraft(storageKey); setMessage(`노트 v${result.revision}을 저장했습니다.`); allowNavigation.current = true;
-      if (!initial) navigate('/references/' + result.id, { replace: true });
+      clearReferenceDraft(storageKey); setMessage(linked ? `노트 v${result.revision}을 저장했습니다.` : '노트는 저장됐지만 질문과 연결하지 못했습니다. 아래 버튼으로 다시 시도해주세요.'); allowNavigation.current = true;
+      if (!initial && linked) navigate('/references/' + result.id, { replace: true });
     } catch (e) { setError(errorMessage(e)); }
     finally { setBusy(false); }
   }
@@ -123,7 +138,7 @@ function NoteEditor({ initial }: { initial: ReferenceNote | null }) {
       {note && <Button disabled={busy || dirty || !!note.archived} onClick={() => void review()}>내 말로 설명해보기</Button>}
       <Button className="primary" disabled={busy || uploading || !!note?.archived || !title.trim() || !body.trim() || (!!note && !dirty)} onClick={() => void save()}>{busy ? '처리 중…' : '노트 저장'}</Button>
     </div></header>
-    <ErrorNotice error={error} />{message && <p className="reference-state" role="status">{message}</p>}
+    <ErrorNotice error={error} />{message && <p className="reference-state" role="status">{message}</p>}{linkFailed && <Button disabled={busy} onClick={() => void linkQuestion(linkFailed).then(() => navigate('/references/' + linkFailed, { replace: true })).catch(e => setError(errorMessage(e)))}>질문과 노트 연결 다시 시도</Button>}
     {note?.archived ? <p className="notice">보관한 노트입니다. <Button onClick={() => void archive()}>복원하기</Button></p> : null}
     {note && revision !== note.revision && <p className="notice">임시 글은 v{revision}에서 작성됐고 서버에는 v{note.revision}이 있습니다. 아래 글을 복사해 보관한 후 최신 버전과 비교해주세요.<Button onClick={() => { if (window.confirm('임시 글을 버리고 서버의 최신 내용을 불러올까요?')) { setTitle(note.title); setBody(note.body); setMetadata(note.metadata); setRevision(note.revision); clearReferenceDraft(storageKey); } }}>서버 내용 불러오기</Button></p>}
     <div className="reference-tabs" role="group" aria-label="노트 작업">

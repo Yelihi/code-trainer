@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources, interpretations, worksheets, practice_records, problem_books
+from . import resources, interpretations, worksheets, practice_records, problem_books, questions
+from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
 from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
@@ -373,6 +374,43 @@ def resource_list(q: str = Query(default='', max_length=160), page: int = Query(
 @app.get('/api/problem-books/catalog')
 def problem_book_catalog(current=Depends(user)):
     return problem_books.catalog(current['id'])
+
+
+@app.get('/api/questions')
+def question_list(q: str = Query('', max_length=160), status: Literal['open', 'done'] = 'open', page: int = Query(1, ge=1), current=Depends(user)):
+    return questions.listing(current['id'], q, status, page)
+
+
+@app.post('/api/questions')
+def question_create(body: QuestionCreate, current=Depends(user)):
+    return questions.create(current['id'], body)
+
+
+@app.get('/api/questions/{identifier}')
+def question_view(identifier: str, current=Depends(user)):
+    return questions.view(current['id'], identifier)
+
+
+@app.put('/api/questions/{identifier}')
+def question_update(identifier: str, body: QuestionUpdate, current=Depends(user)):
+    return questions.update(current['id'], identifier, body)
+
+
+@app.delete('/api/questions/{identifier}')
+def question_delete(identifier: str, current=Depends(user)):
+    return questions.delete(current['id'], identifier)
+
+
+@app.get('/api/questions/{identifier}/guide')
+def question_guide(identifier: str, current=Depends(user)):
+    return questions.latest_guide(current['id'], identifier)
+
+
+@app.post('/api/questions/{identifier}/guide')
+def question_guide_start(identifier: str, body: GuideRequest, tasks: BackgroundTasks, current=Depends(user)):
+    job, fresh = questions.begin(current['id'], identifier, body)
+    if fresh: tasks.add_task(questions.generate, job['id'])
+    return job
 
 
 @app.get('/api/problem-books')

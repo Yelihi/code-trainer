@@ -24,6 +24,7 @@ import { ReferenceNotes, ReferenceNoteRoute } from './ReferenceNotes';
 import { ReferenceReview } from './ReferenceReview';
 import { GitHubSettings, GitHubShare } from './GitHubSharing';
 import { AISettings } from './AISettings';
+import { QuestionInbox, QuestionDetail } from './Questions';
 import './shadcn.css';
 import './styles.css';
 
@@ -36,6 +37,8 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/worksheets/:id', element: <WorksheetDetail /> },
   { path: '/worksheets/:id/practice', element: <PracticeRecordRoute /> },
   { path: '/problem-books', element: <ProblemBookCatalog /> },
+  { path: '/questions', element: <QuestionInbox /> },
+  { path: '/questions/:id', element: <QuestionDetail /> },
   { path: '/problem-books/new', element: <BookEditor /> },
   { path: '/problem-books/problems', element: <ProblemBank /> },
   { path: '/problem-books/problems/new', element: <ProblemEditor /> },

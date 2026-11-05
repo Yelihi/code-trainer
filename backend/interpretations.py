@@ -88,7 +88,14 @@ def generate(identifier):
         try:
             result = ai.generate(InterpretationDraft,
                 'Explain the saved source in Korean. Organize 1-6 sections with earlier-section prerequisite IDs. '
-                'Use short EXACT substrings of content for source_quotes, without ellipses or normalization. '
+                'Write a concise summary, then give each section a substantive explanation rather than repeating that summary. '
+                'When the source contains code, explain the relevant code step by step: what its inputs and outputs are, '
+                'what each important operation does, why it works, and any limits or edge cases actually described by the source. '
+                'Preserve representative original code in source_quotes as an EXACT contiguous substring of content, '
+                'including its full Markdown code fence when it fits the 4000-character limit. '
+                'Do not paraphrase, truncate, add ellipses, or normalize source_quotes. '
+                'Use other source_quotes for the nearby original explanation that supports the code. '
+                'When a code block exceeds the quote limit, choose a meaningful exact contiguous excerpt and explain its context in body. '
                 'Keep explanations grounded; put additional knowledge ONLY in extensions and illustrative examples in examples. '
                 'Questions invite the learner to explain in their own words. Code is optional; no execution language is required.',
                 {'source_name': source['name'], 'revision': row['revision'], 'content': source['content']})

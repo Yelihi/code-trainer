@@ -119,7 +119,7 @@ export function InterpretationDocument({ document, interpretationId }: { documen
       <span className="eyebrow">AI 해석</span><h2>{section.title}</h2>
       {!!section.prerequisites.length && <p>먼저 읽기: {section.prerequisites.map(id => <a key={id} href={'#' + id}>{document.sections.find(s => s.id === id)?.title} </a>)}</p>}
       <Markdown language="">{section.body}</Markdown>
-      <div className="interpretation-quotes"><h3>원문 근거</h3>{section.source_quotes.map((quote, i) => <blockquote key={i}><p>{quote}</p></blockquote>)}</div>
+      <div className="interpretation-quotes"><h3>원문 근거 · 코드와 설명</h3>{section.source_quotes.map((quote, i) => <blockquote key={i}><Markdown language="">{quote}</Markdown></blockquote>)}</div>
       {!!section.examples.length && <div className="interpretation-addition"><h3>AI 예시</h3>{section.examples.map((text, i) => <Markdown key={i} language="">{text}</Markdown>)}</div>}
       {!!section.extensions.length && <div className="interpretation-addition"><h3>AI 확장 · 원문 밖의 연결</h3>{section.extensions.map((text, i) => <Markdown key={i} language="">{text}</Markdown>)}</div>}
       <div className="interpretation-questions"><h3>스스로 확인할 질문</h3><p>AI가 제안한 질문입니다. 먼저 자신의 말로 생각해보세요.</p><ol>{section.questions.map((question, i) => <li key={i}>{question}</li>)}</ol></div>

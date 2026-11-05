@@ -43,7 +43,8 @@
 .interpretation-section h2 { font-size: 26px; margin: 8px 0 24px; }
 .interpretation-section h3 { font-size: 16px; }
 .interpretation-quotes { margin-top: 28px; }
-.interpretation-quotes blockquote { margin: 12px 0; padding: 12px 20px; border-left: 1px solid var(--line); background: var(--panel); white-space: pre-wrap; }
+.interpretation-quotes blockquote { margin: 12px 0; padding: 12px 20px; border-left: 1px solid var(--line); background: var(--panel); overflow-x: auto; }
+.interpretation-quotes .markdown { overflow-wrap: anywhere; }
 .interpretation-quotes p { margin: 0; }
 .interpretation-addition { padding-top: 12px; }
 .interpretation-addition h3 { color: var(--muted); }

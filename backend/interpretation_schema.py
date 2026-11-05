@@ -31,7 +31,7 @@ class InterpretationDraft(Model):
         for section in self.sections:
             if section.id in seen or not set(section.prerequisites) <= seen:
                 raise ValueError('Section prerequisites must refer to earlier sections')
-            if any(not quote.strip() or len(quote) > 1200 for quote in section.source_quotes):
-                raise ValueError('Source quotes must be nonempty and at most 1200 characters')
+            if any(not quote.strip() or len(quote) > 4000 for quote in section.source_quotes):
+                raise ValueError('Source quotes must be nonempty and at most 4000 characters')
             seen.add(section.id)
         return self

@@ -1,4 +1,5 @@
 import unittest
+import json
 from unittest.mock import patch
 from . import db, questions, test_app
 from .questions import Guide
@@ -64,3 +65,37 @@ class QuestionsTest(unittest.TestCase):
         with patch.object(questions.ai, 'generate', side_effect=change_source):
             questions.generate(job['id'])
         self.assertEqual(questions.latest_guide(self.owner, item['id'])['guide']['state'], 'stale')
+
+    def test_daily_feed_question_changes_next_day_and_only_saved_item_persists(self):
+        db.execute("INSERT INTO feed_sources(id,name,url) VALUES ('feed-preview','구독 글','https://example.com/rss')")
+        for index in (1, 2):
+            db.execute('''INSERT INTO feed_posts(id,guid,url,title,summary,published,collected,feed_id)
+                VALUES (?,?,?,?,?,?,?,?)''', (f'post-{index}', f'guid-{index}', f'https://example.com/{index}',
+                    f'포스팅 {index}', '요약', f'2026-11-0{index}T00:00:00+00:00', '2026-11-05T00:00:00+00:00', 'feed-preview'))
+        with patch.object(questions, 'today', return_value='2026-11-05'):
+            first = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertEqual(first['source_kind'], 'feed')
+            self.assertEqual(self.client.get('/api/questions/daily').json()['recommendation']['id'], first['id'])
+            self.assertEqual(self.client.get('/api/questions').json()['total'], 0)
+            saved = self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).json()
+            self.assertEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).json()['id'], saved['id'])
+            self.assertEqual(self.client.get('/api/questions').json()['total'], 1)
+            self.assertEqual(self.client.request('DELETE', '/api/questions/' + saved['id'], json={}).status_code, 200)
+            self.assertIsNone(self.client.get('/api/questions/daily').json()['recommendation']['saved_question_id'])
+            self.assertNotEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).json()['id'], saved['id'])
+        with patch.object(questions, 'today', return_value='2026-11-06'):
+            second = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertNotEqual(second['source_title'], first['source_title'])
+            self.assertEqual(self.client.post('/api/questions/daily/save', json={'recommendation_id': first['id']}).status_code, 409)
+            self.assertEqual(self.client.get('/api/questions').json()['total'], 1)
+
+    def test_daily_deep_inside_reuses_existing_question_without_ai_call(self):
+        db.execute('''INSERT INTO insight_bundles(owner,id,context,data,fingerprint,model,created_at,expires_at)
+            VALUES (?,?,?,?,?,?,?,?)''', (self.owner, 'bundle-one', '{}', json.dumps({'suggestions': [
+                {'title': '상태 비교', 'question': '상태를 어디에 두어야 할까요?'}]}), 'fingerprint', 'test-model',
+                '2026-11-05T00:00:00+00:00', '2999-01-01T00:00:00+00:00'))
+        with patch.object(questions, 'today', return_value='2026-11-06'), patch.object(questions.insight_context, 'valid', return_value=True), patch.object(questions.ai, 'generate', side_effect=AssertionError('AI called')):
+            selected = self.client.get('/api/questions/daily').json()['recommendation']
+            self.assertEqual((selected['source_kind'], selected['text']), ('deep_inside', '상태를 어디에 두어야 할까요?'))
+            saved = self.client.post('/api/questions/daily/save', json={'recommendation_id': selected['id']}).json()
+            self.assertIn('상태 비교', saved['context'])

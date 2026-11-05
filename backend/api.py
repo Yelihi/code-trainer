@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books, questions
-from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest
+from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
 from .worksheet_schema import WorksheetInput
 from .practice_record_schema import PracticeRecordInput
@@ -384,6 +384,16 @@ def question_list(q: str = Query('', max_length=160), status: Literal['open', 'd
 @app.post('/api/questions')
 def question_create(body: QuestionCreate, current=Depends(user)):
     return questions.create(current['id'], body)
+
+
+@app.get('/api/questions/daily')
+def question_daily(current=Depends(user)):
+    return questions.daily(current['id'])
+
+
+@app.post('/api/questions/daily/save')
+def question_daily_save(body: DailySave, current=Depends(user)):
+    return questions.save_daily(current['id'], body)
 
 
 @app.get('/api/questions/{identifier}')

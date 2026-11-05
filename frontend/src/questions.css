@@ -5,6 +5,7 @@
 .daily-question-heading > span, .daily-question-source, .daily-question small { color: var(--muted); }
 .daily-question p { margin: 0; }
 .daily-question-text { font-size: var(--text-reading); color: var(--text); }
+.daily-question-evidence { padding-left: 12px; border-left: 2px solid var(--line); color: var(--muted); font-size: .9em; }
 .question-capture { display: flex; gap: 12px; max-width: 760px; margin: 26px 0 36px; }
 .question-capture input { flex: 1; min-width: 0; }
 .question-filters { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }

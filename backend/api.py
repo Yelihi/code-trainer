@@ -387,8 +387,10 @@ def question_create(body: QuestionCreate, current=Depends(user)):
 
 
 @app.get('/api/questions/daily')
-def question_daily(current=Depends(user)):
-    return questions.daily(current['id'])
+def question_daily(tasks: BackgroundTasks, current=Depends(user)):
+    result, pending = questions.daily(current['id'])
+    if pending: tasks.add_task(questions.generate_daily, pending)
+    return result
 
 
 @app.post('/api/questions/daily/save')

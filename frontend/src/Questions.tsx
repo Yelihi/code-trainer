@@ -12,7 +12,7 @@ type LinkItem = { resource_id: string; excerpt: string };
 type Question = { id: string; text: string; context: string; status: 'open' | 'done'; links: LinkItem[]; note_id: string | null; revision: number; updated_at: string };
 type Guide = { id: string; state: string; error: string; question_revision: number; result: { title: string; reading: string; checks: string[]; practice: string; expected_output: string; source_ids: string[] } | null };
 type Resource = { id: string; name: string; revision: number; state: string };
-type Daily = { day: string; recommendation: { id: string; source_kind: 'feed' | 'deep_inside'; source_title: string; source_url: string; text: string; saved_question_id: string | null } | null; reason: string };
+type Daily = { day: string; recommendation: { id: string; source_kind: 'feed' | 'deep_inside'; source_title: string; source_url: string; text: string; saved_question_id: string | null; state: 'queued' | 'running' | 'ready' | 'failed'; error: string; evidence: string } | null; reason: string };
 
 function LinkedSource({ id, index }: { id: string; index: number }) {
   const { data } = useResource<Resource>('/resources/' + id);
@@ -42,6 +42,11 @@ function DailyQuestion({ onSaved }: { onSaved: () => void }) {
     window.addEventListener('focus', reload);
     return () => { window.clearTimeout(timer); window.removeEventListener('focus', reload); };
   }, [data, reload]);
+  useEffect(() => {
+    if (!data?.recommendation || !['queued', 'running'].includes(data.recommendation.state)) return;
+    const timer = window.setInterval(reload, 2500);
+    return () => window.clearInterval(timer);
+  }, [data, reload]);
   async function save() {
     if (!data?.recommendation || busy) return;
     setBusy(true); setError('');
@@ -51,7 +56,7 @@ function DailyQuestion({ onSaved }: { onSaved: () => void }) {
   }
   return <section className="daily-question" aria-labelledby="daily-question-heading"><div className="daily-question-heading"><div><span className="eyebrow">DAILY QUESTION</span><h2 id="daily-question-heading">오늘의 추천 질문</h2></div><span>{data?.day.replaceAll('-', '.')}</span></div>
     <ErrorNotice error={error || loadError} />{loadError && <Button onClick={reload}>추천 다시 불러오기</Button>}
-    {data?.recommendation ? <><p className="daily-question-source">{data.recommendation.source_kind === 'feed' ? '구독 포스팅' : 'Deep Inside'} · {data.recommendation.source_title}</p><p className="daily-question-text">{data.recommendation.text}</p><div className="reference-actions">{data.recommendation.saved_question_id ? <Link className="button" to={'/questions/' + data.recommendation.saved_question_id}>저장한 질문 열기</Link> : <Button className="primary" disabled={busy} onClick={() => void save()}>{busy ? '저장 중…' : '질문함에 저장'}</Button>}{data.recommendation.source_kind === 'feed' ? <a className="button" href={data.recommendation.source_url} target="_blank" rel="noreferrer">포스팅 보기</a> : <Link className="button" to="/apply">Deep Inside 보기</Link>}</div><small>저장하지 않으면 다음 날 추천을 다시 고릅니다.</small></> : data && <><p>{data.reason}</p><div className="reference-actions"><Link className="button" to="/inbox">포스팅 보기</Link><Link className="button" to="/apply">Deep Inside 보기</Link></div></>}
+    {data?.recommendation ? <><p className="daily-question-source">{data.recommendation.source_kind === 'feed' ? '구독 포스팅' : 'Deep Inside'} · {data.recommendation.source_title}</p>{data.recommendation.state === 'ready' ? <><p className="daily-question-text">{data.recommendation.text}</p>{data.recommendation.evidence && <p className="daily-question-evidence">본문 근거 · {data.recommendation.evidence}</p>}</> : <p role="status">{data.recommendation.state === 'failed' ? data.recommendation.error : '포스팅 본문에서 개념 질문을 준비하고 있습니다…'}</p>}<div className="reference-actions">{data.recommendation.state === 'ready' && (data.recommendation.saved_question_id ? <Link className="button" to={'/questions/' + data.recommendation.saved_question_id}>저장한 질문 열기</Link> : <Button className="primary" disabled={busy} onClick={() => void save()}>{busy ? '저장 중…' : '질문함에 저장'}</Button>)}{data.recommendation.source_kind === 'feed' ? <a className="button" href={data.recommendation.source_url} target="_blank" rel="noreferrer">포스팅 보기</a> : <Link className="button" to="/apply">Deep Inside 보기</Link>}</div><small>저장하지 않으면 다음 날 추천을 다시 고릅니다.</small></> : data && <><p>{data.reason}</p><div className="reference-actions"><Link className="button" to="/inbox">포스팅 보기</Link><Link className="button" to="/apply">Deep Inside 보기</Link></div></>}
   </section>;
 }
 

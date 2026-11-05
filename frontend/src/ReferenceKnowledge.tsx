@@ -117,7 +117,7 @@ function KnowledgeEditor(props: NoteKnowledgeProps | MaterialKnowledgeProps) {
     <ErrorNotice error={error || proposal?.error || ''} />
     {proposal?.state === 'running' && <p role="status" className="notice">개념과 근거를 추출한 뒤, 별도 검토로 본문과 후보의 정확성을 살피고 있습니다. 다른 페이지로 이동해도 계속 진행됩니다.</p>}
     {!isMaterial && proposal?.review && <ReferenceContentReview key={proposal.id + ':' + source.revision} note={props.note} proposal={proposal} pending={!!pending} onApply={applySuggestions} onEdit={props.onEdit} />}
-    {proposal?.state === 'ready' && !proposal.review && <p className="notice">AI 본문 검토가 없는 후보입니다. 개념의 정의와 근거를 직접 확인해 등록할 수 있습니다.</p>}
+    {proposal?.state === 'ready' && proposal.revision === source.revision && !proposal.review && <p className="notice">AI 본문 검토가 없는 후보입니다. 개념의 정의와 근거를 직접 확인해 등록할 수 있습니다.</p>}
     {data && <form onSubmit={e => { e.preventDefault(); void register(); }}>
       <Label className="reference-concept-search">기존 개념 검색<Input value={search} onChange={e => setSearch(e.target.value)} placeholder="개념명 · 정의 · 별칭으로 찾기" maxLength={160} /></Label>
       <fieldset disabled={!!pending}><legend>개념과 근거</legend>
@@ -156,7 +156,7 @@ function KnowledgeEditor(props: NoteKnowledgeProps | MaterialKnowledgeProps) {
         <Button type="button" disabled={data.assertions.length >= 24} onClick={() => change({ ...data, assertions: [...data.assertions, { subject: data.concepts[0].key, kind: 'CLAIM', object: '', text: '', scope: '', quote: '', basis: isMaterial ? 'interpretation' : 'source', disposition: 'supports' }] })}>+ 주장 / 관계 추가</Button>
       </fieldset>
       {undecided > 0 && <p className="notice" role="status">개념 {undecided}개의 등록 방식을 선택해주세요. 기존 개념 연결 또는 별개 개념 추가를 선택하면 등록할 수 있습니다.</p>}
-      {proposal?.review?.issues.length ? <p className="notice" role="status">AI가 본문에서 확인할 내용 {proposal.review.issues.length}개를 찾았습니다. 등록은 가능하며, 추가할 정의와 근거는 직접 확인해주세요.</p> : null}
+      {proposal?.revision === source.revision && proposal.review?.issues.length ? <p className="notice" role="status">AI가 본문에서 확인할 내용 {proposal.review.issues.length}개를 찾았습니다. 등록은 가능하며, 추가할 정의와 근거는 직접 확인해주세요.</p> : null}
       {candidateBlocked && <div className="notice reference-registration-block" id="reference-registration-block" role="status"><strong>개념 후보를 준비한 뒤 등록할 수 있습니다.</strong><p>{candidateBlocked}</p></div>}
       <div className="reference-register"><p>선택한 개념 {data.concepts.length}개 · 주장과 관계 {data.assertions.length}개<br /><small>추가할 개념의 정의와 근거를 확인해주세요.</small></p><Button className="primary" aria-describedby={candidateBlocked ? "reference-registration-block" : undefined} disabled={!!pending || !!candidateBlocked || undecided > 0}>선택한 개념을 지식 그래프에 추가하기</Button></div>
     </form>}

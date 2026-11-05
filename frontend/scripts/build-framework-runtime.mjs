@@ -1,12 +1,13 @@
 import { build } from 'esbuild';
 import { mkdir } from 'node:fs/promises';
-import { URL } from 'node:url';
+import { fileURLToPath, URL } from 'node:url';
 
-await mkdir(new URL('../public/framework-runtime/', import.meta.url), { recursive: true });
+const local = path => fileURLToPath(new URL(path, import.meta.url));
+await mkdir(local('../public/framework-runtime/'), { recursive: true });
 for (const framework of ['react', 'vue']) {
   await build({
-    entryPoints: [new URL(`../framework-runtime/${framework}-entry.ts`, import.meta.url).pathname],
-    outfile: new URL(`../public/framework-runtime/${framework}-v1.js`, import.meta.url).pathname,
+    entryPoints: [local(`../framework-runtime/${framework}-entry.ts`)],
+    outfile: local(`../public/framework-runtime/${framework}-v1.js`),
     bundle: true, minify: true, format: 'iife', platform: 'browser', target: 'es2022',
   });
 }

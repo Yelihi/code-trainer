@@ -30,3 +30,11 @@ class FrameworkPreviewTest(unittest.TestCase):
         with patch.object(framework_preview.runner, 'run', return_value=[{'status': 'ok', 'exit_code': 0, 'stderr': '', 'stdout': 'not json'}]):
             response = self.client.post('/api/framework-preview', json={'framework': 'react', 'code': 'x'})
         self.assertEqual(response.status_code, 422)
+
+    def test_preview_frame_has_isolated_policy_and_requires_login(self):
+        response = self.client.get('/api/framework-preview-frame')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("connect-src 'none'", response.headers['content-security-policy'])
+        self.assertNotIn('x-frame-options', response.headers)
+        self.client.post('/api/logout', json={})
+        self.assertEqual(self.client.get('/api/framework-preview-frame').status_code, 401)

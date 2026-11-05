@@ -6,7 +6,7 @@ ENV PATH="/usr/local/cargo/bin:${PATH}" RUSTUP_HOME=/usr/local/rustup CARGO_HOME
 RUN npm install --global typescript@5.9.3 react@19.3.0 react-dom@19.3.0 vue@3.5.44 @vue/compiler-sfc@3.5.44 \
     && node --version && python3 --version && g++ --version && rustc --version
 ENV NODE_PATH=/usr/local/lib/node_modules
-COPY framework-preview.cjs /opt/framework-preview.cjs
+COPY --chmod=644 framework-preview.cjs /opt/framework-preview.cjs
 USER 65534:65534
 WORKDIR /work
 CMD ["sleep", "300"]

@@ -8,10 +8,10 @@ const groups: { label: string; items: NavigationItem[] }[] = [
     { label: '자료 보관함', to: '/library', paths: ['/library', '/library/:id', '/library/:id/edit', '/references', '/references/:id'] },
     { label: '직접 노트 작성', to: '/references/new', paths: ['/references/new'] },
     { label: '레퍼런스 등록', to: '/library/new/reference', paths: ['/library/new/reference'] },
+    { label: '질문함', to: '/questions', paths: ['/questions/*'] },
     { label: '자동 등록 대기 (RSA)', to: '/inbox', paths: ['/inbox'] },
   ] },
   { label: '탐구하기', items: [
-    { label: '질문함', to: '/questions', paths: ['/questions/*'] },
     { label: '해석하기', to: '/explore', paths: ['/', '/explore', '/interpretations/*', '/learn/*', '/create'] },
     { label: '문제집', to: '/problem-books', paths: ['/problem-books/*'] },
     { label: '실습하기', to: '/explore/practice', paths: ['/explore/practice', '/foundations/*', '/practice/*', '/worksheets/*'] },

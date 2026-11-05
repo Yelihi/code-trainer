@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
-from . import resources, interpretations, worksheets, practice_records, problem_books, questions
+from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
 from .worksheet_schema import WorksheetInput
@@ -101,8 +101,12 @@ async def local_boundary(request: Request, call_next):
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'no-referrer'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    if request.url.path == '/api/framework-preview-frame' and response.status_code == 200:
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['Content-Security-Policy'] = "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'"
+    else:
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     if deployed:
         response.headers['X-Trainer-Auth'] = 'access'
     return response
@@ -323,6 +327,16 @@ def progress(exercise_id: str, body: DraftInput, current=Depends(user)):
 @app.post('/api/exercises/{exercise_id}/execute')
 def execute(exercise_id: str, body: ExecutionInput, current=Depends(user)):
     return service.execute(current['id'], exercise_id, body)
+
+
+@app.post('/api/framework-preview')
+def preview_framework(body: framework_preview.PreviewInput, current=Depends(user)):
+    return framework_preview.render(current['id'], body)
+
+
+@app.get('/api/framework-preview-frame')
+def framework_frame(current=Depends(user)):
+    return FileResponse(Path(__file__).with_name('framework_frame.html'), media_type='text/html')
 
 
 @app.get('/api/exercises/{exercise_id}/hints/{step}')

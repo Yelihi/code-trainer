@@ -3,7 +3,10 @@ FROM node:24.12.0-bookworm@sha256:929c026d5a4e4a59685b3c1dbc1a8c3eb090aa95373d3a
 COPY --from=rust /usr/local/rustup /usr/local/rustup
 COPY --from=rust /usr/local/cargo /usr/local/cargo
 ENV PATH="/usr/local/cargo/bin:${PATH}" RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
-RUN npm install --global typescript@5.9.2 && node --version && python3 --version && g++ --version && rustc --version
+RUN npm install --global typescript@5.9.3 react@19.3.0 react-dom@19.3.0 vue@3.5.44 @vue/compiler-sfc@3.5.44 \
+    && node --version && python3 --version && g++ --version && rustc --version
+ENV NODE_PATH=/usr/local/lib/node_modules
+COPY framework-preview.cjs /opt/framework-preview.cjs
 USER 65534:65534
 WORKDIR /work
 CMD ["sleep", "300"]

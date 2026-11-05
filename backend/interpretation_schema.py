@@ -1,6 +1,8 @@
+from typing import Annotated
 from pydantic import Field, model_validator
 from .schema import Model, Text
 
+SourceQuote = Annotated[str, Field(min_length=1, max_length=4000)]
 
 class InterpretationInput(Model):
     request_id: str = Field(min_length=8, max_length=80)
@@ -13,7 +15,7 @@ class InterpretationSection(Model):
     title: str = Field(min_length=1, max_length=160)
     body: Text
     prerequisites: list[str] = Field(max_length=5)
-    source_quotes: list[str] = Field(min_length=1, max_length=3)
+    source_quotes: list[SourceQuote] = Field(min_length=1, max_length=3)
     examples: list[Text] = Field(max_length=3)
     extensions: list[Text] = Field(max_length=3)
     questions: list[Text] = Field(min_length=1, max_length=4)
@@ -31,7 +33,7 @@ class InterpretationDraft(Model):
         for section in self.sections:
             if section.id in seen or not set(section.prerequisites) <= seen:
                 raise ValueError('Section prerequisites must refer to earlier sections')
-            if any(not quote.strip() or len(quote) > 1200 for quote in section.source_quotes):
-                raise ValueError('Source quotes must be nonempty and at most 1200 characters')
+            if any(not quote.strip() for quote in section.source_quotes):
+                raise ValueError('Source quotes must be nonempty')
             seen.add(section.id)
         return self

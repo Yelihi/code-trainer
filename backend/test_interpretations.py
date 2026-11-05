@@ -81,12 +81,33 @@ class InterpretationsTest(unittest.TestCase):
         self.assertIsNone(interpretations.view(self.owner, job['id'])['document'])
         with self.assertRaises(ValidationError):
             InterpretationDraft.model_validate({**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0], 'prerequisites': ['s1']}]})
+        with self.assertRaises(ValidationError):
+            InterpretationDraft.model_validate({**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0], 'source_quotes': ['x' * 4001]}]})
         context, _ = sample()
         old = context.model_dump()
         for section in old['units'][0]['lesson']:
             section.update(code='', walkthrough='')
         with self.assertRaises(ValidationError):
             CurriculumDraft.model_validate(old)
+
+    def test_code_source_keeps_exact_fenced_example_and_explanation(self):
+        code = '```js\nconst total = [1, 2].reduce((sum, n) => sum + n, 0);\nconsole.log(total);\n```'
+        source = resources.register(self.owner, ResourceInput(request_id=service.uid(), kind='text',
+            name='코드가 있는 원문', content='배열의 값을 더합니다.\n\n' + code + '\n\n결과는 3입니다.'))
+        job, _ = self.start(source)
+        draft = {**DOCUMENT, 'sections': [{**DOCUMENT['sections'][0],
+            'body': '초기값 0부터 각 배열 원소를 더하고 최종 합계를 출력합니다.',
+            'source_quotes': [code, '결과는 3입니다.']}]}
+        def generate(model, instruction, data):
+            self.assertIn('step by step', instruction)
+            self.assertIn('full Markdown code fence', instruction)
+            self.assertIn(code, data['content'])
+            return model.model_validate(draft)
+        with patch.object(ai, 'generate', side_effect=generate):
+            interpretations.generate(job['id'])
+        saved = interpretations.view(self.owner, job['id'])
+        self.assertEqual(saved['state'], 'ready')
+        self.assertEqual(saved['document']['sections'][0]['source_quotes'], [code, '결과는 3입니다.'])
 
     def test_concurrent_first_requests_reserve_only_one_job_and_worker(self):
         raw = self.raw()

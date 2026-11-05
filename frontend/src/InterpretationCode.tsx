@@ -56,6 +56,7 @@ function CodeSetup({ id, sectionId }: { id: string; sectionId: string }) {
   return <main className="page narrow-page"><div className="breadcrumb"><Link to={`/interpretations/${id}#${sectionId}`}>해석 섹션</Link><span>/</span> 코드 실습</div>
     <span className="eyebrow">FROM CONCEPT TO CODE</span><h1>{data?.source.title ?? '코드 실습 준비'}</h1>
     <p className="page-intro">이 섹션을 코딩 학습 과정으로 준비합니다.<br />과정을 확인한 뒤 원하는 단원에서 검증된 문제 생성을 요청하세요.</p>
+    <p className="notice">React·Vue 컴포넌트 화면을 확인하려면 <Link className="button" to="/framework-practice">프레임워크 실행 열기</Link></p>
     <ErrorNotice error={loadError} />{loadError && <Button onClick={() => setVersion(v => v + 1)}>생성 기록 다시 확인</Button>}
     {!data && !loadError && <LoadingSkeleton layout="editor" label="실습 출처와 기록을 불러오는 중…" />}
     {data && <aside className="interpretation-provenance"><strong>{data.source.source_name} · 원문 v{data.source.revision}</strong><p>선택한 섹션의 원문 인용과 AI 해석을 구분해 사용합니다. 코딩으로 실습하기 어려운 내용은 이유를 안내합니다.{data.source.current_revision !== data.source.revision && ` 현재 원문은 v${data.source.current_revision}이며, 이 실습은 v${data.source.revision} 해석을 유지합니다.`}</p></aside>}

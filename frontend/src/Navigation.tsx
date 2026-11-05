@@ -14,7 +14,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
   { label: '탐구하기', items: [
     { label: '해석하기', to: '/explore', paths: ['/', '/explore', '/interpretations/*', '/learn/*', '/create'] },
     { label: '문제집', to: '/problem-books', paths: ['/problem-books/*'] },
-    { label: '실습하기', to: '/explore/practice', paths: ['/explore/practice', '/foundations/*', '/practice/*', '/worksheets/*'] },
+    { label: '실습하기', to: '/explore/practice', paths: ['/explore/practice', '/framework-practice', '/foundations/*', '/practice/*', '/worksheets/*'] },
     { label: '다시 검토', to: '/reviews', paths: ['/reviews/*', '/reference-reviews/*'] },
     { label: '나의 기록', to: '/me', paths: ['/me'] },
   ] },
@@ -56,6 +56,7 @@ export function PracticeEntry() {
     <div className="context-grid">
       <Link className="context-card" to="/"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택</span></Link>
       <Link className="context-card" to="/foundations"><h2>자료구조 · 알고리즘</h2><p>준비된 기초 구현 과정을 선택하고 직접 코드를 작성합니다.</p><span className="text-link">기초 구현 학습</span></Link>
+      <Link className="context-card" to="/framework-practice"><h2>React · Vue 컴포넌트</h2><p>TSX 또는 Vue 컴포넌트를 작성하고 렌더링 결과를 확인합니다.</p><span className="text-link">프레임워크 실행</span></Link>
     </div>
     <p className="notice">질문지를 열어 내 답변과 요약을 남겨보세요. 일부만 작성해도 저장하고 이어서 수정할 수 있습니다.</p>
     <Link className="text-link" to="/me">나의 실습 기록 보기</Link>

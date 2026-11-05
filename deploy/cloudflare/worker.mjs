@@ -47,6 +47,10 @@ export default {
       for (const name of ['content-type', 'content-disposition', 'retry-after', 'x-request-id']) {
         if (upstream.headers.has(name)) outgoing.set(name, upstream.headers.get(name));
       }
+      if (url.pathname === '/api/framework-preview-frame' && upstream.status === 200) {
+        outgoing.set('X-Frame-Options', 'SAMEORIGIN');
+        outgoing.set('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
+      }
       return new Response(upstream.body, { status: upstream.status, headers: outgoing });
     } catch { return failure(502, 'Mac mini 서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.'); }
   },

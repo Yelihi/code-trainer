@@ -26,6 +26,7 @@ import { ReferenceReview } from './ReferenceReview';
 import { GitHubSettings, GitHubShare } from './GitHubSharing';
 import { AISettings } from './AISettings';
 import { QuestionInbox, QuestionDetail } from './Questions';
+import { ProjectBrainHome, ProjectBrainSource, ProjectBrainNew, ProjectBrainEdit, ProjectBrainRecord, ProjectBrainGraph } from './ProjectBrain';
 import './shadcn.css';
 import './styles.css';
 
@@ -50,6 +51,12 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/problem-books/:id', element: <BookDetail /> },
   { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
   { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
+  { path: '/project-brain', element: <ProjectBrainHome /> },
+  { path: '/project-brain/graph', element: <ProjectBrainGraph /> },
+  { path: '/project-brain/new', element: <ProjectBrainNew /> },
+  { path: '/project-brain/sources/:id', element: <ProjectBrainSource /> },
+  { path: '/project-brain/:id/edit', element: <ProjectBrainEdit /> },
+  { path: '/project-brain/:id', element: <ProjectBrainRecord /> },
   { path: '/apply', element: <DeepInside /> },
   { path: '/apply/explorations', element: <Explorations /> },
   { path: '/apply/explorations/:id', element: <ExplorationRoute /> },

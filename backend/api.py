@@ -11,6 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
+from . import project_brain
+from .project_brain import SourceInput as BrainSourceInput, RecordInput as BrainRecordInput, RevisionInput as BrainRevisionInput, LinkInput as BrainLinkInput, DraftInput as BrainDraftInput
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
 from .worksheet_schema import WorksheetInput
@@ -367,6 +369,75 @@ def learning_summary(current=Depends(user), record_id: str | None = None):
 @app.get('/api/me/knowledge-graph')
 def knowledge_graph(current=Depends(user), record_id: str | None = None):
     return knowledge.view(current['id'], record_id)
+
+
+@app.get('/api/project-brain/sources')
+def brain_sources(current=Depends(user)):
+    return project_brain.sources(current['id'])
+
+
+@app.post('/api/project-brain/sources')
+def brain_source_create(body: BrainSourceInput, current=Depends(user)):
+    return project_brain.source_save(current['id'], body)
+
+
+@app.get('/api/project-brain/sources/{identifier}')
+def brain_source_view(identifier: str, current=Depends(user)):
+    return project_brain.source_view(current['id'], identifier)
+
+
+@app.get('/api/project-brain/records')
+def brain_records(q: str = Query('', max_length=160), archived: bool = False, current=Depends(user)):
+    return project_brain.records(current['id'], q, archived)
+
+
+@app.post('/api/project-brain/records')
+def brain_record_save(body: BrainRecordInput, current=Depends(user)):
+    return project_brain.record_save(current['id'], body)
+
+
+@app.get('/api/project-brain/graph')
+def brain_graph(current=Depends(user)):
+    return project_brain.graph(current['id'])
+
+
+@app.post('/api/project-brain/drafts', status_code=202)
+def brain_draft_start(body: BrainDraftInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = project_brain.draft_begin(current['id'], body)
+    if fresh:
+        tasks.add_task(project_brain.draft_generate, result['id'])
+    return result
+
+
+@app.get('/api/project-brain/drafts/{identifier}')
+def brain_draft_view(identifier: str, current=Depends(user)):
+    return project_brain.draft_view(current['id'], identifier)
+
+
+@app.get('/api/project-brain/records/{identifier}')
+def brain_record_view(identifier: str, revision: int | None = Query(None, ge=1), current=Depends(user)):
+    return project_brain.record_view(current['id'], identifier, revision)
+
+
+@app.get('/api/project-brain/records/{identifier}/export')
+def brain_record_export(identifier: str, current=Depends(user)):
+    return Response(project_brain.export_markdown(current['id'], identifier), media_type='text/markdown; charset=utf-8',
+                    headers={'Content-Disposition': f'attachment; filename="project-record-{identifier}.md"'})
+
+
+@app.post('/api/project-brain/records/{identifier}/confirm')
+def brain_record_confirm(identifier: str, body: BrainRevisionInput, current=Depends(user)):
+    return project_brain.confirm(current['id'], identifier, body.revision)
+
+
+@app.post('/api/project-brain/records/{identifier}/archive')
+def brain_record_archive(identifier: str, body: ArchiveInput, current=Depends(user)):
+    return project_brain.archive(current['id'], identifier, body.archived)
+
+
+@app.post('/api/project-brain/records/{identifier}/links')
+def brain_record_link(identifier: str, body: BrainLinkInput, current=Depends(user)):
+    return project_brain.link(current['id'], identifier, body)
 
 
 @app.get('/api/knowledge/concepts')

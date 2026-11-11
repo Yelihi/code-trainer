@@ -21,6 +21,7 @@ const groups: { label: string; items: NavigationItem[] }[] = [
   { label: '데이터 쌓기', items: [
     { label: '추출 가능 자료', to: '/knowledge/candidates', paths: ['/knowledge/candidates', '/knowledge/candidates/:id'] },
     { label: '지식 그래프', to: '/knowledge', paths: ['/knowledge'] },
+    { label: '프로젝트 브레인', to: '/project-brain', paths: ['/project-brain', '/project-brain/*'] },
   ] },
   { label: '응용하기', items: [
     { label: 'Deep Inside', to: '/apply', paths: ['/apply'] },

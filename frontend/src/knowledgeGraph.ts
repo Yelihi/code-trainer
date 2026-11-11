@@ -25,7 +25,7 @@ export function zoomView(view: ViewBox, factor: number, anchor: Point, base: Vie
     width, height: view.height * ratio };
 }
 
-export function layoutGraph(nodes: GraphNode[], edges: GraphEdge[]) {
+export function layoutGraph<N extends { id: string }, E extends { source: string; target: string }>(nodes: N[], edges: E[]) {
   const links = new Map(nodes.map(node => [node.id, new Set<string>()]));
   for (const edge of edges) {
     if (!links.has(edge.source) || !links.has(edge.target)) continue;

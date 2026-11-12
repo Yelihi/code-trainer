@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { timestamp } from './api';
 import { ErrorNotice } from './App';
@@ -10,7 +10,7 @@ import { Skeleton } from './components/ui/skeleton';
 import { QuestionListSkeleton } from './QuestionSkeletons';
 import type { Question } from './questionTypes';
 
-type QuestionPage = { items: Question[]; total: number; page: number };
+type QuestionPage = { items: Question[]; total: number; page: number; pages: number };
 
 function QuestionSearch({ query, status }: { query: string; status: string }) {
   const [, setParams] = useSearchParams();
@@ -19,7 +19,20 @@ function QuestionSearch({ query, status }: { query: string; status: string }) {
 }
 
 export const QuestionRows = memo(function QuestionRows({ items }: { items: Question[] }) {
-  return <>{items.map(item => <Link className="question-row" title={item.text} key={item.id} to={'/questions/' + item.id}><span><strong>{item.text}</strong><small>{timestamp(item.updated_at)} · 연결 자료 {item.links.length}개{item.note_id ? ' · 노트 연결됨' : ''}</small></span><span>열기</span></Link>)}</>;
+  const children = new Map<string | null, Question[]>();
+  const ids = new Set(items.map(item => item.id));
+  for (const item of items) {
+    const parent = item.parent_id && ids.has(item.parent_id) ? item.parent_id : null;
+    const siblings = children.get(parent) ?? [];
+    siblings.push(item); children.set(parent, siblings);
+  }
+  function branch(parent: string | null): React.ReactNode {
+    return <ul className="question-tree">{children.get(parent)?.map(item => <li key={item.id}>
+      <Link className="question-row" style={{ '--question-depth': Math.min(item.depth ?? 0, 4) } as CSSProperties} title={item.text} to={'/questions/' + item.id}><span><strong>{item.text}</strong><small>{item.parent_id ? '꼬리질문 · ' : ''}{item.status === 'done' ? '정리 완료' : '열린 질문'}{item.matches_filter === false ? ' · 맥락을 위한 상위 질문' : ''} · {timestamp(item.updated_at)} · 연결 자료 {item.links.length}개{item.note_id ? ' · 노트 연결됨' : ''}</small></span><span>열기</span></Link>
+      {children.has(item.id) && branch(item.id)}
+    </li>)}</ul>;
+  }
+  return branch(null);
 });
 
 export function QuestionResults({ data, loading, query }: { data: QuestionPage | null; loading: boolean; query: string }) {
@@ -36,6 +49,6 @@ export function QuestionList() {
     <div className="question-filters"><h2>{status === 'open' ? '남겨둔 질문' : '정리 완료'} · {data ? data.total : <Skeleton className="question-count-skeleton" aria-label="질문 수를 불러오는 중" />}</h2><div><Button aria-pressed={status === 'open'} onClick={() => setParams({ q, status: 'open' })}>열린 질문</Button><Button aria-pressed={status === 'done'} onClick={() => setParams({ q, status: 'done' })}>정리 완료</Button></div></div>
     <div className="question-feedback"><ErrorNotice error={error} />{error ? <Button onClick={reload}>다시 불러오기</Button> : <span role="status">{loading && data ? '질문 목록을 새로 확인하고 있습니다…' : ''}</span>}</div>
     <QuestionResults data={data} loading={loading} query={q} />
-    <nav className="question-pages" aria-label="질문 페이지"><Button disabled={!data || page <= 1 || loading} onClick={() => setParams({ q, status, page: String(page - 1) })}>이전</Button><span>{data ? `${page} / ${Math.max(1, Math.ceil(data.total / 30))}` : '페이지 확인 중'}</span><Button disabled={!data || page >= Math.ceil(data.total / 30) || loading} onClick={() => setParams({ q, status, page: String(page + 1) })}>다음</Button></nav>
+    <nav className="question-pages" aria-label="질문 페이지"><Button disabled={!data || page <= 1 || loading} onClick={() => setParams({ q, status, page: String(page - 1) })}>이전</Button><span>{data ? `${page} / ${data.pages}` : '페이지 확인 중'}</span><Button disabled={!data || page >= data.pages || loading} onClick={() => setParams({ q, status, page: String(page + 1) })}>다음</Button></nav>
   </section>;
 }

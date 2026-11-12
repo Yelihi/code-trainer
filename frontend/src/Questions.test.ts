@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { createServer } from 'vite';
 
-const question = { id: 'question', text: '저장 결과를 어떻게 유지할까?', context: '', status: 'open', links: [], note_id: null, revision: 1, updated_at: '2026-11-12T03:00:00Z' };
+const question = { id: 'question', parent_id: null, text: '저장 결과를 어떻게 유지할까?', context: '', status: 'open', links: [], note_id: null, revision: 1, updated_at: '2026-11-12T03:00:00Z' };
 const recommendation = { id: 'daily', source_kind: 'feed', source_title: '검토할 원문', source_url: 'https://example.com', text: '근거를 읽고 질문을 확인해보세요.', saved_question_id: null, state: 'ready', error: '', evidence: '원문에 있는 근거' };
 const guide = { id: 'guide', state: 'ready', error: '', question_revision: 1, result: { title: '이전 가이드를 유지합니다', reading: '확인할 구절', checks: ['경계 조건 확인'], practice: '직접 비교하기', expected_output: '관찰한 결과', source_ids: [] } };
 
@@ -69,5 +69,36 @@ test('guide regeneration leaves the previous guide visible instead of replacing 
     const initial = render(QuestionGuideContent, { guide: null, revision: 1, pending: true });
     assert.match(initial, /question-guide-skeleton/);
     assert.match(initial, /가이드를 준비하고 있습니다/);
+  } finally { await server.close(); }
+});
+
+
+test('follow-up rows keep semantic nesting, detail links and ancestor context', async () => {
+  const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { QuestionRows } = await server.ssrLoadModule('/src/QuestionList.tsx');
+    const html = render(QuestionRows, { items: [
+      { ...question, matches_filter: false, status: 'done' },
+      { ...question, id: 'child', parent_id: 'question', text: '이어서 묻기', depth: 1 },
+      { ...question, id: 'leaf', parent_id: 'child', text: '한 번 더 묻기', depth: 2 },
+    ] });
+    assert.equal((html.match(/<ul class="question-tree">/g) ?? []).length, 3);
+    assert.match(html, /href="\/questions\/child"/);
+    assert.match(html, /href="\/questions\/leaf"/);
+    assert.match(html, /맥락을 위한 상위 질문/);
+    assert.match(html, /꼬리질문/);
+    assert.ok(html.indexOf('이어서 묻기') < html.indexOf('한 번 더 묻기'));
+  } finally { await server.close(); }
+});
+
+
+test('initial detail skeleton reserves the follow-up section before related sources', async () => {
+  const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { QuestionDetailSkeleton } = await server.ssrLoadModule('/src/QuestionSkeletons.tsx');
+    const html = render(QuestionDetailSkeleton, {});
+    assert.match(html, /question-follow-ups/);
+    assert.match(html, /question-relation-skeleton/);
+    assert.ok(html.indexOf('이어지는 질문') < html.indexOf('관련 자료'));
   } finally { await server.close(); }
 });

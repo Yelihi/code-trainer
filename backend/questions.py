@@ -17,6 +17,13 @@ class Link(Model):
 class Create(Model):
     request_id: str = Field(min_length=8, max_length=80)
     text: str = Field(min_length=1, max_length=500)
+    parent_id: str | None = Field(default=None, pattern=r'^[a-f0-9]{32}$')
+
+    @model_validator(mode='after')
+    def nonempty(self):
+        if not self.text.strip():
+            raise ValueError('질문을 입력해주세요.')
+        return self
 
 
 class Update(Model):
@@ -65,6 +72,9 @@ def initialize(c):
         text TEXT NOT NULL, context TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'open',
         links TEXT NOT NULL DEFAULT '[]', note_id TEXT, revision INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(owner,request_id))''')
+    if 'parent_id' not in {row['name'] for row in c.execute('PRAGMA table_info(question_memos)')}:
+        c.execute('ALTER TABLE question_memos ADD COLUMN parent_id TEXT REFERENCES question_memos(id) ON DELETE SET NULL')
+    c.execute('CREATE INDEX IF NOT EXISTS question_parent ON question_memos(owner,parent_id)')
     c.execute('''CREATE TABLE IF NOT EXISTS question_guides (
         id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), question_id TEXT NOT NULL REFERENCES question_memos(id),
         request_id TEXT NOT NULL, question_revision INTEGER NOT NULL, state TEXT NOT NULL,
@@ -222,20 +232,68 @@ def create(owner, body):
     with db.connect(write=True) as c:
         old = c.execute('SELECT * FROM question_memos WHERE owner=? AND request_id=?', (owner, body.request_id)).fetchone()
         if old:
-            if old['text'] != body.text.strip():
+            if old['text'] != body.text.strip() or old['parent_id'] != body.parent_id:
                 raise service.Error('같은 저장 요청의 질문이 다릅니다.', 409)
             return row_view(old)
+        if body.parent_id:
+            owned(c, owner, body.parent_id)
         clock, identifier = service.now(), service.uid()
-        c.execute('INSERT INTO question_memos(id,owner,request_id,text,created_at,updated_at) VALUES (?,?,?,?,?,?)',
-                  (identifier, owner, body.request_id, body.text.strip(), clock, clock))
+        c.execute('INSERT INTO question_memos(id,owner,request_id,text,parent_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
+                  (identifier, owner, body.request_id, body.text.strip(), body.parent_id, clock, clock))
         return row_view(owned(c, owner, identifier))
 
 
 def listing(owner, q='', status='open', page=1):
-    where = 'owner=? AND status=? AND text LIKE ?'
-    params = (owner, status, '%' + q + '%')
-    rows = db.all(f'SELECT * FROM question_memos WHERE {where} ORDER BY updated_at DESC,id DESC LIMIT 30 OFFSET ?', (*params, (page - 1) * 30))
-    return {'items': [row_view(row) for row in rows], 'total': db.one(f'SELECT COUNT(*) n FROM question_memos WHERE {where}', params)['n'], 'page': page}
+    with db.connect() as c:
+        rows = {row['id']: row_view(row) for row in c.execute(
+            'SELECT * FROM question_memos WHERE owner=? ORDER BY updated_at DESC,id DESC', (owner,))}
+        matches = {row['id'] for row in c.execute(
+            'SELECT id FROM question_memos WHERE owner=? AND status=? AND text LIKE ?', (owner, status, '%' + q + '%'))}
+    included = set(matches)
+    for identifier in matches:
+        parent = rows[identifier]['parent_id']
+        while parent in rows and parent not in included:
+            included.add(parent)
+            parent = rows[parent]['parent_id']
+    children, roots = {}, []
+    for identifier, row in rows.items():
+        if identifier not in included:
+            continue
+        row['matches_filter'] = identifier in matches
+        parent = row['parent_id']
+        if parent in included:
+            children.setdefault(parent, []).append(identifier)
+        else:
+            roots.append(identifier)
+    # Keep whole branches on one page, ordered by their latest matching activity.
+    activity, root_ids = {}, {}
+    for identifier in included:
+        path, root = [], identifier
+        while root not in root_ids and rows[root]['parent_id'] in included:
+            path.append(root)
+            root = rows[root]['parent_id']
+        root = root_ids.get(root, root)
+        root_ids[identifier] = root
+        for ancestor in path:
+            root_ids[ancestor] = root
+        activity[root] = max(activity.get(root, ('', '')), (rows[identifier]['updated_at'], identifier))
+    roots.sort(key=lambda identifier: activity[identifier], reverse=True)
+    items = []
+    stack = [(identifier, 0) for identifier in reversed(roots[(page - 1) * 30:page * 30])]
+    while stack:
+        identifier, depth = stack.pop()
+        items.append({**rows[identifier], 'depth': depth})
+        stack.extend((child, depth + 1) for child in reversed(children.get(identifier, [])))
+    return {'items': items, 'total': len(matches), 'page': page, 'pages': max(1, (len(roots) + 29) // 30)}
+
+
+def relations(owner, identifier):
+    with db.connect() as c:
+        question = owned(c, owner, identifier)
+        parent = owned(c, owner, question['parent_id']) if question['parent_id'] else None
+        children = c.execute('SELECT id,text,status FROM question_memos WHERE owner=? AND parent_id=? ORDER BY created_at,id', (owner, identifier))
+        return {'parent': {key: parent[key] for key in ('id', 'text', 'status')} if parent else None,
+                'children': [dict(row) for row in children]}
 
 
 def view(owner, identifier):
@@ -264,7 +322,8 @@ def update(owner, identifier, body):
 
 def delete(owner, identifier):
     with db.connect(write=True) as c:
-        owned(c, owner, identifier)
+        question = owned(c, owner, identifier)
+        c.execute('UPDATE question_memos SET parent_id=? WHERE owner=? AND parent_id=?', (question['parent_id'], owner, identifier))
         c.execute('UPDATE daily_question_recommendations SET saved_question_id=NULL WHERE owner=? AND saved_question_id=?', (owner, identifier))
         c.execute('DELETE FROM question_guides WHERE owner=? AND question_id=?', (owner, identifier))
         c.execute('DELETE FROM question_memos WHERE owner=? AND id=?', (owner, identifier))

@@ -27,6 +27,7 @@ import { GitHubSettings, GitHubShare } from './GitHubSharing';
 import { AISettings } from './AISettings';
 import { QuestionInbox, QuestionDetail } from './Questions';
 import { ProjectBrainHome, ProjectBrainSource, ProjectBrainNew, ProjectBrainEdit, ProjectBrainRecord, ProjectBrainGraph } from './ProjectBrain';
+import { WikiHome, WikiDocuments, WikiDocumentRoute, WikiPage, WikiActivity, WikiJob } from './Wiki';
 import './shadcn.css';
 import './styles.css';
 
@@ -51,7 +52,14 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/problem-books/:id', element: <BookDetail /> },
   { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
   { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
-  { path: '/project-brain', element: <ProjectBrainHome /> },
+  { path: '/project-brain', element: <WikiHome /> },
+  { path: '/project-brain/documents', element: <WikiDocuments /> },
+  { path: '/project-brain/documents/new', element: <WikiDocumentRoute /> },
+  { path: '/project-brain/documents/:id', element: <WikiDocumentRoute /> },
+  { path: '/project-brain/pages/:slug', element: <WikiPage /> },
+  { path: '/project-brain/activity', element: <WikiActivity /> },
+  { path: '/project-brain/activity/:id', element: <WikiJob /> },
+  { path: '/project-brain/legacy', element: <ProjectBrainHome /> },
   { path: '/project-brain/graph', element: <ProjectBrainGraph /> },
   { path: '/project-brain/new', element: <ProjectBrainNew /> },
   { path: '/project-brain/sources/:id', element: <ProjectBrainSource /> },

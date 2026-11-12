@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
-from . import project_brain
+from . import project_brain, wiki
 from .project_brain import SourceInput as BrainSourceInput, RecordInput as BrainRecordInput, RevisionInput as BrainRevisionInput, LinkInput as BrainLinkInput, DraftInput as BrainDraftInput
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
@@ -369,6 +369,65 @@ def learning_summary(current=Depends(user), record_id: str | None = None):
 @app.get('/api/me/knowledge-graph')
 def knowledge_graph(current=Depends(user), record_id: str | None = None):
     return knowledge.view(current['id'], record_id)
+
+
+@app.get('/api/wiki/documents')
+def wiki_documents(current=Depends(user)):
+    return wiki.documents(current['id'])
+
+
+@app.post('/api/wiki/documents')
+def wiki_document_save(body: wiki.DocumentInput, current=Depends(user)):
+    return wiki.save_document(current['id'], body)
+
+
+@app.get('/api/wiki/documents/{identifier}')
+def wiki_document(identifier: str, revision: int | None = Query(None, ge=1), current=Depends(user)):
+    return wiki.document(current['id'], identifier, revision)
+
+
+@app.get('/api/wiki/pages')
+def wiki_pages(current=Depends(user)):
+    return wiki.pages(current['id'])
+
+
+@app.get('/api/wiki/pages/{slug}')
+def wiki_page(slug: str, revision: int | None = Query(None, ge=1), current=Depends(user)):
+    return wiki.page(current['id'], slug, revision)
+
+
+@app.get('/api/wiki/jobs')
+def wiki_jobs(current=Depends(user)):
+    return wiki.jobs(current['id'])
+
+
+@app.post('/api/wiki/jobs', status_code=202)
+def wiki_job_start(body: wiki.JobInput, tasks: BackgroundTasks, current=Depends(user)):
+    result, fresh = wiki.begin(current['id'], body)
+    if fresh:
+        tasks.add_task(wiki.generate, result['id'])
+    return result
+
+
+@app.get('/api/wiki/jobs/{identifier}')
+def wiki_job(identifier: str, current=Depends(user)):
+    return wiki.proposal(current['id'], identifier)
+
+
+@app.post('/api/wiki/jobs/{identifier}/apply')
+def wiki_apply(identifier: str, body: wiki.WikiCompilation, current=Depends(user)):
+    return wiki.apply(current['id'], identifier, body)
+
+
+@app.get('/api/wiki/inspection')
+def wiki_inspection(current=Depends(user)):
+    return wiki.inspection(current['id'])
+
+
+@app.get('/api/wiki/export')
+def wiki_export(current=Depends(user)):
+    return Response(wiki.export(current['id']), media_type='application/zip',
+                    headers={'Content-Disposition': 'attachment; filename="second-brain-wiki.zip"'})
 
 
 @app.get('/api/project-brain/sources')

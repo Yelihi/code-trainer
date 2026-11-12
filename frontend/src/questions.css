@@ -95,3 +95,16 @@
   .quick-question-panel { position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; border-radius: 16px 16px 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { .questions-page [data-slot="skeleton"] { animation: none; } }
+.question-tree { list-style: none; margin: 0; padding: 0; }
+.question-tree .question-row { padding-inline-start: calc(4px + var(--question-depth, 0) * 24px); overflow-wrap: anywhere; }
+.question-tree .question-tree > li > .question-row { border-inline-start: 1px solid var(--line); }
+.question-relations { min-height: 80px; overflow-wrap: anywhere; }
+.question-relations a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.question-relations ul { margin: 0; padding-inline-start: 20px; }
+.question-relations li { padding-block: 8px; }
+.question-relations small { display: block; color: var(--muted); margin-top: 4px; }
+.question-relation-skeleton { min-height: 80px; width: 100%; }
+.question-follow-ups form { min-width: 0; }
+@media (max-width: 680px) {
+  .question-tree .question-row { padding-inline-start: calc(4px + var(--question-depth, 0) * 12px); gap: 12px; }
+}

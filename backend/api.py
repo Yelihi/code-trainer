@@ -557,6 +557,11 @@ def question_delete(identifier: str, current=Depends(user)):
     return questions.delete(current['id'], identifier)
 
 
+@app.get('/api/questions/{identifier}/relations')
+def question_relations(identifier: str, current=Depends(user)):
+    return questions.relations(current['id'], identifier)
+
+
 @app.get('/api/questions/{identifier}/guide')
 def question_guide(identifier: str, current=Depends(user)):
     return questions.latest_guide(current['id'], identifier)

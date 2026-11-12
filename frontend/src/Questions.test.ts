@@ -90,3 +90,15 @@ test('follow-up rows keep semantic nesting, detail links and ancestor context', 
     assert.ok(html.indexOf('이어서 묻기') < html.indexOf('한 번 더 묻기'));
   } finally { await server.close(); }
 });
+
+
+test('initial detail skeleton reserves the follow-up section before related sources', async () => {
+  const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { QuestionDetailSkeleton } = await server.ssrLoadModule('/src/QuestionSkeletons.tsx');
+    const html = render(QuestionDetailSkeleton, {});
+    assert.match(html, /question-follow-ups/);
+    assert.match(html, /question-relation-skeleton/);
+    assert.ok(html.indexOf('이어지는 질문') < html.indexOf('관련 자료'));
+  } finally { await server.close(); }
+});

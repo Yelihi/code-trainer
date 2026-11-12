@@ -84,6 +84,7 @@
 .quick-question { position: relative; }
 .quick-question-panel { position: absolute; right: 0; top: calc(100% + 12px); z-index: 25; width: min(420px, calc(100vw - 24px)); padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 32px #0008; }
 .quick-question-panel .reference-actions button:first-child { min-width: 7.5em; }
+.quick-question-panel textarea { resize: none; line-height: 1.6; overflow-wrap: anywhere; }
 .quick-question-panel form { display: grid; gap: 14px; }
 @media (max-width: 680px) {
   .daily-question { padding: 22px 20px; }

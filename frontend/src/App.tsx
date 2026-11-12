@@ -1,5 +1,7 @@
 import { Navigation } from './Navigation';
-import { QuickQuestion } from './Questions';
+import { QuickQuestion } from './QuickQuestion';
+import { useResource } from './useResource';
+export { useResource } from './useResource';
 import { NativeSelect } from './components/ui/native-select';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
@@ -17,20 +19,6 @@ import { Badge } from './components/ui/badge';
 type AppContext = { isAdmin: boolean; userId: string; health: Health | null; refreshHealth: () => void };
 export function useApp() { return useOutletContext<AppContext>(); }
 export function ErrorNotice({ error }: { error: string }) { return error ? <p className="notice error" role="alert">{error}</p> : null; }
-
-export function useResource<T>(path: string) {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState('');
-  const [version, setVersion] = useState(0);
-  const reload = useCallback(() => setVersion(value => value + 1), []);
-  useEffect(() => {
-    const controller = new AbortController();
-    setData(null); setError('');
-    api<T>(path, 'GET', undefined, controller.signal).then(setData).catch(error => { if (!controller.signal.aborted) setError(errorMessage(error)); });
-    return () => controller.abort();
-  }, [path, version]);
-  return { data, error, reload };
-}
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);

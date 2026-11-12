@@ -3,7 +3,9 @@
 .graph-page-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
 .graph-page-heading h1 { margin: 9px 0 10px; }
 .graph-page-heading p { margin-bottom: 0; }
-.graph-page-heading > button { flex-shrink: 0; }
+.graph-entry-actions { flex: 0 1 420px; }
+.graph-entry-actions .reference-actions { gap: 12px; }
+.graph-entry-actions p { color: var(--muted); font-size: var(--text-caption); line-height: 1.6; }
 .graph-overview { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 28px 0 24px; padding: 22px 0; border-block: 1px solid var(--line); }
 .graph-overview dl { display: flex; gap: 38px; margin: 0; }
 .graph-overview dt { font-size: var(--text-caption); color: var(--muted); }
@@ -104,6 +106,7 @@
 @media (max-width: 1200px) { .graph-body.with-drawer { grid-template-columns: minmax(0, 1fr) 310px; } .graph-overview dl { gap: 24px; } }
 @media (max-width: 900px) {
   .graph-page { padding: 24px 20px 40px; }
+  .graph-entry-actions { flex-basis: auto; }
   .graph-page-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
   .graph-overview { flex-wrap: wrap; }
   .graph-body.with-drawer { grid-template-columns: minmax(0, 1fr); }

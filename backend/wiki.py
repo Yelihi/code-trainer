@@ -369,6 +369,8 @@ def export(owner):
                 body += f"\n- [Document v{ref['revision']}](../documents/{ref['document_id']}-v{ref['revision']}.md): {ref['quote']}\n"
             body += '\n## Related pages\n' + '\n'.join(f'- [{slug}]({slug}.md)' for slug in p['links'])
             archive.writestr(f"wiki/{p['slug']}.md", body)
+        for version in db.all('SELECT slug,revision,data,created_at FROM wiki_page_versions WHERE owner=? ORDER BY slug,revision', (owner,)):
+            archive.writestr(f"history/{version['slug']}-v{version['revision']}.json", service.dump(version))
         archive.writestr('index.md', '\n'.join(index) + '\n')
         log = ['# Activity log', '']
         for row in db.all('SELECT id,kind,state,request,data,error,created_at,updated_at FROM wiki_jobs WHERE owner=? ORDER BY created_at,id', (owner,)):

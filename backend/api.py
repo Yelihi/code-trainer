@@ -424,6 +424,13 @@ def wiki_inspection(current=Depends(user)):
     return wiki.inspection(current['id'])
 
 
+@app.get('/api/records/export')
+def records_export(current=Depends(user)):
+    from . import record_export
+    return Response(record_export.export(current['id']), media_type='application/zip',
+                    headers={'Content-Disposition': 'attachment; filename="code-trainer-records.zip"'})
+
+
 @app.get('/api/wiki/export')
 def wiki_export(current=Depends(user)):
     return Response(wiki.export(current['id']), media_type='application/zip',

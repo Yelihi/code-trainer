@@ -36,5 +36,5 @@ function QuestionDetailContent() {
     <QuestionFollowUps id={current.id} />
     <QuestionSources current={current} busy={busy} onSave={save} onDraft={setDraft} />
     <QuestionGuide id={current.id} revision={current.revision} canStart={!busy && !!current.links.length && !dirty} />
-    <section className="question-section"><h2>내 언어로 정리</h2><p>정리한 노트는 기존 자료 복습과 지식 그래프 등록 흐름으로 이어집니다.</p>{current.note_id ? <Link className="button" to={'/references/' + current.note_id}>연결된 노트 열기</Link> : <Link className="button" to="/references/new" state={{ questionId: current.id, questionText: current.text }}>노트로 정리</Link>}</section></>}</main>;
+    <section className="question-section"><h2>내 언어로 정리</h2><p>질문을 연결한 레퍼런스를 만들거나 짧은 메모로 남길 수 있습니다.</p><div className="learning-links"><Link to={`/technical-references/new?source=${encodeURIComponent(`/questions/${current.id}`)}`}>레퍼런스로 정리</Link></div>{current.note_id ? <Link className="button" to={'/references/' + current.note_id}>연결된 노트 열기</Link> : <Link className="button" to="/references/new" state={{ questionId: current.id, questionText: current.text }}>노트로 정리</Link>}</section></>}</main>;
 }

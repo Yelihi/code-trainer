@@ -22,7 +22,7 @@ class ReferenceTest(unittest.TestCase):
         second = self.save(revision=1, user_body='보완한 내 설명')
         self.assertEqual(second['revision'], 2)
         self.assertEqual(references.version(self.owner, first['id'], 1)['user_body'], '내가 작성한 설명')
-        self.assertEqual(references.listing('other', ''), [])
+        self.assertEqual(references.listing('other', '')['items'], [])
         with self.assertRaises(service.Error):
             references.read('other', first['id'])
         with self.assertRaises(service.Error):
@@ -116,3 +116,15 @@ class ReferenceTest(unittest.TestCase):
             with patch.object(ai.httpx, 'Client', side_effect=lambda **kwargs: client(transport=httpx.MockTransport(handle), **kwargs)):
                 result = ai._generate(type(value), 'Use supplied records.', {}, connection={'model': 'fixture-model', 'api_key': 'fixture-only', 'provider_url': 'https://example.test'})
             self.assertEqual(result, value)
+
+    def test_reference_search_is_owned_paginated_and_summaries_are_bounded(self):
+        for index in range(21):
+            self.save(id=f'{index:032x}', title=f'주제 {index:02d}', user_body='긴 설명' * 200)
+        first = self.client.get('/api/technical-references').json()
+        last = self.client.get('/api/technical-references?page=99').json()
+        self.assertEqual((first['total'], first['pages'], len(first['items'])), (21, 2, 20))
+        self.assertEqual((last['page'], len(last['items'])), (2, 1))
+        self.assertFalse({item['id'] for item in first['items']} & {item['id'] for item in last['items']})
+        self.assertLessEqual(len(first['items'][0]['user_body']), 180)
+        self.assertEqual(self.client.get('/api/technical-references?q=주제%2005').json()['total'], 1)
+        self.assertEqual(self.client.get('/api/technical-references?page=0').status_code, 422)

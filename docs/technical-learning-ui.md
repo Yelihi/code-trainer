@@ -20,3 +20,11 @@
 첫 로딩은 행 스켈레톤, 재요청은 기존 내용 유지. 오류는 해당 영역에 재시도와 함께 표시한다. 자료/질문/레퍼런스 검색은 URL에 보존한다. 뒤로 가기 시 history key별 스크롤 위치를 복원한다. 질문 초안은 사용자별 로컬 저장과 동일 요청 ID 재전송을 사용한다. 로그아웃한 다른 사용자에게 초안이 노출되지 않는다.
 
 기존 화면 근거: technical-learning-evidence/2026-11-15. 구현 후 같은 1440/390px 폭에서 비교한다. 실제 모바일 가상 키보드는 별도 검증 범위를 명시한다.
+
+## 디자인 검토 기록
+
+초기 구현은 위 사용자 요구와 코드 기반 화면 계약으로 진행했으며, Impeccable의 concept-seed 추첨, 정식 5개 블록 방향 계약, 별도의 quality-bar 카드 절차는 수행하지 않았다. 이 절차를 완료했다거나 이미지 시안을 승인받았다고 기록하지 않는다. 실제 검토 근거는 사용자 요구, PRODUCT.md, 이 문서와 데스크톱/모바일 캡처다.
+
+독립 검토에서 읽기 링크의 버튼 처리와 OS 설치 서체 의존을 수정 대상으로 받았다. 명시적 행동 버튼은 유지하고 읽기 링크에는 밑줄을 사용한다. 제목은 자체 제공하는 Trainer Reading Serif를 사용한다. 이는 Google Fonts의 Nanum Myeongjo Regular를 WOFF2로 변환하고 예약 이름과 구분되도록 family 이름을 변경한 배포본이다. 글리프는 삭제하지 않았고 원본 저작권·OFL은 frontend/public/fonts/OFL-NanumMyeongjo.txt에 보존한다. 런타임 의존 패키지를 추가하지 않았다.
+
+서체 원본: https://raw.githubusercontent.com/google/fonts/main/ofl/nanummyeongjo/NanumMyeongjo-Regular.ttf . 변환은 임시 `uv run --no-project --with 'fonttools[woff]'` 환경의 TTFont에서 name ID 1/3/4/6/16을 Trainer Reading Serif(6은 TrainerReadingSerif-Regular)로 바꾸고 flavor='woff2'로 저장했다. 소스 asset은 frontend/src/assets/fonts/trainer-reading-serif.woff2이며 Vite가 해시 assets 경로로 배포한다. 브라우저에서 font load와 실제 h1 computed family를 확인한다.

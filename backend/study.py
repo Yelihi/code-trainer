@@ -21,7 +21,7 @@ class Visit(Model):
 
 
 class Choice(Model):
-    key: str = Field(pattern=r'^(question|ai):[a-f0-9]{32}(?::[0-9]+)?$')
+    key: str = Field(max_length=80, pattern=r'^(question:[a-f0-9]{32}|ai:[a-f0-9]{32}:[0-2])$')
     action: Literal['start', 'snooze', 'hide']
 
 
@@ -83,8 +83,10 @@ def choice(owner, body):
     if kind == 'question':
         if not db.one('SELECT id FROM question_memos WHERE owner=? AND id=?', (owner, identifier)):
             raise service.Error('질문을 찾을 수 없습니다.', 404)
-    elif not db.one('SELECT id FROM study_recommendations WHERE owner=? AND id=?', (owner, identifier)):
-        raise service.Error('추천을 찾을 수 없습니다.', 404)
+    else:
+        job = db.one("SELECT data FROM study_recommendations WHERE owner=? AND id=? AND state='ready'", (owner, identifier))
+        if not job or int(body.key.split(':')[2]) >= len(json.loads(job['data'])['suggestions']):
+            raise service.Error('추천을 찾을 수 없습니다.', 404)
     until = (clock() + timedelta(days=policy(owner).snooze_days)).isoformat() if body.action == 'snooze' else ''
     db.execute('''INSERT INTO study_choices(owner,key,hidden,until_at,shown_at) VALUES (?,?,?,?,?)
         ON CONFLICT(owner,key) DO UPDATE SET hidden=excluded.hidden,until_at=excluded.until_at,shown_at=excluded.shown_at''',
@@ -170,9 +172,9 @@ def today(owner):
 
 def snapshot(owner):
     items = []
-    for row in db.all("SELECT id,text,status,targets,revision FROM question_memos WHERE owner=? AND status='open' ORDER BY updated_at DESC,id LIMIT 20", (owner,)):
+    for row in db.all("SELECT id,text,status,targets,revision,created_at FROM question_memos WHERE owner=? AND status='open' ORDER BY updated_at DESC,id LIMIT 20", (owner,)):
         items.append({'id': 'question:' + row['id'], 'title': row['text'], 'href': '/questions/' + row['id'],
-                      'kind': 'unresolved_question', 'revision': row['revision'], 'targets': json.loads(row['targets'])})
+                      'kind': 'unresolved_question', 'created_at': row['created_at'], 'revision': row['revision'], 'targets': json.loads(row['targets'])})
     for row in db.all('SELECT * FROM study_locations WHERE owner=? ORDER BY updated_at DESC LIMIT 10', (owner,)):
         target = json.loads(row['target'])
         try:
@@ -181,8 +183,24 @@ def snapshot(owner):
             continue
         if target['kind'] == 'exercise' and db.one("SELECT id FROM attempts WHERE owner=? AND exercise_id=? AND status='passed'", (owner, target['id'])):
             continue
+        if target['kind'] == 'question':
+            continue  # Open questions already appear once above; solved questions stay excluded.
+        if target['kind'] == 'review' and not db.one("SELECT id FROM review_sessions WHERE owner=? AND id=? AND state='active'", (owner, target['id'])):
+            continue
+        if target['kind'] == 'material_review' and not spaced_reviews.view(owner, target['id'], history=False)['due']:
+            continue
+        excerpt = ''
+        if target['kind'] in ('course', 'unit'):
+            context = json.loads(db.one('SELECT data FROM contexts WHERE owner=? AND id=?', (owner, target['id']))['data'])
+            if target['kind'] == 'unit':
+                context = next(unit for unit in context['units'] if unit['id'] == target['unit_id'])
+            excerpt = service.dump({key: context[key] for key in ('summary', 'objective', 'concepts', 'lesson') if key in context})[:2000]
+        if target['kind'] == 'foundation':
+            from . import foundations
+            lesson = foundations.public(foundations.lesson(target['id']))
+            excerpt = service.dump({key: lesson[key] for key in ('summary', 'concept', 'application')})[:2000]
         items.append({'id': target['kind'] + ':' + target['id'] + ':' + target['unit_id'], 'title': target['title'],
-                      'href': target['href'], 'kind': 'visited_not_proof_of_understanding', 'revision': target['revision']})
+                      'href': target['href'], 'kind': 'visited_not_proof_of_understanding', 'revision': target['revision'], 'excerpt': excerpt})
     for row in db.all('''SELECT v.resource_id,v.revision,v.name,v.content,v.url,v.kind FROM resource_versions v JOIN resources r ON r.id=v.resource_id AND r.owner=v.owner
         WHERE v.owner=? AND r.archived=0 AND v.revision=(SELECT MAX(revision) FROM resource_versions WHERE owner=v.owner AND resource_id=v.resource_id)
         ORDER BY v.created_at DESC,v.resource_id LIMIT 10''', (owner,)):
@@ -194,6 +212,12 @@ def snapshot(owner):
         items.append({'id': 'attempt:' + row['id'], 'title': json.loads(row['data'])['title'], 'status': row['status'],
                       'assistance': row['assistance'] or 'unknown', 'kind': 'recorded_code_attempt_not_mastery', 'can_start': False,
                       'href': f"/practice/{row['set_id']}?exercise={row['exercise_id']}"})
+    for row in db.all("""SELECT r.exercise_id,r.due_at,e.data,
+        (SELECT id FROM review_sessions v WHERE v.owner=r.owner AND v.exercise_id=r.exercise_id AND v.state='active') AS active_id
+        FROM review_schedule r JOIN exercises e ON e.id=r.exercise_id JOIN sets s ON s.id=e.set_id JOIN contexts c ON c.id=s.context_id
+        WHERE r.owner=? AND c.owner=? AND s.withdrawn=0 AND (r.due_at<=? OR active_id IS NOT NULL) ORDER BY r.due_at,e.id LIMIT 5""", (owner, owner, service.now())):
+        items.append({'id': 'review:' + row['exercise_id'], 'title': json.loads(row['data'])['title'], 'kind': 'scheduled_or_active_review',
+            'due_at': row['due_at'], 'active_review': row['active_id'], 'href': '/reviews/' + row['active_id'] if row['active_id'] else '/reviews'})
     # Stable ordering/values avoid regenerating merely because a page was visited again.
     return {'items': items, 'limits': 'Bounded recent records; visits and saves are not evidence of understanding.'}
 

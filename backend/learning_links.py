@@ -120,6 +120,8 @@ def listing(owner, query):
         result.append(resolve(owner, Target(kind='course', id=row['id'])))
     for row in db.all('SELECT id FROM technical_references WHERE owner=? AND title LIKE ? ORDER BY updated_at DESC LIMIT 10', (owner, '%' + query + '%')):
         result.append(resolve(owner, Target(kind='reference', id=row['id'])))
+    for row in db.all('SELECT id FROM question_memos WHERE owner=? AND text LIKE ? ORDER BY updated_at DESC LIMIT 10', (owner, '%' + query + '%')):
+        result.append(resolve(owner, Target(kind='question', id=row['id'])))
     return result
 
 

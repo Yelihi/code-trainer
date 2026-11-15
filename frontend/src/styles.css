@@ -66,8 +66,7 @@ a {
   text-decoration: none;
 }
 button:not([data-slot]),
-.button,
-.page a:not([class]):not(.breadcrumb a) {
+.button {
   font-size: var(--text-body);
   font-weight: var(--weight-medium);
   border: 1px solid var(--line);
@@ -87,8 +86,7 @@ button[data-slot="button"], .button {
 }
 button:not(:disabled):active, .button:active { transform: translateY(1px); }
 button:not([data-slot]):hover,
-.button:hover,
-.page a:not([class]):not(.breadcrumb a):hover {
+.button:hover {
   background: #33382c;
   border-color: #6a745b;
 }
@@ -212,19 +210,19 @@ button.text-button,
 .text-link:hover {
   color: #f4ead5;
 }
-.page a.text-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 9px 15px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #23271e;
-  color: var(--text);
+.page a.text-link, .page a:not([class]) {
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  display: inline;
   font-weight: var(--weight-medium);
-  transition: background-color 180ms ease, border-color 180ms ease;
 }
-.page a.text-link:hover { background: #33382c; border-color: #6a745b; }
+.page a.text-link:hover, .page a:not([class]):hover { color: var(--text); background: transparent; }
+
 .muted {
   color: var(--muted);
 }

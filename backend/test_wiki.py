@@ -178,11 +178,16 @@ class WikiTest(unittest.TestCase):
         report, _ = self.start('lint', {'answer': '문서 간 연결이 있습니다.', 'insufficient': False,
             'citations': [{'slug': 'storage', 'revision': 1, 'quote': doc['body']}]})
         self.assertEqual(report['state'], 'ready')
+        revised = {**result, 'pages': [{**page, 'revision': 1, 'body': page['body'] + '\n추가 검토'} for page in result['pages']]}
+        update, _ = self.start('ingest', revised, [doc])
+        self.assertEqual(self.apply(update, revised).status_code, 200)
         exported = self.client.get('/api/wiki/export')
         self.assertEqual(exported.status_code, 200)
         with zipfile.ZipFile(io.BytesIO(exported.content)) as archive:
             self.assertIn('AGENTS.md', archive.namelist())
             self.assertIn('index.md', archive.namelist())
+            for revision in (1, 2):
+                self.assertEqual(json.loads(archive.read(f'history/deployment-v{revision}.json'))['revision'], revision)
             self.assertIn('wiki/deployment.md', archive.namelist())
             self.assertIn(f"documents/{doc['id']}-v1.md", archive.namelist())
             self.assertIn('lint', archive.read('log.md').decode())

@@ -437,8 +437,8 @@ def technical_skill_download(identifier: str, job_id: str, current=Depends(user)
 
 
 @app.get('/api/technical-references')
-def reference_list(q: str = Query(default='', max_length=160), current=Depends(user)):
-    return {'items': technical_references.listing(current['id'], q)}
+def reference_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1), current=Depends(user)):
+    return technical_references.listing(current['id'], q, page)
 
 
 @app.post('/api/technical-references')

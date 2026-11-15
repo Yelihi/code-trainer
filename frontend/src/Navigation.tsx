@@ -1,4 +1,5 @@
 import { Link, matchPath, useLocation } from 'react-router-dom';
+import { Button } from './components/ui/button';
 import { WorksheetList } from './Worksheets';
 
 const primary = [
@@ -6,7 +7,7 @@ const primary = [
   { label: '학습 자료', to: '/library', paths: ['/library/*', '/references/*', '/inbox', '/explore', '/interpretations/*', '/create', '/courses', '/problem-books/*'] },
   { label: '내 레퍼런스', to: '/technical-references', paths: ['/technical-references/*'] },
 ];
-export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate: () => void }) {
+export function Navigation({ isAdmin, onNavigate, onLogout }: { isAdmin: boolean; onNavigate: () => void; onLogout?: () => void }) {
   const { pathname } = useLocation();
   const active = primary.find(item => item.to === pathname) ?? primary.find(item => item.paths.some(path => matchPath(path, pathname)));
   return <div className="learning-navigation">
@@ -16,6 +17,7 @@ export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
       <Link to="/settings/ai" onClick={onNavigate}>AI 연결과 사용량</Link><Link to="/settings/github" onClick={onNavigate}>GitHub 연동</Link>
       <Link to="/settings/records" onClick={onNavigate}>기록 내보내기</Link>
       {isAdmin && <><Link to="/admin/operations" onClick={onNavigate}>운영 상태</Link><Link to="/admin/sources" onClick={onNavigate}>원본 자료 관리</Link></>}
+      {onLogout && <Button className="text-button" onClick={onLogout}>로그아웃</Button>}
     </nav></details>
   </div>;
 }

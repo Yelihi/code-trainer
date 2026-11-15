@@ -216,8 +216,14 @@ def read(owner, identifier):
     return row
 
 
-def listing(owner, query):
-    return db.all('SELECT id,title,user_body,revision,updated_at FROM technical_references WHERE owner=? AND (title LIKE ? OR user_body LIKE ?) ORDER BY updated_at DESC,id', (owner, '%' + query + '%', '%' + query + '%'))
+def listing(owner, query, page=1):
+    args = (owner, '%' + query + '%', '%' + query + '%')
+    condition = 'owner=? AND (title LIKE ? OR user_body LIKE ?)'
+    total = db.one('SELECT COUNT(*) AS n FROM technical_references WHERE ' + condition, args)['n']
+    pages = max(1, (total + 19) // 20)
+    page = min(page, pages)
+    rows = db.all('SELECT id,title,SUBSTR(user_body,1,180) AS user_body,revision,updated_at FROM technical_references WHERE ' + condition + ' ORDER BY updated_at DESC,id LIMIT 20 OFFSET ?', (*args, (page - 1) * 20))
+    return {'items': rows, 'total': total, 'page': page, 'pages': pages}
 
 
 def version(owner, identifier, revision):

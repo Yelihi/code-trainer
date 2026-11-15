@@ -1,5 +1,7 @@
 # 세컨드 브레인 · LLM Wiki
 
+> 역사 기록: 이 문서는 이전 기능의 설계/사용법입니다. 현재 Code Trainer는 기술 학습과 레퍼런스에 집중하며 범용 위키·개인 탐구 AI 생성은 종료했습니다. 기존 기록은 보존합니다. [현재 계획](../PLAN.md)과 [전환 안내](technical-learning-release.md)를 따르세요.
+
 사용자가 **선택하고 수정·보완한 문서**를 근거로 AI가 위키를 누적 갱신합니다. 카파시의 [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)의 원자료·위키·운영 규칙과 ingest / query / lint 흐름을 앱 안에 구현합니다.
 
 ## 처음 사용하는 순서

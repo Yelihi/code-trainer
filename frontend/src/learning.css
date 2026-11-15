@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Trainer Reading Serif';
+  src: url('./assets/fonts/trainer-reading-serif.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
 :root {
   color-scheme: dark;
   color: #eee9dd; background: #141614;
@@ -29,7 +36,7 @@ input, textarea { caret-color: #dcc18b; }
 .workspace-settings a:hover { background: var(--accent); }
 .workspace { margin: 0; padding: 0; min-width: 0; }
 .page { width: 100%; max-width: 1100px; padding: 52px 32px 100px; margin: auto; min-width: 0; }
-.page h1 { font-family: Georgia, 'AppleMyungjo', 'Noto Serif KR', serif; font-weight: 500; font-size: clamp(1.9rem, 3.5vw, 2.7rem); letter-spacing: -.03em; line-height: 1.4; text-wrap: balance; }
+.page h1 { font-family: 'Trainer Reading Serif', Georgia, serif; font-weight: 400; font-size: clamp(1.9rem, 3.5vw, 2.7rem); letter-spacing: -.03em; line-height: 1.4; text-wrap: balance; }
 .page h2 { letter-spacing: -.02em; }
 .page p { line-height: 1.85; }
 .page > p, .reading-copy { max-width: 72ch; }
@@ -46,7 +53,7 @@ input, textarea { caret-color: #dcc18b; }
 .context-card { display: block; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 26px 0; }
 .context-card:hover { background: transparent; transform: none; }
 .button.primary, button.primary { background: var(--primary); color: var(--primary-foreground); border-color: transparent; }
-.button, .page a.text-link { background: var(--secondary); border-color: var(--line); color: var(--text); }
+.button { background: var(--secondary); border-color: var(--line); color: var(--text); }
 .account .text-button { color: var(--muted); }
 .reference-actions { flex-wrap: wrap; }
 .learning-section { margin-top: 48px; }

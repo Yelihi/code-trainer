@@ -100,7 +100,7 @@ components:
 
 The notebook metaphor comes from the recorded user direction in `docs/technical-learning-ui.md`: ink surroundings, warm paper-colored text, and restrained gold emphasis. The interface supports sustained Korean reading and deliberate learning actions. Paper describes the text's warmth; the implemented surface remains dark.
 
-This is a source-derived record of the implemented system, not a retrospective direction approval. The formal THESIS, OWN-WORLD, STORY, FIRST VIEWPORT, and FORM blocks and concept-seed protocol were not completed. Existing review screenshots precede the final reading-link and bundled-font fixes; final visual review remains pending. Sources: `frontend/src/learning.css` (loaded last), `styles.css`, `typography.css`, `shadcn.css`, `components/ui`, `App.tsx`, `Navigation.tsx`, `Today.tsx`, and `TechnicalReferences.tsx`.
+This is a source-derived record of the implemented system, not a retrospective direction approval. The formal THESIS, OWN-WORLD, STORY, FIRST VIEWPORT, and FORM blocks and concept-seed protocol were not completed. An independent reviewer opened and validated all seven post-fix captures and returned a scoped ship verdict for the scored fixes only: distinct reading links, bundled Korean serif, and honest protocol omissions. No fix-batch regressions were found; this is not a broader product approval. Browser checks also confirmed native back navigation restored the library query (예시) and scroll position (650px), and a 390×500 viewport kept the question panel bottom (488px) and save control (467px) visible. Actual-device keyboard behavior remains unverified. Sources: `frontend/src/learning.css` (loaded last), `styles.css`, `typography.css`, `shadcn.css`, `components/ui`, `App.tsx`, `Navigation.tsx`, `Today.tsx`, and `TechnicalReferences.tsx`.
 
 **Key Characteristics:**
 - Dark ink surfaces with warm readable text and restrained gold actions.
@@ -209,4 +209,4 @@ The contextual question panel uses raised ink, a border, internal scrolling, and
 ### Don't:
 - **Don't** make primary learning surfaces depend on dashboard tiles or table-centered composition.
 - **Don't** promote legacy purple literals or every isolated radius into reusable theme decisions.
-- **Don't** treat pre-fix screenshots or this source record as a completed final visual review.
+- **Don't** extend the scoped post-fix ship verdict into broad product approval or actual-device keyboard verification.

@@ -28,3 +28,5 @@
 독립 검토에서 읽기 링크의 버튼 처리와 OS 설치 서체 의존을 수정 대상으로 받았다. 명시적 행동 버튼은 유지하고 읽기 링크에는 밑줄을 사용한다. 제목은 자체 제공하는 Trainer Reading Serif를 사용한다. 이는 Google Fonts의 Nanum Myeongjo Regular를 WOFF2로 변환하고 예약 이름과 구분되도록 family 이름을 변경한 배포본이다. 글리프는 삭제하지 않았고 원본 저작권·OFL은 frontend/public/fonts/OFL-NanumMyeongjo.txt에 보존한다. 런타임 의존 패키지를 추가하지 않았다.
 
 서체 원본: https://raw.githubusercontent.com/google/fonts/main/ofl/nanummyeongjo/NanumMyeongjo-Regular.ttf . 변환은 임시 `uv run --no-project --with 'fonttools[woff]'` 환경의 TTFont에서 name ID 1/3/4/6/16을 Trainer Reading Serif(6은 TrainerReadingSerif-Regular)로 바꾸고 flavor='woff2'로 저장했다. 소스 asset은 frontend/src/assets/fonts/trainer-reading-serif.woff2이며 Vite가 해시 assets 경로로 배포한다. 브라우저에서 font load와 실제 h1 computed family를 확인한다.
+
+최종 수정 후 같은 7개 화면을 다시 촬영해 독립 수정 검토 `ship` 판정을 받았다. 판정 범위는 앞선 링크·서체·정직한 절차 기록 수정에 한정된다. 실제 캡처와 확인 내용은 [최종 UI 검증 캡처](technical-learning-evidence/2026-11-15-redesign/README.md)에 보존했다.

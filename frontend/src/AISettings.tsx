@@ -1,4 +1,3 @@
-import { InsightSchedule } from './InsightSchedule';
 import { CircleCheck, CircleOff, ServerCog, TriangleAlert } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -27,7 +26,6 @@ function SettingsLoader() {
     <div className="ai-settings-sections">
       {!data && !error && <LoadingSkeleton layout="editor" label="AI 연결을 불러오는 중…" />}
       {data && <SettingsForm key={data.revision} initial={data} onReload={reload} />}
-      <InsightSchedule />
     </div>
   </main>;
 }

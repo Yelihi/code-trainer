@@ -1,5 +1,4 @@
-import { Explorations, ExplorationRoute } from './Explorations';
-import { DeepInside } from './DeepInside';
+import { TechnicalReferences, TechnicalReferenceRoute } from './TechnicalReferences';
 import { SpacedReviewRoute } from './SpacedReviews';
 import { KnowledgeCandidates, KnowledgeCandidateDetail } from './KnowledgeCandidates';
 import { PracticeEntry } from './Navigation';
@@ -12,6 +11,8 @@ import { PracticeRecordRoute } from './PracticeRecords';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { Today } from './Today';
+import { RecordSettings, LegacyTransition } from './RecordSettings';
 import { App, Home, Create, Me } from './App';
 import { Context, Lesson } from './Learning';
 import { Practice } from './Practice';
@@ -27,13 +28,17 @@ import { GitHubSettings, GitHubShare } from './GitHubSharing';
 import { AISettings } from './AISettings';
 import { QuestionInbox } from './Questions';
 import { QuestionDetail } from './QuestionDetail';
-import { ProjectBrainHome, ProjectBrainSource, ProjectBrainNew, ProjectBrainEdit, ProjectBrainRecord, ProjectBrainGraph } from './ProjectBrain';
-import { WikiHome, WikiDocuments, WikiDocumentRoute, WikiPage, WikiActivity, WikiJob } from './Wiki';
 import './shadcn.css';
 import './styles.css';
+import './learning.css';
 
 const router = createBrowserRouter([{ element: <App />, children: [
-  { path: '/', element: <Home /> },
+  { path: '/', element: <Today /> },
+  { path: '/technical-references', element: <TechnicalReferences /> },
+  { path: '/technical-references/new', element: <TechnicalReferenceRoute /> },
+  { path: '/technical-references/:id', element: <TechnicalReferenceRoute /> },
+  { path: '/courses', element: <Home /> },
+  { path: '/settings/records', element: <RecordSettings /> },
   { path: '/explore', element: <Interpretations /> },
   { path: '/interpretations/:id', element: <InterpretationDetail /> },
   { path: '/interpretations/:id/code/:sectionId', element: <InterpretationCode /> },
@@ -53,22 +58,8 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/problem-books/:id', element: <BookDetail /> },
   { path: '/knowledge/candidates', element: <KnowledgeCandidates /> },
   { path: '/knowledge/candidates/:id', element: <KnowledgeCandidateDetail /> },
-  { path: '/project-brain', element: <WikiHome /> },
-  { path: '/project-brain/documents', element: <WikiDocuments /> },
-  { path: '/project-brain/documents/new', element: <WikiDocumentRoute /> },
-  { path: '/project-brain/documents/:id', element: <WikiDocumentRoute /> },
-  { path: '/project-brain/pages/:slug', element: <WikiPage /> },
-  { path: '/project-brain/activity', element: <WikiActivity /> },
-  { path: '/project-brain/activity/:id', element: <WikiJob /> },
-  { path: '/project-brain/legacy', element: <ProjectBrainHome /> },
-  { path: '/project-brain/graph', element: <ProjectBrainGraph /> },
-  { path: '/project-brain/new', element: <ProjectBrainNew /> },
-  { path: '/project-brain/sources/:id', element: <ProjectBrainSource /> },
-  { path: '/project-brain/:id/edit', element: <ProjectBrainEdit /> },
-  { path: '/project-brain/:id', element: <ProjectBrainRecord /> },
-  { path: '/apply', element: <DeepInside /> },
-  { path: '/apply/explorations', element: <Explorations /> },
-  { path: '/apply/explorations/:id', element: <ExplorationRoute /> },
+  { path: '/project-brain/*', element: <LegacyTransition /> },
+  { path: '/apply/*', element: <LegacyTransition /> },
   { path: '/settings/ai', element: <AISettings /> },
   { path: '/inbox', element: <FeedInbox /> },
   { path: '/create', element: <Create /> },

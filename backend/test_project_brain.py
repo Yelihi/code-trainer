@@ -3,7 +3,7 @@ import unittest
 import httpx
 from unittest.mock import patch
 from . import ai, db, github_sharing, project_brain, resources, service, test_app
-from .project_brain import BrainDraft, SourceInput
+from .project_brain import SourceInput
 from .resource_schema import ResourceInput
 
 
@@ -76,27 +76,13 @@ class ProjectBrainTest(unittest.TestCase):
         with self.assertRaises(service.Error):
             project_brain.link('other', record['id'], project_brain.LinkInput(target_id=service.uid(), kind='related', reason='연결'))
 
-    def test_requested_ai_draft_is_not_saved_or_confirmed_automatically(self):
+    def test_personal_ai_generation_is_retired_without_touching_records(self):
         source = self.source()
-        draft = {'kind': 'decision', 'title': '재시도', 'summary': '같은 기록에서 다시 시도', 'body': '기존 ID를 유지한다.',
-                 'claims': [{'text': '사용자 요청', 'attribution': 'user_statement', 'source_id': source['id'],
-                             'quote': '실패한 해석은 같은 기록에서 재시도한다.'}]}
-        body = {'request_id': 'draft-request', 'source_ids': [source['id']]}
-        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', return_value=BrainDraft.model_validate(draft)) as generate:
-            response = self.client.post('/api/project-brain/drafts', json=body)
-            self.assertEqual(response.status_code, 202, response.text)
-            identifier = response.json()['id']
-            self.assertEqual(generate.call_count, 1)
-            self.assertEqual(self.client.get('/api/project-brain/drafts/' + identifier).json()['state'], 'ready')
-            self.assertEqual(self.client.post('/api/project-brain/drafts', json=body).json()['id'], identifier)
-            self.assertEqual(generate.call_count, 1)
-        self.assertEqual(self.client.get('/api/project-brain/records').json(), [])
-        self.assertEqual(self.client.get('/api/project-brain/graph').json()['nodes'][0]['kind'], 'source')
-        invalid = {**draft, 'claims': [{**draft['claims'][0], 'quote': 'AI가 지어낸 문장'}]}
-        with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', return_value=BrainDraft.model_validate(invalid)):
-            response = self.client.post('/api/project-brain/drafts', json={'request_id': 'draft-invalid', 'source_ids': [source['id']]})
-        self.assertEqual(self.client.get('/api/project-brain/drafts/' + response.json()['id']).json()['state'], 'failed')
-        self.assertEqual(self.client.get('/api/project-brain/records').json(), [])
+        with patch.object(ai, 'generate') as generate:
+            response = self.client.post('/api/project-brain/drafts', json={'request_id': 'retired-draft', 'source_ids': [source['id']]})
+        self.assertEqual(response.status_code, 410)
+        generate.assert_not_called()
+        self.assertEqual(self.client.get('/api/project-brain/sources').json()[0]['id'], source['id'])
 
     def test_github_snapshot_validates_response_and_source_id_collision(self):
         url = 'https://github.com/example/repo/pull/3'

@@ -1,51 +1,23 @@
 import { Link, matchPath, useLocation } from 'react-router-dom';
 import { WorksheetList } from './Worksheets';
-import { Badge } from './components/ui/badge';
 
-type NavigationItem = { label: string; to: string; paths: string[]; planned?: boolean; admin?: boolean };
-const groups: { label: string; items: NavigationItem[] }[] = [
-  { label: '등록하기', items: [
-    { label: '자료 보관함', to: '/library', paths: ['/library', '/library/:id', '/library/:id/edit', '/references', '/references/:id'] },
-    { label: '직접 노트 작성', to: '/references/new', paths: ['/references/new'] },
-    { label: '레퍼런스 등록', to: '/library/new/reference', paths: ['/library/new/reference'] },
-    { label: '질문함', to: '/questions', paths: ['/questions/*'] },
-    { label: '자동 등록 대기 (RSA)', to: '/inbox', paths: ['/inbox'] },
-  ] },
-  { label: '탐구하기', items: [
-    { label: '해석하기', to: '/explore', paths: ['/', '/explore', '/interpretations/*', '/learn/*', '/create'] },
-    { label: '문제집', to: '/problem-books', paths: ['/problem-books/*'] },
-    { label: '실습하기', to: '/explore/practice', paths: ['/explore/practice', '/framework-practice', '/foundations/*', '/practice/*', '/worksheets/*'] },
-    { label: '다시 검토', to: '/reviews', paths: ['/reviews/*', '/reference-reviews/*'] },
-    { label: '나의 기록', to: '/me', paths: ['/me'] },
-  ] },
-  { label: '데이터 쌓기', items: [
-    { label: '추출 가능 자료', to: '/knowledge/candidates', paths: ['/knowledge/candidates', '/knowledge/candidates/:id'] },
-    { label: '지식 그래프', to: '/knowledge', paths: ['/knowledge'] },
-    { label: '세컨드 브레인', to: '/project-brain', paths: ['/project-brain', '/project-brain/*'] },
-  ] },
-  { label: '응용하기', items: [
-    { label: 'Deep Inside', to: '/apply', paths: ['/apply'] },
-    { label: '나의 탐구', to: '/apply/explorations', paths: ['/apply/explorations/*'] },
-  ] },
-  { label: '설정', items: [
-    { label: 'GitHub 연동', to: '/settings/github', paths: ['/settings/github', '/github/share'] },
-    { label: 'AI 연결', to: '/settings/ai', paths: ['/settings/ai'] },
-    { label: '운영 상태', to: '/admin/operations', paths: ['/admin/operations'], admin: true },
-    { label: '원본 자료 · 관리자', to: '/admin/sources', paths: ['/admin/sources/*'], admin: true },
-  ] },
+const primary = [
+  { label: '오늘의 학습', to: '/', paths: ['/', '/questions/*', '/reviews/*', '/learn/*', '/practice/*', '/foundations/*', '/explore/practice', '/worksheets/*'] },
+  { label: '학습 자료', to: '/library', paths: ['/library/*', '/references/*', '/inbox', '/explore', '/interpretations/*', '/create', '/courses', '/problem-books/*'] },
+  { label: '내 레퍼런스', to: '/technical-references', paths: ['/technical-references/*'] },
 ];
-
 export function Navigation({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate: () => void }) {
   const { pathname } = useLocation();
-  const items = groups.flatMap(group => group.items).filter(item => !item.admin || isAdmin);
-  // Exact entry routes win over resource identifiers such as /references/:id.
-  const active = items.find(item => item.to === pathname) ?? items.find(item => item.paths.some(path => matchPath(path, pathname)));
-  return <div className="navigation-groups">{groups.map((group, index) => <section className="navigation-group" key={group.label}>
-    <h2 className="sidebar-label"><span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{group.label}</h2>
-    <nav aria-label={group.label}>{group.items.filter(item => !item.admin || isAdmin).map(item => <Link key={item.to} to={item.to} className={active === item ? 'active' : undefined} aria-current={active === item ? 'page' : undefined} onClick={onNavigate}>
-      <span>{item.label}</span>{item.planned && <Badge variant="outline" className="navigation-badge ml-auto rounded border-current px-1 py-0 text-[11px] text-[#bcb2cd]">예정</Badge>}
-    </Link>)}</nav>
-  </section>)}</div>;
+  const active = primary.find(item => item.to === pathname) ?? primary.find(item => item.paths.some(path => matchPath(path, pathname)));
+  return <div className="learning-navigation">
+    <nav aria-label="주요 메뉴">{primary.map(item => <Link key={item.to} to={item.to} aria-current={active === item ? 'page' : undefined} onClick={onNavigate}>{item.label}</Link>)}</nav>
+    <details className="workspace-settings"><summary>설정과 기록</summary><nav aria-label="설정과 기록">
+      <Link to="/questions" onClick={onNavigate}>질문 모아보기</Link><Link to="/me" onClick={onNavigate}>학습 기록</Link>
+      <Link to="/settings/ai" onClick={onNavigate}>AI 연결과 사용량</Link><Link to="/settings/github" onClick={onNavigate}>GitHub 연동</Link>
+      <Link to="/settings/records" onClick={onNavigate}>기록 내보내기</Link>
+      {isAdmin && <><Link to="/admin/operations" onClick={onNavigate}>운영 상태</Link><Link to="/admin/sources" onClick={onNavigate}>원본 자료 관리</Link></>}
+    </nav></details>
+  </div>;
 }
 
 export function PracticeEntry() {

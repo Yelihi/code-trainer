@@ -1,3 +1,6 @@
+import { ContextQuestions } from './ContextQuestions';
+import { StudyLocation } from './Today';
+import { ReadingPosition } from './ReadingPosition';
 import { Navigation } from './Navigation';
 import { QuickQuestion } from './QuickQuestion';
 import { useResource } from './useResource';
@@ -25,12 +28,6 @@ export function App() {
   const [opened, setOpened] = useState(false);
   const [error, setError] = useState('');
   const [health, setHealth] = useState<Health | null>(null);
-  const [menu, setMenu] = useState(false);
-  const menuToggle = useRef<HTMLButtonElement>(null);
-  function closeMenu() {
-    setMenu(false);
-    if (menuToggle.current?.offsetParent) menuToggle.current.focus();
-  }
   const refreshHealth = useCallback(() => { api<Health>('/health').then(setHealth).catch(() => setHealth(null)); }, []);
   const refreshSession = useCallback(() => {
     setError('');
@@ -54,24 +51,17 @@ export function App() {
       else setSession({ user: null, setup_required: false });
     } catch (error) { setError(errorMessage(error)); }
   }
-  return <div className="app-shell" onKeyDown={event => {
-    if (menu && event.key === 'Escape' && !event.defaultPrevented && !(event.target as HTMLElement).closest('dialog')) {
-      event.preventDefault(); closeMenu();
-    }
-  }}>
+  return <div className="app-shell">
+    <ReadingPosition />
     <a className="skip-link" href="#workspace">본문으로 이동</a>
     <header className="topbar">
-      <Button ref={menuToggle} className="icon-button menu-toggle" aria-label={menu ? '메뉴 닫기' : '메뉴 열기'} aria-controls="workspace-navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}>☰</Button>
       <Link className="brand" to="/">code<span>trainer</span><span className="version">{session?.auth_mode === 'access' ? 'PRIVATE' : 'LOCAL'}</span></Link>
-      <div className="account">{session?.user && <><QuickQuestion /><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span><Button className="text-button" onClick={logout}>로그아웃</Button></>}</div>
+      <div className="account">{session?.user && <><QuickQuestion key={session.user.id} userId={session.user.id} /><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span><Button className="text-button" onClick={logout}>로그아웃</Button></>}</div>
     </header>
-    <aside id="workspace-navigation" className={`sidebar ${menu ? 'open' : ''}`}>
-      <Navigation isAdmin={!!session?.user?.admin} onNavigate={closeMenu} />
-      <div className="sidebar-bottom"><span className={`status-dot ${health?.sandbox ? 'online' : ''}`} /><span>{health === null ? '실행 환경 확인 필요' : health.sandbox ? '샌드박스 연결됨' : '샌드박스 연결 필요'}</span><Button className="icon-button" aria-label="실행 환경 다시 확인" onClick={refreshHealth}>↻</Button></div>
-    </aside>
+    <div className="workspace-navigation"><Navigation isAdmin={!!session?.user?.admin} onNavigate={() => undefined} /></div>
     <div className="workspace" id="workspace">
       {error && <div className="page"><ErrorNotice error={error} /><Button onClick={refreshSession}>다시 연결</Button></div>}
-      {opened && <Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} />}
+      {opened && <><StudyLocation /><Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} /><ContextQuestions /></>}
       {!session && !error && <main className="page"><LoadingSkeleton layout="cards" label="학습 공간을 여는 중…" heading /></main>}
     </div>
     {session && !session.user && <Login access={session.auth_mode === 'access'} setup={session.setup_required} onSuccess={() => { refreshSession(); refreshHealth(); }} />}
@@ -111,19 +101,11 @@ export function Home() {
   const { data, error, reload } = useResource<{ items: LearningContext[]; page: number; pages: number; total: number }>(`/contexts?page=${Math.floor(page)}`);
   const { health } = useApp();
   return <main className="page home-page">
-    <div className="breadcrumb">탐구하기 <span>/</span> 해석하기</div>
-    <section className="hero brain-hero"><div><span className="eyebrow">COLLECT. UNDERSTAND. CONNECT.</span><h1>자료를 모으고,<br /><em>이해를 연결하세요.</em></h1><p>컴퓨터와 개발에 관한 레퍼런스를 저장하고,<br />탐구한 내용을 나만의 지식으로 쌓아가세요.</p><div className="brain-actions"><Link className="button primary" to="/library/new/reference">레퍼런스 등록</Link><Link className="button" to="/library">자료 보관함</Link></div></div>
-      <ol className="brain-journey" aria-label="자료에서 창조까지">
-        <li><span>01</span><div><strong>등록하기</strong><p>원문과 생각을 한곳에 모으기</p></div></li>
-        <li><span>02</span><div><strong>탐구하기</strong><p>개념을 이해하고 직접 실습하기</p></div></li>
-        <li><span>03</span><div><strong>데이터 쌓기</strong><p>개념과 관계를 지식 그래프로 연결하기</p></div></li>
-        <li><span>04</span><div><strong>응용하기</strong><p>연결에서 새로운 질문 찾기</p></div></li>
-      </ol>
-    </section>
-    <div className="section-heading"><div><span className="eyebrow">CODING COURSES</span><h2>기존 코딩 학습 과정 <span className="count">{data?.total ?? '—'}</span></h2></div><div className="brain-actions"><Link className="text-link" to="/explore">일반 해석 문서</Link><Link className="text-link" to="/create">기존 자료 분석</Link><Link className="text-link" to="/me">학습 기록 보기</Link></div></div>
+    <div className="breadcrumb"><Link to="/library">학습 자료</Link><span>/</span>개념 학습 과정</div>
+    <header className="learning-intro"><h1>개념에서 코드까지.</h1><p>이전에 만든 학습 과정을 이어가세요. 필요한 단원만 읽거나 문제를 풀 수 있습니다.</p><div className="learning-links"><Link to="/library">자료에서 학습 시작</Link><Link to="/create">새 코딩 과정 만들기</Link></div></header>
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="cards" label="자료를 불러오는 중…" />}
-    {data?.total === 0 && <div className="empty-state"><h3>아직 생성한 코딩 과정이 없습니다.</h3><p>일반 자료는 보관함에서 원문을 열어 해석할 수 있습니다.<br />실행 언어에 맞춘 기존 코딩 과정은 자료 분석에서 시작하세요.</p><Link className="button" to="/create">기존 자료 분석 열기</Link></div>}
+    {data?.total === 0 && <div className="empty-state"><h3>아직 생성한 코딩 과정이 없습니다.</h3><p>일반 자료는 보관함에서 원문을 열어 해석할 수 있습니다.<br />실행 언어에 맞춘 코딩 과정은 새 과정 만들기에서 시작하세요.</p><Link className="button" to="/create">기존 자료 분석 열기</Link></div>}
     <div className="context-grid">{data?.items.map(context => <Link className="context-card" key={context.id} to={`/learn/${context.id}`}><div className="card-top"><Badge variant="language" className="language-tag">{languages[context.language]} · {difficulties[context.difficulty ?? 'beginner']}</Badge></div><h3>{context.title}</h3><p>{context.description}</p><div className="chips">{context.concepts.slice(0, 3).map(concept => <Badge variant="outline" key={concept} className="rounded-[5px] border-[#31253e] bg-[#1b152b] px-2 py-[3px] text-[var(--text-caption)] text-[#ac9bbc]">{concept}</Badge>)}</div><div className="card-footer"><span>{context.completed} / {context.total} 완료</span><span>{timestamp(context.created_at)}</span></div></Link>)}</div>
     {data && data.total > 0 && <nav className="pagination" aria-label="학습 자료 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ page: String(data.page - 1) })}>이전</Button><span aria-live="polite">{data.page} / {data.pages} 페이지 · {data.total}개 자료</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ page: String(data.page + 1) })}>다음</Button></nav>}
     {health && !health.sandbox && <p className="notice">실행 환경이 아직 연결되지 않았습니다. 문제 생성 검증과 코드 실행에는 샌드박스가 필요합니다.</p>}

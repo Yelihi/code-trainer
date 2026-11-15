@@ -1,7 +1,7 @@
 import asyncio
 import time
 import uuid
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
-from . import project_brain, wiki
+from . import project_brain, wiki, study, technical_references
 from .project_brain import SourceInput as BrainSourceInput, RecordInput as BrainRecordInput, RevisionInput as BrainRevisionInput, LinkInput as BrainLinkInput, DraftInput as BrainDraftInput
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
@@ -36,13 +36,9 @@ async def lifespan(app):
     access.validate_config()
     service.initialize()
     collector = asyncio.create_task(feeds.poll())
-    scheduler = asyncio.create_task(insight_schedule.poll())
     try:
         yield
     finally:
-        scheduler.cancel()
-        with suppress(asyncio.CancelledError):
-            await scheduler
         await feeds.stop(collector)
 
 
@@ -403,10 +399,7 @@ def wiki_jobs(current=Depends(user)):
 
 @app.post('/api/wiki/jobs', status_code=202)
 def wiki_job_start(body: wiki.JobInput, tasks: BackgroundTasks, current=Depends(user)):
-    result, fresh = wiki.begin(current['id'], body)
-    if fresh:
-        tasks.add_task(wiki.generate, result['id'])
-    return result
+    raise service.Error('범용 위키 생성은 종료되었습니다. 기술 레퍼런스를 이용해주세요.', 410)
 
 
 @app.get('/api/wiki/jobs/{identifier}')
@@ -422,6 +415,121 @@ def wiki_apply(identifier: str, body: wiki.WikiCompilation, current=Depends(user
 @app.get('/api/wiki/inspection')
 def wiki_inspection(current=Depends(user)):
     return wiki.inspection(current['id'])
+
+
+@app.post('/api/technical-references/{identifier}/skills', status_code=202)
+def technical_skill_generate(identifier: str, body: technical_references.Generate, background: BackgroundTasks, current=Depends(user)):
+    job, fresh = technical_references.begin(current['id'], identifier, body, kind='skill')
+    if fresh:
+        background.add_task(technical_references.generate, job['id'])
+    return {'id': job['id'], 'state': job['state']}
+
+
+@app.get('/api/technical-references/{identifier}/skills/{job_id}')
+def technical_skill(identifier: str, job_id: str, current=Depends(user)):
+    return technical_references.skill_job(current['id'], identifier, job_id)
+
+
+@app.get('/api/technical-references/{identifier}/skills/{job_id}/download')
+def technical_skill_download(identifier: str, job_id: str, current=Depends(user)):
+    return Response(technical_references.skill_package(current['id'], identifier, job_id), media_type='application/zip',
+                    headers={'Content-Disposition': 'attachment; filename="technical-skill.zip"'})
+
+
+@app.get('/api/technical-references')
+def reference_list(q: str = Query(default='', max_length=160), current=Depends(user)):
+    return {'items': technical_references.listing(current['id'], q)}
+
+
+@app.post('/api/technical-references')
+def reference_save(body: technical_references.ReferenceInput, current=Depends(user)):
+    return technical_references.save(current['id'], body)
+
+
+@app.get('/api/technical-references/{identifier}')
+def technical_reference(identifier: str, current=Depends(user)):
+    return technical_references.read(current['id'], identifier)
+
+
+@app.get('/api/technical-references/{identifier}/jobs/{job_id}')
+def technical_reference_job(identifier: str, job_id: str, current=Depends(user)):
+    technical_references.owned(current['id'], identifier)
+    row = db.one('SELECT id,kind,state,revision,data,snapshot,error,created_at FROM technical_reference_jobs WHERE owner=? AND reference_id=? AND id=?', (current['id'], identifier, job_id))
+    if not row:
+        raise service.Error('생성 이력을 찾을 수 없습니다.', 404)
+    import json
+    return {**row, 'data': json.loads(row['data']) if row['data'] else None, 'snapshot': json.loads(row['snapshot'])}
+
+
+@app.get('/api/technical-references/{identifier}/versions/{revision}')
+def technical_reference_version(identifier: str, revision: int, current=Depends(user)):
+    return technical_references.version(current['id'], identifier, revision)
+
+
+@app.post('/api/technical-references/{identifier}/generate', status_code=202)
+def technical_reference_generate(identifier: str, body: technical_references.Generate, background: BackgroundTasks, current=Depends(user)):
+    job, fresh = technical_references.begin(current['id'], identifier, body)
+    if fresh:
+        background.add_task(technical_references.generate, job['id'])
+    return {'id': job['id'], 'state': job['state']}
+
+
+@app.get('/api/study/recommendations')
+def study_recommendations(current=Depends(user)):
+    return study.recommendation_status(current['id'])
+
+
+@app.post('/api/study/recommendations', status_code=202)
+def study_recommendations_begin(background: BackgroundTasks, current=Depends(user)):
+    job, fresh = study.begin_recommendations(current['id'])
+    if fresh:
+        background.add_task(study.generate_recommendations, job['id'])
+    return {'id': job['id'], 'state': job['state']}
+
+
+@app.put('/api/study/policy')
+def study_policy_save(body: study.Policy, current=Depends(user)):
+    return study.save_policy(current['id'], body)
+
+
+@app.post('/api/study/visit')
+def study_visit(body: study.Visit, current=Depends(user)):
+    return study.visit(current['id'], body.path)
+
+
+@app.post('/api/study/choice')
+def study_choice(body: study.Choice, current=Depends(user)):
+    return study.choice(current['id'], body)
+
+
+@app.get('/api/study/today')
+def study_today(current=Depends(user)):
+    from . import study
+    return study.today(current['id'])
+
+
+@app.get('/api/study/policy')
+def study_policy(current=Depends(user)):
+    from . import study
+    return study.policy(current['id']).model_dump()
+
+
+@app.get('/api/related-questions')
+def related_questions(path: str = Query(max_length=300), current=Depends(user)):
+    from . import learning_links
+    return {'items': learning_links.related_questions(current['id'], path)}
+
+
+@app.get('/api/learning-targets')
+def learning_targets(q: str = Query(default='', max_length=160), current=Depends(user)):
+    from . import learning_links
+    return {'items': learning_links.listing(current['id'], q)}
+
+
+@app.get('/api/learning-target')
+def learning_target(path: str = Query(max_length=300), current=Depends(user)):
+    from . import learning_links
+    return {'target': learning_links.from_path(current['id'], path)}
 
 
 @app.get('/api/records/export')
@@ -469,10 +577,7 @@ def brain_graph(current=Depends(user)):
 
 @app.post('/api/project-brain/drafts', status_code=202)
 def brain_draft_start(body: BrainDraftInput, tasks: BackgroundTasks, current=Depends(user)):
-    result, fresh = project_brain.draft_begin(current['id'], body)
-    if fresh:
-        tasks.add_task(project_brain.draft_generate, result['id'])
-    return result
+    raise service.Error('개인 기록 AI 생성은 종료되었습니다. 기술 레퍼런스를 이용해주세요.', 410)
 
 
 @app.get('/api/project-brain/drafts/{identifier}')
@@ -539,14 +644,12 @@ def question_create(body: QuestionCreate, current=Depends(user)):
 
 @app.get('/api/questions/daily')
 def question_daily(tasks: BackgroundTasks, current=Depends(user)):
-    result, pending = questions.daily(current['id'])
-    if pending: tasks.add_task(questions.generate_daily, pending)
-    return result
+    return {'day': questions.today(), 'recommendation': None, 'reason': '오늘의 학습에서 미해결 질문과 학습 추천을 확인해주세요.'}
 
 
 @app.post('/api/questions/daily/save')
 def question_daily_save(body: DailySave, current=Depends(user)):
-    return questions.save_daily(current['id'], body)
+    raise service.Error('이전 일일 질문 추천은 종료되었습니다. 질문을 직접 기록해주세요.', 410)
 
 
 @app.get('/api/questions/{identifier}')
@@ -931,7 +1034,7 @@ def insight_schedule_status(current=Depends(user)):
 
 @app.put('/api/insights/schedule')
 def insight_schedule_configure(body: InsightScheduleInput, current=Depends(user)):
-    return insight_schedule.configure(current['id'], body)
+    raise service.Error('범용 탐구 자동 생성은 종료되었습니다.', 410)
 
 
 @app.post('/api/insights/{identifier}/choice')
@@ -961,9 +1064,7 @@ def insight_status(current=Depends(user)):
 
 @app.post('/api/insights')
 def insight_generate(body: InsightRequest, tasks: BackgroundTasks, current=Depends(user)):
-    job, fresh = insights.begin(current['id'], body.request_id)
-    if fresh: tasks.add_task(insights.generate, job['id'])
-    return job
+    raise service.Error('범용 탐구 제안은 종료되었습니다. 오늘의 학습 추천을 이용해주세요.', 410)
 
 
 @app.get('/api/spaced-reviews')

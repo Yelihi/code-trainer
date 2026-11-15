@@ -17,7 +17,7 @@
 .daily-question-content.is-expanded { height: auto; min-height: 6.4em; }
 .daily-question-text { max-width: 72ch; color: var(--text); font-size: inherit; line-height: inherit; font-weight: 600; overflow-wrap: anywhere; }
 .daily-question-text.is-condensed { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
-.daily-question .daily-question-expand { display: inline-flex; height: 32px; padding: 0; margin-top: 8px; border: 0; background: transparent; box-shadow: none; color: #c7b3eb; }
+.daily-question .daily-question-expand { display: inline-flex; height: 32px; padding: 0; margin-top: 8px; border: 0; background: transparent; box-shadow: none; color: #ebd8b3; }
 .daily-question .daily-question-expand:hover { background: transparent; color: var(--text); }
 .daily-question-expand.is-placeholder { visibility: hidden; }
 .daily-question-expand[aria-expanded="true"] svg { transform: rotate(180deg); }

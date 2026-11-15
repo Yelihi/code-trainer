@@ -144,9 +144,9 @@ function PracticeEditor({
     // Navigate only after the saved state has rendered and released useBlocker.
     if (destination === null || saving || dirty || busy) return;
     setDestination(null);
-    if (destination === "finish") navigate(reviewId ? "/reviews" : `/learn/${problemSet.context_id}`);
+    if (destination === "finish") navigate(reviewId ? "/reviews" : `/learn/${problemSet.context_id}${problemSet.unit_id ? `/units/${problemSet.unit_id}` : ""}`);
     else onMove(destination);
-  }, [destination, saving, dirty, busy, navigate, onMove, problemSet.context_id, reviewId]);
+  }, [destination, saving, dirty, busy, navigate, onMove, problemSet.context_id, problemSet.unit_id, reviewId]);
   const extensions = useMemo(
     () => codeExtensions(problemSet.language, true),
     [problemSet.language],

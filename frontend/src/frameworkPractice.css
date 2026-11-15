@@ -6,7 +6,7 @@
 .framework-practice-grid section { min-width: 0; }
 .framework-practice-grid h2 { margin: 0 0 16px; }
 .framework-practice-grid iframe, .framework-practice-empty { width: 100%; min-height: 440px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-.framework-practice-empty { display: grid; place-items: center; padding: 24px; color: #575466; text-align: center; }
+.framework-practice-empty { display: grid; place-items: center; padding: 24px; color: #5e6654; text-align: center; }
 .framework-practice-error { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--error); }
 .framework-practice-warning { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
 .framework-practice-state { margin: 0 0 12px; color: var(--muted); }

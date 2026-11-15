@@ -1,4 +1,4 @@
-"""Curated document -> reviewed incremental wiki -> cited answers contracts."""
+"""Archive engine regression for retained history/export; paid HTTP generation is retired."""
 import io
 import json
 import unittest
@@ -30,9 +30,10 @@ class WikiTest(unittest.TestCase):
                    'documents': [{'id': d['id'], 'revision': d['revision']} for d in documents]}
         model = wiki.WikiCompilation if kind == 'ingest' else wiki.WikiAnswer
         with patch.object(ai, 'available', return_value=True), patch.object(ai, 'generate', return_value=model.model_validate(result)) as generate:
-            response = self.client.post('/api/wiki/jobs', json=payload)
-            self.assertEqual(response.status_code, 202, response.text)
-        job = self.client.get('/api/wiki/jobs/' + response.json()['id']).json()
+            started, fresh = wiki.begin(self.owner, wiki.JobInput(**payload))
+            if fresh:
+                wiki.generate(started['id'])
+        job = wiki.proposal(self.owner, started['id'])
         return job, generate
 
     def apply(self, job, result):

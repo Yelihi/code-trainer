@@ -169,8 +169,8 @@ export function Lesson() {
       <section className="lesson-section"><h2>자주 헷갈리는 지점</h2><ul className="lesson-pitfalls">{unit.pitfalls.map(item => <li key={item}><Markdown language={data.language}>{item}</Markdown></li>)}</ul></section>
       <section id="checkpoints" className="lesson-section"><span className="eyebrow">CHECK YOUR UNDERSTANDING</span><h2>문제로 넘어가기 전에</h2><p>먼저 스스로 설명해본 뒤 질문을 열어 해설을 확인하세요.</p>{unit.checkpoints.map((item, i) => <AnimatedDetails className="lesson-checkpoint" key={i} summary={<><InlineMarkdown>{item.question}</InlineMarkdown></>}><Markdown language={data.language}>{item.answer}</Markdown></AnimatedDetails>)}</section>
       <section className="lesson-section"><span className="eyebrow">KEEP WHAT YOU LEARNED</span><h2>개념 학습 마무리</h2>
-        <p>개념 학습으로 마쳐도 괜찮습니다. 기억할 내용을 지도에 직접 추가하세요.</p>
-        <AddToKnowledge key={`${data.id}:${unit.id}`} path={`/contexts/${data.id}/units/${unit.id}/knowledge`} addedAt={data.knowledge_added_units?.[unit.id]} />
+        <p>개념 학습으로 마쳐도 괜찮습니다. 질문을 남기거나 내 설명을 레퍼런스로 정리할 수 있습니다.</p>
+        <div className="learning-links"><Link to={`/technical-references/new?source=${encodeURIComponent(`/learn/${data.id}/units/${unit.id}`)}`}>레퍼런스로 정리</Link><Link to="/questions">내 질문 살펴보기</Link></div>
       </section>
       <section className="lesson-practice"><span className="eyebrow">PUT IT INTO CODE</span><h2>코드로도 연습해볼까요?</h2><p>이 단원의 개념을 READ → FIX → MODIFY → BUILD로 연습합니다. 막히면 언제든 이 페이지로 돌아오세요.</p>
         <ErrorNotice error={actionError} /><UnitPractice key={unit.id} course={course} unitId={unit.id} />

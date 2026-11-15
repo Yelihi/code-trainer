@@ -1,316 +1,186 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-15T12:34:29.913172+00:00",
+  "generatedAt": "2026-11-15T14:28:17.687529+00:00",
   "title": "Design System: Code Trainer",
   "extensions": {
     "colorMeta": {
-      "primary": {
+      "brand": {
         "role": "primary",
-        "displayName": "Primary",
-        "tonalRamp": [
-          "oklch(15% 0.0768 84.25)",
-          "oklch(26% 0.0768 84.25)",
-          "oklch(38% 0.0768 84.25)",
-          "oklch(49% 0.0768 84.25)",
-          "oklch(61% 0.0768 84.25)",
-          "oklch(72% 0.0768 84.25)",
-          "oklch(84% 0.0768 84.25)",
-          "oklch(95% 0.0768 84.25)"
-        ]
+        "displayName": "Plum learning focus"
       },
-      "primary-foreground": {
-        "role": "neutral",
-        "displayName": "Primary Foreground",
-        "tonalRamp": [
-          "oklch(15% 0.0180 131.32)",
-          "oklch(26% 0.0180 131.32)",
-          "oklch(38% 0.0180 131.32)",
-          "oklch(49% 0.0180 131.32)",
-          "oklch(61% 0.0180 131.32)",
-          "oklch(72% 0.0180 131.32)",
-          "oklch(84% 0.0180 131.32)",
-          "oklch(95% 0.0180 131.32)"
-        ]
+      "pink": {
+        "role": "secondary",
+        "displayName": "Pink context accent"
       },
       "background": {
         "role": "neutral",
-        "displayName": "Background",
-        "tonalRamp": [
-          "oklch(15% 0.0050 145.38)",
-          "oklch(26% 0.0050 145.38)",
-          "oklch(38% 0.0050 145.38)",
-          "oklch(49% 0.0050 145.38)",
-          "oklch(61% 0.0050 145.38)",
-          "oklch(72% 0.0050 145.38)",
-          "oklch(84% 0.0050 145.38)",
-          "oklch(95% 0.0050 145.38)"
-        ]
+        "displayName": "Light gray ground"
       },
-      "foreground": {
-        "role": "neutral",
-        "displayName": "Foreground",
-        "tonalRamp": [
-          "oklch(15% 0.0169 88.00)",
-          "oklch(26% 0.0169 88.00)",
-          "oklch(38% 0.0169 88.00)",
-          "oklch(49% 0.0169 88.00)",
-          "oklch(61% 0.0169 88.00)",
-          "oklch(72% 0.0169 88.00)",
-          "oklch(84% 0.0169 88.00)",
-          "oklch(95% 0.0169 88.00)"
-        ]
+      "primary": {
+        "role": "primary",
+        "displayName": "Black action"
       },
       "panel": {
         "role": "neutral",
-        "displayName": "Panel",
-        "tonalRamp": [
-          "oklch(15% 0.0088 137.83)",
-          "oklch(26% 0.0088 137.83)",
-          "oklch(38% 0.0088 137.83)",
-          "oklch(49% 0.0088 137.83)",
-          "oklch(61% 0.0088 137.83)",
-          "oklch(72% 0.0088 137.83)",
-          "oklch(84% 0.0088 137.83)",
-          "oklch(95% 0.0088 137.83)"
-        ]
-      },
-      "border": {
-        "role": "neutral",
-        "displayName": "Border",
-        "tonalRamp": [
-          "oklch(15% 0.0182 129.04)",
-          "oklch(26% 0.0182 129.04)",
-          "oklch(38% 0.0182 129.04)",
-          "oklch(49% 0.0182 129.04)",
-          "oklch(61% 0.0182 129.04)",
-          "oklch(72% 0.0182 129.04)",
-          "oklch(84% 0.0182 129.04)",
-          "oklch(95% 0.0182 129.04)"
-        ]
-      },
-      "muted": {
-        "role": "neutral",
-        "displayName": "Muted",
-        "tonalRamp": [
-          "oklch(15% 0.0196 113.45)",
-          "oklch(26% 0.0196 113.45)",
-          "oklch(38% 0.0196 113.45)",
-          "oklch(49% 0.0196 113.45)",
-          "oklch(61% 0.0196 113.45)",
-          "oklch(72% 0.0196 113.45)",
-          "oklch(84% 0.0196 113.45)",
-          "oklch(95% 0.0196 113.45)"
-        ]
-      },
-      "secondary": {
-        "role": "neutral",
-        "displayName": "Secondary",
-        "tonalRamp": [
-          "oklch(15% 0.0160 133.69)",
-          "oklch(26% 0.0160 133.69)",
-          "oklch(38% 0.0160 133.69)",
-          "oklch(49% 0.0160 133.69)",
-          "oklch(61% 0.0160 133.69)",
-          "oklch(72% 0.0160 133.69)",
-          "oklch(84% 0.0160 133.69)",
-          "oklch(95% 0.0160 133.69)"
-        ]
-      },
-      "surface-muted": {
-        "role": "neutral",
-        "displayName": "Surface Muted",
-        "tonalRamp": [
-          "oklch(15% 0.0140 131.74)",
-          "oklch(26% 0.0140 131.74)",
-          "oklch(38% 0.0140 131.74)",
-          "oklch(49% 0.0140 131.74)",
-          "oklch(61% 0.0140 131.74)",
-          "oklch(72% 0.0140 131.74)",
-          "oklch(84% 0.0140 131.74)",
-          "oklch(95% 0.0140 131.74)"
-        ]
-      },
-      "accent": {
-        "role": "neutral",
-        "displayName": "Accent",
-        "tonalRamp": [
-          "oklch(15% 0.0276 130.62)",
-          "oklch(26% 0.0276 130.62)",
-          "oklch(38% 0.0276 130.62)",
-          "oklch(49% 0.0276 130.62)",
-          "oklch(61% 0.0276 130.62)",
-          "oklch(72% 0.0276 130.62)",
-          "oklch(84% 0.0276 130.62)",
-          "oklch(95% 0.0276 130.62)"
-        ]
-      },
-      "input": {
-        "role": "neutral",
-        "displayName": "Input",
-        "tonalRamp": [
-          "oklch(15% 0.0333 122.57)",
-          "oklch(26% 0.0333 122.57)",
-          "oklch(38% 0.0333 122.57)",
-          "oklch(49% 0.0333 122.57)",
-          "oklch(61% 0.0333 122.57)",
-          "oklch(72% 0.0333 122.57)",
-          "oklch(84% 0.0333 122.57)",
-          "oklch(95% 0.0333 122.57)"
-        ]
-      },
-      "success": {
-        "role": "secondary",
-        "displayName": "Success",
-        "tonalRamp": [
-          "oklch(15% 0.0634 158.42)",
-          "oklch(26% 0.0634 158.42)",
-          "oklch(38% 0.0634 158.42)",
-          "oklch(49% 0.0634 158.42)",
-          "oklch(61% 0.0634 158.42)",
-          "oklch(72% 0.0634 158.42)",
-          "oklch(84% 0.0634 158.42)",
-          "oklch(95% 0.0634 158.42)"
-        ]
-      },
-      "error": {
-        "role": "secondary",
-        "displayName": "Error",
-        "tonalRamp": [
-          "oklch(15% 0.0946 28.05)",
-          "oklch(26% 0.0946 28.05)",
-          "oklch(38% 0.0946 28.05)",
-          "oklch(49% 0.0946 28.05)",
-          "oklch(61% 0.0946 28.05)",
-          "oklch(72% 0.0946 28.05)",
-          "oklch(84% 0.0946 28.05)",
-          "oklch(95% 0.0946 28.05)"
-        ]
+        "displayName": "White work surface"
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Reading serif",
-        "purpose": "Bundled regular page titles."
+      "page": {
+        "displayName": "Page heading",
+        "purpose": "Original system sans; mobile size 1.7rem."
+      },
+      "body": {
+        "displayName": "Interface body",
+        "purpose": "Inherited body role; task and document surfaces use their explicit sizes."
+      },
+      "reading": {
+        "displayName": "Reading",
+        "purpose": "Long-form lesson content."
       }
     },
     "shadows": [
       {
+        "name": "settings-menu",
+        "value": "0 12px 32px #18181820",
+        "purpose": "Floating settings disclosure."
+      },
+      {
         "name": "question-panel",
-        "value": "0 12px 32px #0008",
-        "purpose": "Ambient separation for the floating question form."
+        "value": "0 12px 40px #18181826",
+        "purpose": "Floating question capture."
+      },
+      {
+        "name": "mobile-dock",
+        "value": "0 8px 28px #1818181c",
+        "purpose": "Fixed primary navigation."
       }
     ],
     "motion": [
       {
-        "name": "control-state",
-        "value": "180ms ease",
-        "purpose": "Control color and transform transitions; disabled under reduced motion."
+        "name": "action-card",
+        "value": "background-color 160ms ease",
+        "purpose": "Task-card hover; disabled for reduced motion."
+      },
+      {
+        "name": "button-states",
+        "value": "background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease",
+        "purpose": "Existing button state transitions."
       }
     ],
     "breakpoints": [
       {
-        "name": "learning-narrow",
-        "value": "700px"
+        "name": "stack-practice",
+        "value": "900px"
       },
       {
-        "name": "lesson-stack",
-        "value": "900px"
+        "name": "mobile-dock",
+        "value": "700px"
       }
     ]
   },
   "components": [
     {
-      "name": "Primary action",
+      "name": "Primary button",
       "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Gold emphasis for the principal explicit action. ",
-      "html": "<button class=\"ds-button-primary\">학습 이어서 하기</button>",
-      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:8px 16px;border-radius:4px;font:500 .875rem/1.7 var(--font-sans,sans-serif);cursor:pointer;transition:background-color 180ms ease,border-color 180ms ease,color 180ms ease,transform 180ms ease;background:var(--primary,#dcc18b);color:var(--primary-foreground,#20251c);border:1px solid transparent;}.ds-button-primary:hover{background:var(--primary,#dcc18b);}.ds-button-primary:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#dcc18b) 50%,transparent);}.ds-button-primary:active{transform:translateY(1px)}.ds-button-primary:disabled{cursor:not-allowed;color:#bec5b5;background:#272b21;border-color:#3f4537;box-shadow:none;}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none}}"
+      "description": "Explicit task action; secondary is the shared Button default.",
+      "html": "<button class=\"ds-button-primary\">학습 시작</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;border:1px solid transparent;border-radius:12px;background:var(--primary,#181818);color:var(--primary-foreground,#fff);font:500 .875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,transform 180ms ease}.ds-button-primary:hover{background:var(--brand,#49144f)}.ds-button-primary:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}.ds-button-primary:active{transform:translateY(1px)}.ds-button-primary:disabled{background:var(--surface-muted,#efebf0);color:#7c727f;pointer-events:none}",
+      "refersTo": "button-primary"
     },
     {
-      "name": "Secondary action",
+      "name": "Secondary button",
       "kind": "button",
-      "refersTo": "button-secondary",
-      "description": "Explicit action; secondary hover retains a legacy purple edge pending product cleanup.",
-      "html": "<button class=\"ds-button-secondary\">학습 이어서 하기</button>",
-      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:8px 16px;border-radius:4px;font:500 .875rem/1.7 var(--font-sans,sans-serif);cursor:pointer;transition:background-color 180ms ease,border-color 180ms ease,color 180ms ease,transform 180ms ease;background:var(--secondary,#252a22);color:var(--foreground,#eee9dd);border:1px solid var(--border,#393e34);}.ds-button-secondary:hover{background:var(--accent,#343c2d);border-color:#65517e;}.ds-button-secondary:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#dcc18b) 50%,transparent);}.ds-button-secondary:active{transform:translateY(1px)}.ds-button-secondary:disabled{cursor:not-allowed;color:#bec5b5;background:#272b21;border-color:#3f4537;box-shadow:none;}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none}}"
+      "description": "Explicit task action; secondary is the shared Button default.",
+      "html": "<button class=\"ds-button-secondary\">학습 시작</button>",
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 16px;border:1px solid var(--line,#d2ccd4);border-radius:12px;background:var(--secondary,#f4f1f5);color:var(--text,#181818);font:500 .875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,transform 180ms ease}.ds-button-secondary:hover{background:var(--accent,#f6e1ef)}.ds-button-secondary:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}.ds-button-secondary:active{transform:translateY(1px)}.ds-button-secondary:disabled{background:var(--surface-muted,#efebf0);color:#7c727f;pointer-events:none}",
+      "refersTo": "button-secondary"
     },
     {
-      "name": "Reading link",
-      "kind": "custom",
-      "refersTo": "reading-link",
-      "description": "Transparent underlined navigation within reading content.",
-      "html": "<a class=\"ds-reading-link\" href=\"#reading\">학습 자료 찾아보기</a>",
-      "css": ".ds-reading-link{background:transparent;border:0;border-radius:0;padding:4px 0;color:var(--primary,#dcc18b);text-decoration:underline;text-underline-offset:5px;font:500 .9375rem/1.7 var(--font-sans,sans-serif)}.ds-reading-link:hover{color:var(--foreground,#eee9dd)}.ds-reading-link:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;}.ds-reading-link:active{color:var(--foreground,#eee9dd)}"
-    },
-    {
-      "name": "Search field",
+      "name": "Labeled input",
       "kind": "input",
-      "refersTo": "input",
-      "description": "Shared field with app-shell ink override.",
-      "html": "<label class=\"ds-field-label\" for=\"ds-search\">레퍼런스 검색</label><input class=\"ds-field\" id=\"ds-search\" type=\"search\" placeholder=\"기술 주제에서 찾기\">",
-      "css": ".ds-field-label{display:block;margin-bottom:8px;color:var(--foreground,#eee9dd);font:500 .875rem/1.7 var(--font-sans,sans-serif)}.ds-field{min-height:44px;width:100%;min-width:0;padding:8px 20px;border:1px solid var(--input,#626954);border-radius:4px;background:var(--bg,#141614);color:var(--text,#eee9dd);font:.9375rem/1.7 var(--font-sans,sans-serif);caret-color:var(--primary,#dcc18b)}.ds-field::placeholder{color:var(--muted,#b4b6a8)}.ds-field:hover{border-color:var(--input,#626954)}.ds-field:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;border-color:var(--ring,#dcc18b);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#dcc18b) 50%,transparent)}.ds-field:disabled{opacity:.5;cursor:not-allowed}"
+      "description": "Shared field with visible focus and invalid state.",
+      "html": "<label class=\"ds-label\" for=\"ds-search\">자료 검색</label><input class=\"ds-input\" id=\"ds-search\" placeholder=\"제목이나 내용을 입력하세요\">",
+      "css": ".ds-label{display:block;margin-bottom:8px;color:var(--text,#181818);font:500 .875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-input{width:100%;min-height:44px;padding:8px 20px;border:1px solid var(--input,#86798a);border-radius:12px;background:var(--field-background,#faf9fb);color:var(--text,#181818);font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif);caret-color:var(--brand,#49144f)}.ds-input::placeholder{color:var(--muted,#655d68)}.ds-input:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}.ds-input:focus-visible{border-color:var(--ring,#49144f);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#49144f) 50%,transparent)}.ds-input[aria-invalid=\"true\"]{border-color:var(--error,#b42342)}.ds-input:disabled{opacity:.5;cursor:not-allowed}",
+      "refersTo": "input"
     },
     {
       "name": "Secondary badge",
       "kind": "chip",
-      "refersTo": "badge-secondary",
-      "description": "Existing shared compact metadata pill.",
+      "description": "Compact noninteractive metadata.",
       "html": "<span class=\"ds-badge\">사용자 작성</span>",
-      "css": ".ds-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid transparent;border-radius:9999px;background:var(--secondary,#252a22);color:var(--foreground,#eee9dd);font:500 .75rem/1.7 var(--font-sans,sans-serif);white-space:nowrap}"
+      "css": ".ds-badge{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid transparent;border-radius:9999px;background:var(--secondary,#f4f1f5);color:var(--text,#181818);font:500 .75rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif);white-space:nowrap}",
+      "refersTo": "badge-secondary"
     },
     {
-      "name": "Reading row",
+      "name": "Task action card",
       "kind": "card",
-      "refersTo": "reading-row",
-      "description": "Flat list container; no invented hover elevation.",
-      "html": "<article class=\"ds-row\"><div><h3>이어서 배울 개념</h3><p>마지막 학습 위치에서 계속 읽어보세요.</p></div></article>",
-      "css": ".ds-row{padding:24px 0;border:0;border-bottom:1px solid var(--line,#393e34);border-radius:0;background:transparent;color:var(--text,#eee9dd);font:.9375rem/1.7 var(--font-sans,sans-serif)}.ds-row h3{margin:0 0 8px;font-size:1.1rem;font-weight:600;line-height:1.4}.ds-row p{margin:5px 0;max-width:68ch;color:var(--muted,#b4b6a8);line-height:1.85}"
+      "description": "Whole-card task entry with a reusable icon well.",
+      "html": "<a class=\"ds-action\" href=\"#problem-books\"><span class=\"ds-action-icon\"><svg width=\"23\" height=\"23\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 7v14m-9-3a1 1 0 0 0 1 1h3a5 5 0 0 1 5 2 5 5 0 0 1 5-2h3a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-3a5 5 0 0 0-5 2 5 5 0 0 0-5-2H4a1 1 0 0 0-1 1z\"/></svg></span><span><strong>문제집</strong><small>문제 선택 · 풀이</small></span><svg class=\"ds-action-arrow\" width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"M7 17 17 7M7 7h10v10\"/></svg></a>",
+      "css": ".ds-action{display:flex;align-items:center;gap:14px;min-height:94px;padding:20px;border-radius:16px;background:var(--panel,#fff);color:var(--text,#181818);font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif);text-decoration:none;transition:background-color 160ms ease}.ds-action:hover{background:var(--accent,#f6e1ef)}.ds-action:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}.ds-action-icon{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;flex-shrink:0;border-radius:14px;background:var(--surface-muted,#efebf0);color:var(--brand,#49144f)}.ds-action strong{display:block;font-size:.95rem;font-weight:600}.ds-action small{display:block;font-size:.8rem;color:var(--muted,#655d68)}.ds-action-arrow{margin-left:auto;flex-shrink:0}@media(prefers-reduced-motion:reduce){.ds-action{transition:none}}",
+      "refersTo": "action-card"
     },
     {
       "name": "Primary navigation",
       "kind": "nav",
-      "description": "Three destinations with text and active underline.",
-      "html": "<nav class=\"ds-nav\" aria-label=\"주요 메뉴\"><a href=\"#today\" aria-current=\"page\">오늘의 학습</a><a href=\"#library\">학습 자료</a><a href=\"#references\">내 레퍼런스</a></nav>",
-      "css": ".ds-nav{display:flex;gap:32px;border-block:1px solid var(--line,#393e34);font:.9375rem/1.7 var(--font-sans,sans-serif)}.ds-nav a{padding:18px 0 15px;border-bottom:2px solid transparent;color:var(--muted,#b4b6a8);text-decoration:none}.ds-nav a[aria-current]{color:var(--text,#eee9dd);border-bottom-color:var(--primary,#dcc18b)}.ds-nav a:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;}@media(max-width:700px){.ds-nav{gap:12px;justify-content:space-between}.ds-nav a{font-size:.9rem}}"
+      "description": "Three labeled destinations; mobile preview shows the dock shape without fixing to the preview canvas.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"주요 메뉴\"><a href=\"#today\" aria-current=\"page\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 2v4m8-4v4M3 10h18\"/><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/></svg><span>오늘의 학습</span></a><a href=\"#materials\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v1\"/></svg><span>자료</span></a><a href=\"#references\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M2 6h4m-4 4h4m-4 4h4m-4 4h4M16 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3m-1.6-13.4a2 2 0 0 1 3 3L16 12l-4 1 1-4Z\"/></svg><span>레퍼런스</span></a></nav>",
+      "css": ".ds-nav{display:flex;gap:8px;padding:6px;background:var(--panel,#fff);border-radius:16px;font:600 .9rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-nav a{display:flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:10px 24px;border-radius:12px;color:var(--muted,#655d68);text-decoration:none}.ds-nav a:hover{background:var(--accent,#f6e1ef);color:var(--brand,#49144f)}.ds-nav a[aria-current]{background:var(--primary,#181818);color:var(--primary-foreground,#fff)}.ds-nav a:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-nav{justify-content:space-around;gap:4px;border-radius:20px;box-shadow:0 8px 28px #1818181c}.ds-nav a{flex:1;flex-direction:column;gap:5px;min-height:60px;padding:8px 4px;border-radius:15px;font-size:.75rem}}"
+    },
+    {
+      "name": "Reference document card",
+      "kind": "card",
+      "description": "A document surface with a separate explicit open action.",
+      "html": "<article class=\"ds-document\"><h2>학습 레퍼런스</h2><p>내 설명과 근거를 함께 정리합니다.</p><a href=\"#reference\">문서 열기</a></article>",
+      "css": ".ds-document{display:flex;flex-direction:column;align-items:start;gap:16px;padding:24px;border-radius:18px;background:var(--panel,#fff);color:var(--text,#181818);font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-document h2{font-size:1.1rem;font-weight:600;margin:12px 0 8px}.ds-document p{font-size:.9rem;color:var(--muted,#655d68);margin:8px 0;line-height:1.65}.ds-document a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--line,#d2ccd4);border-radius:12px;text-decoration:none;color:inherit;background:var(--panel,#fff)}.ds-document a:hover{background:var(--surface-muted,#efebf0)}.ds-document a:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-document{padding:20px}}",
+      "refersTo": "document-card"
+    },
+    {
+      "name": "Resume surface",
+      "kind": "custom",
+      "description": "Real learning title, timestamp and an explicit continuation action.",
+      "html": "<section class=\"ds-resume\"><h2>학습 중인 개념</h2><p>마지막 학습 · 오늘</p><a href=\"#resume\">학습 이어서 하기</a></section>",
+      "css": ".ds-resume{display:flex;flex-direction:column;align-items:start;justify-content:center;min-height:268px;padding:28px;border-radius:22px;background:var(--brand,#49144f);color:#fff;font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-resume h2{font-size:1.65rem;line-height:1.4;max-width:32ch;margin:16px 0 8px}.ds-resume p{color:#f2deef;margin:0 0 22px;font-size:.85rem;line-height:1.65}.ds-resume a{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:12px;background:#fff;color:var(--brand,#49144f);font-weight:600;text-decoration:none}.ds-resume a:hover{background:var(--accent,#f6e1ef)}.ds-resume a:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-resume{min-height:234px;padding:24px;border-radius:20px}.ds-resume h2{font-size:1.4rem}}",
+      "refersTo": "resume-card"
     }
   ],
   "narrative": {
-    "northStar": "Technical reading notebook",
-    "overview": "The notebook metaphor comes from the recorded user direction in `docs/technical-learning-ui.md`: ink surroundings, warm paper-colored text, and restrained gold emphasis. The interface supports sustained Korean reading and deliberate learning actions. Paper describes the text's warmth; the implemented surface remains dark.\n\nThis is a source-derived record of the implemented system, not a retrospective direction approval. The formal THESIS, OWN-WORLD, STORY, FIRST VIEWPORT, and FORM blocks and concept-seed protocol were not completed. An independent reviewer opened and validated all seven post-fix captures and returned a scoped ship verdict for the scored fixes only: distinct reading links, bundled Korean serif, and honest protocol omissions. No fix-batch regressions were found; this is not a broader product approval. Browser checks also confirmed native back navigation restored the library query (예시) and scroll position (650px), and a 390×500 viewport kept the question panel bottom (488px) and save control (467px) visible. Actual-device keyboard behavior remains unverified. Sources: `frontend/src/learning.css` (loaded last), `styles.css`, `typography.css`, `shadcn.css`, `components/ui`, `App.tsx`, `Navigation.tsx`, `Today.tsx`, and `TechnicalReferences.tsx`.",
+    "northStar": "Learning workspace",
+    "overview": "Light gray surroundings and white work surfaces expose learning tasks through reusable labeled components. Plum identifies learning focus, pink supplies context, and black carries primary actions. The original Code Trainer system sans serves both Korean interface text and readable documents. This is a code-led replacement system, not a claim of comp approval.",
     "keyCharacteristics": [
-      "Dark ink surfaces with warm readable text and restrained gold actions.",
-      "Serif page titles paired with practical sans-serif interface text.",
-      "Ruled reading lists, limited prose measure, and generous vertical rhythm.",
-      "Three primary destinations with settings in a secondary disclosure."
+      "Explicit labeled task menus",
+      "Reusable white rounded surfaces",
+      "Original system sans",
+      "Light workspace with dark detailed code editor"
     ],
     "rules": [
       {
-        "name": "The Bookmark Rule",
-        "body": "Use gold to identify reading links, action priority, and current position; retain written labels and an underline or other structural cue.",
+        "name": "The Action and Context Rule",
+        "body": "Black marks primary action or destination; plum and pale pink identify context. Preserve labels and written state.",
         "section": "colors"
       },
       {
         "name": "The Reading Measure Rule",
-        "body": "Keep introductory prose and reading copy within 72ch; longer lesson and reference chapters use a related 74ch limit.",
+        "body": "Shared reading copy stops at 72ch; lesson articles and reference chapters use 74ch.",
         "section": "typography"
       },
       {
-        "name": "The Ruled List Rule",
-        "body": "Keep recurring reading rows transparent with separators; reserve enclosed surfaces for controls, editable material, code, and overlays that need their own boundary.",
+        "name": "The Floating Layer Rule",
+        "body": "Keep work cards flat; use shadows for floating menus, the dock and question capture.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** use the bundled regular serif for page titles and sans-serif for interface text.",
-      "**Do** preserve transparent underlined reading links and distinct explicit action buttons.",
-      "**Do** use ruled rows and limited reading measures for primary learning content.",
-      "**Do** retain keyboard focus, written states, labeled inputs, and reduced-motion behavior."
+      "Do reuse shared workspace components.",
+      "Do keep problem books and practice visible in Materials.",
+      "Do preserve focus, labels and safe-area spacing.",
+      "Do distinguish user writing, evidence and AI explanation."
     ],
     "donts": [
-      "**Don't** make primary learning surfaces depend on dashboard tiles or table-centered composition.",
-      "**Don't** promote legacy purple literals or every isolated radius into reusable theme decisions.",
-      "**Don't** extend the scoped post-fix ship verdict into broad product approval or actual-device keyboard verification."
+      "Don't restore the rejected serif and gold system.",
+      "Don't use dashboards or management tables as the main learning composition.",
+      "Don't add decorative eyebrows or duplicate labels.",
+      "Don't imply real-device or paid-AI validation from synthetic browser renders."
     ]
   }
 }

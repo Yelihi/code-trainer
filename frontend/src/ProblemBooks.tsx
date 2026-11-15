@@ -1,3 +1,6 @@
+import { BookOpen, Plus } from 'lucide-react';
+import { EmptyState, PageHeading } from './WorkspaceUI';
+import { LoadingSkeleton } from './LoadingSkeleton';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
@@ -33,11 +36,11 @@ function Catalog() {
   const [params, setParams] = useSearchParams();
   const language = params.get('language') ?? 'all';
   const visible = data?.items.filter(item => !item.archived && (language === 'all' || (language === 'general' ? !item.language : item.language === language))) ?? [];
-  return <main className="page problem-books-page"><div className="breadcrumb">탐구하기<span>/</span>문제집</div>
-    <header className="reference-page-heading"><div><h1>문제집</h1><p>만든 문제와 기존 학습 문제를 언어별로 찾아 풀어보세요.</p></div><div className="reference-actions"><Link className="button" to="/problem-books/problems">문제 보관함</Link><Link className="button primary" to="/problem-books/new">문제집 구성</Link></div></header>
+  return <main className="page problem-books-page">
+    <PageHeading title="문제집" description="학습 문제를 모으고, 골라 풀어보세요." actions={<><Link className="button" to="/problem-books/problems">문제 보관함</Link><Link className="button primary" to="/problem-books/new"><Plus size={18} aria-hidden="true" />문제집 만들기</Link></>} />
     <div className="problem-books-filter"><Label htmlFor="problem-language">언어</Label><NativeSelect id="problem-language" value={language} onChange={e => setParams(e.target.value === 'all' ? {} : { language: e.target.value })}><option value="all">전체</option>{Object.entries(languages).map(([key, label]) => <option value={key} key={key}>{label}</option>)}<option value="general">언어 무관</option></NativeSelect></div>
-    <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}{!data && !error && <p role="status">문제집을 불러오는 중…</p>}
-    {data && (!visible.length ? <section className="reference-empty"><h2>해당 언어의 문제집이 없습니다.</h2><p>문제를 만든 뒤 문제집에 담거나 다른 언어를 선택해보세요.</p></section> : <div className="problem-books-list">{visible.map(item => <Link className="problem-book-row" key={item.source + item.id} to={item.href}><div><small>{sourceLabels[item.source]} · {item.language ? languages[item.language] : '언어 무관'}</small><h2>{item.title}</h2><p>{item.source === 'worksheet' ? '질문지 열기' : `${item.count}개 문제`}{item.source === 'manual' && ` · ${item.solved}개 풀이 · 복습 ${item.due}개`}</p></div><span>열기</span></Link>)}</div>)}
+    <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}{!data && !error && <LoadingSkeleton layout="catalog" label="문제집을 불러오는 중…" />}
+    {data && (!visible.length ? <EmptyState icon={BookOpen} title="해당 언어의 문제집이 없습니다" description="다른 언어를 고르거나 새 문제를 추가해보세요." action={<Link className="button" to="/problem-books/problems/new">문제 만들기</Link>} /> : <div className="problem-books-list">{visible.map(item => <Link className="problem-book-row" key={item.source + item.id} to={item.href}><div><BookOpen className="book-cover-icon" size={28} strokeWidth={1.6} aria-hidden="true" /><small>{sourceLabels[item.source]} · {item.language ? languages[item.language] : '언어 무관'}</small><h2>{item.title}</h2><p>{item.source === 'worksheet' ? '질문지 열기' : `${item.count}개 문제`}{item.source === 'manual' && ` · ${item.solved}개 풀이 · 복습 ${item.due}개`}</p></div><span>열기</span></Link>)}</div>)}
   </main>;
 }
 

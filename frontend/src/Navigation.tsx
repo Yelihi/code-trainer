@@ -1,18 +1,20 @@
+import { CalendarDays, FolderOpen, NotebookPen, Settings2 } from 'lucide-react';
+import { materialSection } from './WorkspaceUI';
 import { Link, matchPath, useLocation } from 'react-router-dom';
 import { Button } from './components/ui/button';
 import { WorksheetList } from './Worksheets';
 
 const primary = [
-  { label: '오늘의 학습', to: '/', paths: ['/', '/questions/*', '/reviews/*', '/learn/*', '/practice/*', '/foundations/*', '/explore/practice', '/worksheets/*'] },
-  { label: '학습 자료', to: '/library', paths: ['/library/*', '/references/*', '/inbox', '/explore', '/interpretations/*', '/create', '/courses', '/problem-books/*'] },
-  { label: '내 레퍼런스', to: '/technical-references', paths: ['/technical-references/*'] },
+  { label: '오늘의 학습', to: '/', icon: CalendarDays, paths: ['/', '/questions/*', '/reviews/*', '/me'] },
+  { label: '자료', to: '/library', icon: FolderOpen, paths: [] },
+  { label: '레퍼런스', to: '/technical-references', icon: NotebookPen, paths: ['/technical-references/*'] },
 ];
 export function Navigation({ isAdmin, onNavigate, onLogout }: { isAdmin: boolean; onNavigate: () => void; onLogout?: () => void }) {
   const { pathname } = useLocation();
-  const active = primary.find(item => item.to === pathname) ?? primary.find(item => item.paths.some(path => matchPath(path, pathname)));
+  const active = primary.find(item => item.to === pathname) ?? (materialSection(pathname) ? primary[1] : primary.find(item => item.paths.some(path => matchPath(path, pathname))));
   return <div className="learning-navigation">
-    <nav aria-label="주요 메뉴">{primary.map(item => <Link key={item.to} to={item.to} aria-current={active === item ? 'page' : undefined} onClick={onNavigate}>{item.label}</Link>)}</nav>
-    <details className="workspace-settings"><summary>설정과 기록</summary><nav aria-label="설정과 기록">
+    <nav aria-label="주요 메뉴">{primary.map(({ icon: Icon, ...item }) => <Link key={item.to} to={item.to} aria-current={active?.to === item.to ? 'page' : undefined} onClick={onNavigate}><Icon size={22} strokeWidth={1.7} aria-hidden="true" /><span>{item.label}</span></Link>)}</nav>
+    <details className="workspace-settings"><summary><Settings2 size={21} strokeWidth={1.7} aria-hidden="true" /><span>설정</span></summary><nav aria-label="설정과 기록">
       <Link to="/questions" onClick={onNavigate}>질문 모아보기</Link><Link to="/me" onClick={onNavigate}>학습 기록</Link>
       <Link to="/settings/ai" onClick={onNavigate}>AI 연결과 사용량</Link><Link to="/settings/github" onClick={onNavigate}>GitHub 연동</Link>
       <Link to="/settings/records" onClick={onNavigate}>기록 내보내기</Link>
@@ -29,7 +31,7 @@ export function PracticeEntry() {
     <p>해석을 바탕으로 질문지를 만들고, 코드 실습과 기초 구현 학습을 이어가세요.</p>
     <WorksheetList />
     <div className="context-grid">
-      <Link className="context-card" to="/"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택</span></Link>
+      <Link className="context-card" to="/courses"><h2>자료 기반 코드 실습</h2><p>기존 학습 자료를 열고 단원별 개념과 코드 문제를 이어갑니다.</p><span className="text-link">학습 자료 선택</span></Link>
       <Link className="context-card" to="/foundations"><h2>자료구조 · 알고리즘</h2><p>준비된 기초 구현 과정을 선택하고 직접 코드를 작성합니다.</p><span className="text-link">기초 구현 학습</span></Link>
       <Link className="context-card" to="/framework-practice"><h2>React · Vue 컴포넌트</h2><p>TSX 또는 Vue 컴포넌트를 작성하고 렌더링 결과를 확인합니다.</p><span className="text-link">프레임워크 실행</span></Link>
     </div>

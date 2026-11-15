@@ -1,32 +1,21 @@
-# 학습 중심 화면 계약
+# Learning workspace redesign
 
-사용자 확정: 시각 스타일을 변경하며 대시보드/테이블 중심 구성을 피한다. Operate + Read 화면으로 코드에서 직접 구현한다. 기존 UI 컴포넌트의 동작/접근성은 재사용한다.
+Mode: Operate; article bodies remain Read. Targets: App, Navigation, Today, Library, TechnicalReferences, ProblemBooks and shared controls.
 
-## 구성
+The user rejects the previous ink/paper/gold reading-notebook design. Confirmed constraints: original Code Trainer sans-serif; supplied #49144F, #E86FB5, #E2E2E2, #181818 palette; mobile-friendly reusable components; three primary areas; problem books and practice directly discoverable from materials. The supplied screenshots are interaction and palette references, explicitly not an approved pixel composition. Code-led implementation; no image comp approval is claimed. User-pinned direction takes precedence over the roll; no further aesthetic choice is required.
 
-- 공통 프레임: 작은 워드마크와 질문 버튼, 가로 3개 주요 탐색. 설정은 접을 수 있는 보조 영역. 넓은 사이드바와 통계 카드 군집을 없앤다.
-- 오늘의 학습: 날짜와 짧은 제목 → 가장 최근의 중단 위치 → 오늘 복습의 세로 목록 → 다시 볼 질문 → 근거가 있는 AI 활동. 각 행에 제목/이유/시작을 배치한다. AI 갱신과 목록 로딩은 별개다.
-- 학습 자료: 제목/검색 → 직접 작성/URL/자동 수집 진입 → 원자료의 간결한 세로 목록. 본문과 요약은 상세로 이동한다. 기존 개념 과정과 실습은 보조 링크로 접근한다.
-- 내 레퍼런스: 주제 검색과 문서 목록 → 읽기 중심 상세. 사용자 설명을 먼저 보존하고 AI 설명, 적용 조건, 검증, 출처, 변경 이력을 구분한다. Skill은 미리보기 뒤 다운로드한다.
-- 상세 학습: 본문 한 열, 개념↔풀이 복귀 링크, 접을 수 있는 보조 정보. 코드 내부만 가로 스크롤한다.
-- 질문: 공통 헤더에서 열고 학습 컴포넌트는 유지한다. 현재 연결 대상 표시, 해제/변경, 본문, 저장/닫기. 좁거나 키보드가 열린 화면은 패널 내부 스크롤.
+## Direction contract
 
-## 시각 방향
+THESIS: A learning workspace whose menus expose the actual tasks. Replace the editorial hero and text-link directory with labeled navigation, an actionable resume surface, and reusable content components.
 
-책갈피가 있는 기술 독서 노트: 먹색 바탕, 따뜻한 종이색 본문, 절제한 황금색 강조. 장식적인 그래프와 대형 통계 숫자를 첫 화면에 두지 않는다. 본문 폭 72ch, 넉넉한 줄 간격, 제목과 가는 구분선으로 위계를 만든다. 모든 항목을 상자에 넣지 않는다. 모바일 390px에서는 한 열, 데스크톱에서도 읽기 폭을 제한한다.
+OWN-WORLD: Light gray ground, white work surfaces, plum learning focus, pink selected/context accents, black actions. Use Code Trainer's existing system sans and Lucide stroke icons. Controls keep clear borders, state labels and focus.
 
-## 상태와 탐색
+STORY: Choose today's activity, open materials or a problem book in one step, then collect reusable references. Descriptions explain an action in one line; actual documents retain full readable content.
 
-첫 로딩은 행 스켈레톤, 재요청은 기존 내용 유지. 오류는 해당 영역에 재시도와 함께 표시한다. 자료/질문/레퍼런스 검색은 URL에 보존한다. 뒤로 가기 시 history key별 스크롤 위치를 복원한다. 질문 초안은 사용자별 로컬 저장과 동일 요청 ID 재전송을 사용한다. 로그아웃한 다른 사용자에게 초안이 노출되지 않는다.
+FIRST VIEWPORT: Compact title and date; plum resume card with a real task or honest empty state; visible problem-book/review/question actions. Three labeled destinations become a bottom dock on mobile. Materials exposes source/problem-book/course/practice navigation above its content.
 
-기존 화면 근거: technical-learning-evidence/2026-11-15. 구현 후 같은 1440/390px 폭에서 비교한다. 실제 모바일 가상 키보드는 별도 검증 범위를 명시한다.
+FORM: User-pinned mobile component workspace; seed:31278e23fbe62928 was run and acknowledged. Its open expressive axes are constrained by the supplied palette, original font and explicit task navigation. No retrospective choice board or comp approval is claimed.
 
-## 디자인 검토 기록
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 
-초기 구현은 위 사용자 요구와 코드 기반 화면 계약으로 진행했으며, Impeccable의 concept-seed 추첨, 정식 5개 블록 방향 계약, 별도의 quality-bar 카드 절차는 수행하지 않았다. 이 절차를 완료했다거나 이미지 시안을 승인받았다고 기록하지 않는다. 실제 검토 근거는 사용자 요구, PRODUCT.md, 이 문서와 데스크톱/모바일 캡처다.
-
-독립 검토에서 읽기 링크의 버튼 처리와 OS 설치 서체 의존을 수정 대상으로 받았다. 명시적 행동 버튼은 유지하고 읽기 링크에는 밑줄을 사용한다. 제목은 자체 제공하는 Trainer Reading Serif를 사용한다. 이는 Google Fonts의 Nanum Myeongjo Regular를 WOFF2로 변환하고 예약 이름과 구분되도록 family 이름을 변경한 배포본이다. 글리프는 삭제하지 않았고 원본 저작권·OFL은 frontend/public/fonts/OFL-NanumMyeongjo.txt에 보존한다. 런타임 의존 패키지를 추가하지 않았다.
-
-서체 원본: https://raw.githubusercontent.com/google/fonts/main/ofl/nanummyeongjo/NanumMyeongjo-Regular.ttf . 변환은 임시 `uv run --no-project --with 'fonttools[woff]'` 환경의 TTFont에서 name ID 1/3/4/6/16을 Trainer Reading Serif(6은 TrainerReadingSerif-Regular)로 바꾸고 flavor='woff2'로 저장했다. 소스 asset은 frontend/src/assets/fonts/trainer-reading-serif.woff2이며 Vite가 해시 assets 경로로 배포한다. 브라우저에서 font load와 실제 h1 computed family를 확인한다.
-
-최종 수정 후 같은 7개 화면을 다시 촬영해 독립 수정 검토 `ship` 판정을 받았다. 판정 범위는 앞선 링크·서체·정직한 절차 기록 수정에 한정된다. 실제 캡처와 확인 내용은 [최종 UI 검증 캡처](technical-learning-evidence/2026-11-15-redesign/README.md)에 보존했다.
+기존 명조·금색 UI의 캡처와 검토 기록은 이전 구현 이력이며 이번 사용자 요구의 시각 기준으로 사용하지 않는다. 새 검증 결과는 구현 후 기록한다.

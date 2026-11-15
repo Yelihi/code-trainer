@@ -1,3 +1,5 @@
+import { BookOpen, CalendarCheck2, ChevronRight, MessageCircle, RotateCcw } from 'lucide-react';
+import { ActionCard, ActivityItem, EmptyState, PageHeading, SectionHeading } from './WorkspaceUI';
 import { StudyRecommendations } from './StudyRecommendations';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -31,15 +33,27 @@ export function Today() {
     try { await api('/study/choice', 'POST', { key, action }); reload(); }
     catch (cause) { setActionError(errorMessage(cause)); } finally { setBusy(''); }
   }
-  return <main className="page today-page"><header className="learning-intro"><time>{data ? new Date(data.day + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }) : '오늘'}</time><h1>배우던 곳에서,<br />다음 이해로.</h1><p>읽고, 질문하고, 직접 다뤄보세요. 오늘 이어갈 학습을 골라 시작할 수 있습니다.</p><div className="learning-links"><Link to="/library">학습 자료 찾아보기</Link><Link to="/questions">질문 모아보기</Link><Link to="/explore/practice">실습 선택</Link></div></header>
-    <div className="today-feedback"><ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}</div>
-    {!data && !error && <LoadingSkeleton layout="list" label="이어서 할 학습을 불러오는 중…" />}
-    {data && <><section className="learning-section"><header><h2>이어서 하기</h2><Link className="text-link" to="/courses">모든 개념 과정</Link></header>{data.resume.length ? data.resume.map(item => <div className="learning-row" key={item.href}><div><h3>{item.title}</h3><small>마지막 학습 위치 · {timestamp(item.updated_at)}</small></div><Link className="button primary" to={item.href}>이어서 하기</Link></div>) : <div className="learning-row"><div><h3>관심 있는 자료부터 시작하세요.</h3><p>자료를 저장한 뒤 필요한 개념을 읽고, 질문이나 실습을 남길 수 있습니다.</p></div><Link className="button" to="/library">자료 고르기</Link></div>}</section>
-    <section className="learning-section"><header><h2>오늘의 복습</h2><Link className="text-link" to="/reviews">전체 복습 {data.review_count > 10 ? `(${data.review_count})` : ''}</Link></header>{data.reviews.map(item => <div className="learning-row" key={item.key}><div><h3>{item.title}</h3><small>{item.in_progress ? '진행 중인 복습' : '복습 예정'} · {timestamp(item.due_at)}</small></div><Button disabled={!!busy} onClick={() => void review(item)}>{busy === item.key ? '여는 중…' : item.in_progress ? '복습 이어서 하기' : '복습 시작'}</Button></div>)}{!data.reviews.length && <p className="muted">지금 예정된 복습이 없습니다. 학습과 질문을 이어가도 좋습니다.</p>}</section>
-    <section className="learning-section"><header><h2>다시 살펴볼 질문</h2><Link className="text-link" to="/questions">모든 질문</Link></header>{data.questions.map(item => <div className="learning-row" key={item.key}><div><h3>{item.title}</h3><p>예전에 남긴 질문입니다. 최근 학습과 함께 다시 살펴보세요.</p></div><div className="reference-actions"><Link className="button" to={item.href}>질문 열기</Link><Button disabled={!!busy} onClick={() => void choose(item.key, 'snooze')}>나중에 보기</Button><Button disabled={!!busy} onClick={() => void choose(item.key, 'hide')}>추천 숨기기</Button></div></div>)}{!data.questions.length && <p className="muted">지금 다시 볼 질문은 없습니다. 떠오르는 질문은 상단에서 바로 남기세요.</p>}<PolicySettings initial={data.policy} onSaved={reload} /></section>
+  const resume = data?.resume[0];
+  return <main className="page today-page">
+    <PageHeading title="오늘의 학습" meta={<time>{data ? new Date(data.day + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }) : '오늘'}</time>} />
+    <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}
+    <div className="today-launch">
+      <section className="resume-card" aria-labelledby="resume-heading">
+        {!data && !error ? <LoadingSkeleton layout="summary" label="마지막 학습을 불러오는 중…" /> : <><h2 id="resume-heading">{resume?.title ?? '새로운 학습을 시작하세요'}</h2><p>{resume ? '마지막 학습 · ' + timestamp(resume.updated_at) : '관심 있는 자료를 저장하거나 문제집을 골라보세요.'}</p><Link className="button resume-action" to={resume?.href ?? '/library'}>{resume ? '학습 이어서 하기' : '학습 자료 열기'}<ChevronRight size={19} aria-hidden="true" /></Link></>}
+      </section>
+      <nav className="quick-access" aria-label="학습 바로가기"><ActionCard to="/problem-books" icon={BookOpen} title="문제집" description="문제 선택 · 풀이" accent /><ActionCard to="/reviews" icon={RotateCcw} title="복습" description="예정된 학습 확인" /><ActionCard to="/questions" icon={MessageCircle} title="내 질문" description="기록한 궁금증 보기" /></nav>
+    </div>
+    {!data && !error && <LoadingSkeleton layout="list" label="학습 활동을 불러오는 중…" />}
+    {data && <>
+      {data.resume.length > 1 && <section className="learning-section"><SectionHeading title="진행 중인 다른 학습" /><div className="activity-list">{data.resume.slice(1).map(item => <ActivityItem key={item.href} title={item.title} meta={timestamp(item.updated_at)}><Link className="button" to={item.href}>계속하기<ChevronRight size={17} aria-hidden="true" /></Link></ActivityItem>)}</div></section>}
+      <div className="today-columns">
+        <section className="learning-section"><SectionHeading title="오늘의 복습" action={<Link className="section-more" to="/reviews">전체 보기<ChevronRight size={16} aria-hidden="true" /></Link>} />{data.reviews.length ? <div className="activity-list">{data.reviews.map(item => <ActivityItem key={item.key} title={item.title} meta={<><span className="status-label">{item.in_progress ? '진행 중' : '복습 예정'}</span><time>{timestamp(item.due_at)}</time></>}><Button disabled={!!busy} onClick={() => void review(item)}>{busy === item.key ? '여는 중…' : item.in_progress ? '이어서 하기' : '복습 시작'}</Button></ActivityItem>)}</div> : <EmptyState icon={CalendarCheck2} title="예정된 복습이 없습니다" description="학습한 내용의 복습 일정이 여기에 표시됩니다." />}</section>
+        <section className="learning-section"><SectionHeading title="다시 살펴볼 질문" action={<Link className="section-more" to="/questions">전체 보기<ChevronRight size={16} aria-hidden="true" /></Link>} />{data.questions.length ? <div className="activity-list">{data.questions.map(item => <ActivityItem key={item.key} title={item.title} meta="미해결 질문"><Link className="button" to={item.href}>질문 열기</Link><Button disabled={!!busy} onClick={() => void choose(item.key, 'snooze')}>나중에</Button><Button className="text-button" disabled={!!busy} onClick={() => void choose(item.key, 'hide')}>숨기기</Button></ActivityItem>)}</div> : <EmptyState icon={MessageCircle} title="지금 다시 볼 질문이 없습니다" description="떠오르는 질문은 상단의 질문 적기로 남기세요." />}<PolicySettings initial={data.policy} onSaved={reload} /></section>
+      </div>
     </>}
     <StudyRecommendations />
   </main>;
+
 }
 function PolicySettings({ initial, onSaved }: { initial: Policy; onSaved: () => void }) {
   const [policy, setPolicy] = useState(initial), [error, setError] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState('');

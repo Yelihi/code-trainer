@@ -1,3 +1,4 @@
+import { MaterialsNavigation } from './WorkspaceUI';
 import { ContextQuestions } from './ContextQuestions';
 import { StudyLocation } from './Today';
 import { ReadingPosition } from './ReadingPosition';
@@ -61,7 +62,7 @@ export function App() {
     <div className="workspace-navigation"><Navigation isAdmin={!!session?.user?.admin} onNavigate={() => undefined} onLogout={session?.auth_mode === 'preview' ? undefined : () => void logout()} /></div>
     <div className="workspace" id="workspace">
       {error && <div className="page"><ErrorNotice error={error} /><Button onClick={refreshSession}>다시 연결</Button></div>}
-      {opened && <><StudyLocation /><Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} /><ContextQuestions /></>}
+      {opened && <><StudyLocation /><MaterialsNavigation /><Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} /><ContextQuestions /></>}
       {!session && !error && <main className="page"><LoadingSkeleton layout="cards" label="학습 공간을 여는 중…" heading /></main>}
     </div>
     {session && !session.user && <Login access={session.auth_mode === 'access'} setup={session.setup_required} onSuccess={() => { refreshSession(); refreshHealth(); }} />}
@@ -106,7 +107,7 @@ export function Home() {
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="cards" label="자료를 불러오는 중…" />}
     {data?.total === 0 && <div className="empty-state"><h3>아직 생성한 코딩 과정이 없습니다.</h3><p>일반 자료는 보관함에서 원문을 열어 해석할 수 있습니다.<br />실행 언어에 맞춘 코딩 과정은 새 과정 만들기에서 시작하세요.</p><Link className="button" to="/create">기존 자료 분석 열기</Link></div>}
-    <div className="context-grid">{data?.items.map(context => <Link className="context-card" key={context.id} to={`/learn/${context.id}`}><div className="card-top"><Badge variant="language" className="language-tag">{languages[context.language]} · {difficulties[context.difficulty ?? 'beginner']}</Badge></div><h3>{context.title}</h3><p>{context.description}</p><div className="chips">{context.concepts.slice(0, 3).map(concept => <Badge variant="outline" key={concept} className="rounded-[5px] border-[#31253e] bg-[#1b152b] px-2 py-[3px] text-[var(--text-caption)] text-[#ac9bbc]">{concept}</Badge>)}</div><div className="card-footer"><span>{context.completed} / {context.total} 완료</span><span>{timestamp(context.created_at)}</span></div></Link>)}</div>
+    <div className="context-grid">{data?.items.map(context => <Link className="context-card" key={context.id} to={`/learn/${context.id}`}><div className="card-top"><Badge variant="language" className="language-tag">{languages[context.language]} · {difficulties[context.difficulty ?? 'beginner']}</Badge></div><h3>{context.title}</h3><p>{context.description}</p><div className="chips">{context.concepts.slice(0, 3).map(concept => <Badge variant="outline" key={concept} className="rounded-[5px] border-border bg-secondary px-2 py-[3px] text-[var(--text-caption)] text-secondary-foreground">{concept}</Badge>)}</div><div className="card-footer"><span>{context.completed} / {context.total} 완료</span><span>{timestamp(context.created_at)}</span></div></Link>)}</div>
     {data && data.total > 0 && <nav className="pagination" aria-label="학습 자료 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ page: String(data.page - 1) })}>이전</Button><span aria-live="polite">{data.page} / {data.pages} 페이지 · {data.total}개 자료</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ page: String(data.page + 1) })}>다음</Button></nav>}
     {health && !health.sandbox && <p className="notice">실행 환경이 아직 연결되지 않았습니다. 문제 생성 검증과 코드 실행에는 샌드박스가 필요합니다.</p>}
   </main>;

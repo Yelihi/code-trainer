@@ -1,41 +1,43 @@
 ---
 name: Code Trainer
-description: An ink, paper, and gold technical reading notebook.
+description: A mobile-friendly learning workspace with explicit tasks and reusable work surfaces.
 colors:
-  primary: "#dcc18b"
-  primary-foreground: "#20251c"
-  background: "#141614"
-  foreground: "#eee9dd"
-  panel: "#1b1e1a"
-  border: "#393e34"
-  muted: "#b4b6a8"
-  secondary: "#252a22"
-  surface-muted: "#22261f"
-  accent: "#343c2d"
-  input: "#626954"
-  success: "#99c8ac"
-  error: "#ffb0a5"
+  brand: "#49144f"
+  pink: "#e86fb5"
+  background: "#e2e2e2"
+  foreground: "#181818"
+  panel: "#ffffff"
+  primary: "#181818"
+  primary-foreground: "#ffffff"
+  secondary: "#f4f1f5"
+  surface-muted: "#efebf0"
+  accent: "#f6e1ef"
+  border: "#d2ccd4"
+  muted: "#655d68"
+  input: "#86798a"
+  field-background: "#faf9fb"
+  success: "#236442"
+  success-surface: "#e8f4ec"
+  error: "#b42342"
+  error-surface: "#fff0f3"
 typography:
-  display:
-    fontFamily: "'Trainer Reading Serif', Georgia, serif"
-    fontSize: "clamp(1.9rem, 3.5vw, 2.7rem)"
-    fontWeight: 400
-    lineHeight: 1.4
-    letterSpacing: "-.03em"
-  headline:
+  page:
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif'
-    fontSize: "1.5rem"
+    fontSize: "2rem"
     fontWeight: 600
-    lineHeight: 1.4
+    lineHeight: 1.3
+    letterSpacing: "-.03em"
+  section:
+    fontSize: "1.2rem"
+    fontWeight: 600
     letterSpacing: "-.02em"
   title:
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif'
-    fontSize: "1.25rem"
+    fontSize: ".95rem"
     fontWeight: 600
-    lineHeight: 1.4
+    lineHeight: 1.5
   body:
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif'
-    fontSize: ".9375rem"
+    fontSize: ".875rem"
     fontWeight: 400
     lineHeight: 1.7
   reading:
@@ -49,164 +51,178 @@ typography:
     fontSize: "1rem"
     lineHeight: 1.75
 rounded:
-  flat: "0"
-  control: "4px"
-  field: "4px"
+  status: "6px"
+  control: "12px"
+  action-card: "16px"
+  surface: "18px"
+  dock: "20px"
+  resume: "22px"
   pill: "9999px"
 spacing:
-  compact: "12px"
+  tight: "8px"
   control: "16px"
   mobile-gutter: "20px"
-  row: "24px"
-  desktop-gutter: "32px"
-  section: "48px"
+  surface: "24px"
+  desktop-gutter: "28px"
+  section: "32px"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
     rounded: "{rounded.control}"
-    padding: "8px 16px"
+    padding: "10px 16px"
+  button-primary-hover:
+    backgroundColor: "{colors.brand}"
   button-secondary:
     backgroundColor: "{colors.secondary}"
     textColor: "{colors.foreground}"
     rounded: "{rounded.control}"
     padding: "8px 16px"
   input:
-    backgroundColor: "{colors.background}"
+    backgroundColor: "{colors.field-background}"
     textColor: "{colors.foreground}"
-    rounded: "{rounded.field}"
+    rounded: "{rounded.control}"
     padding: "8px 20px"
-  reading-link:
-    backgroundColor: "transparent"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.flat}"
-  reading-row:
-    backgroundColor: "transparent"
-    textColor: "{colors.foreground}"
-    rounded: "{rounded.flat}"
-    padding: "24px 0"
   badge-secondary:
     backgroundColor: "{colors.secondary}"
     textColor: "{colors.foreground}"
     rounded: "{rounded.pill}"
     padding: "2px 8px"
+  action-card:
+    backgroundColor: "{colors.panel}"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.action-card}"
+    padding: "20px"
+  document-card:
+    backgroundColor: "{colors.panel}"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.surface}"
+    padding: "24px"
+  resume-card:
+    backgroundColor: "{colors.brand}"
+    textColor: "{colors.primary-foreground}"
+    rounded: "{rounded.resume}"
+    padding: "28px"
 ---
 
 # Design System: Code Trainer
 
 ## Overview
 
-**Creative North Star: "Technical reading notebook"**
+**Creative North Star: “Learning workspace.”**
 
-The notebook metaphor comes from the recorded user direction in `docs/technical-learning-ui.md`: ink surroundings, warm paper-colored text, and restrained gold emphasis. The interface supports sustained Korean reading and deliberate learning actions. Paper describes the text's warmth; the implemented surface remains dark.
+A light gray workspace makes saved material, questions, practice and references easy to open. White reusable surfaces organize tasks; plum identifies the learning focus, pink adds context, and black carries decisive actions. The original Code Trainer system sans supports Korean headings, interface labels and sustained reading.
 
-This is a source-derived record of the implemented system, not a retrospective direction approval. The formal THESIS, OWN-WORLD, STORY, FIRST VIEWPORT, and FORM blocks and concept-seed protocol were not completed. An independent reviewer opened and validated all seven post-fix captures and returned a scoped ship verdict for the scored fixes only: distinct reading links, bundled Korean serif, and honest protocol omissions. No fix-batch regressions were found; this is not a broader product approval. Browser checks also confirmed native back navigation restored the library query (예시) and scroll position (650px), and a 390×500 viewport kept the question panel bottom (488px) and save control (467px) visible. Actual-device keyboard behavior remains unverified. Sources: `frontend/src/learning.css` (loaded last), `styles.css`, `typography.css`, `shadcn.css`, `components/ui`, `App.tsx`, `Navigation.tsx`, `Today.tsx`, and `TechnicalReferences.tsx`.
+This records the implemented replacement world from source, following the user-pinned brief in PRODUCT.md and the surface direction contract. It does not claim image-comp approval or pixel reproduction. The rejected serif, ink and gold system is superseded. The source authority is `frontend/src/shadcn.css` for the shared light palette, `typography.css` for fonts and shared type roles, and `learning.css` for the final workspace treatment; `main.tsx` loads shadcn, base styles and learning styles in that order.
 
 **Key Characteristics:**
-- Dark ink surfaces with warm readable text and restrained gold actions.
-- Serif page titles paired with practical sans-serif interface text.
-- Ruled reading lists, limited prose measure, and generous vertical rhythm.
-- Three primary destinations with settings in a secondary disclosure.
+
+- Explicit labeled task menus and reusable icon-led action cards.
+- Gray ground, white work surfaces, plum focus and restrained pink accents.
+- Rounded controls with visible boundaries and keyboard focus.
+- Mobile reading and question capture; a dark editor for detailed code work.
 
 ## Colors
 
-Gold supplies the primary accent; olive-tinted neutrals hold the reading space. Frontmatter records the effective learning theme, rather than earlier declarations overridden by it. The sidecar tonal ramps are synthesized panel previews, not additional colors authorized for product use.
-
 ### Primary
-- **Bookmark gold:** primary actions, current navigation underline, reading links, selection, caret, and focus.
-- **Dark action ink:** text on filled gold actions and selected text.
+
+- **Black action** (`primary`): decisive buttons and the current primary destination, with white text.
+- **Plum learning focus** (`brand`): resume surface, context icons, links and the focus ring.
 
 ### Secondary
-- **Quiet green:** success and confirmed-result text, not a substitute for written state labels.
-- **Warm error:** error text; describe the problem and offer a local recovery action.
+
+- **Pink** (`pink`): selected text and the emphasized action icon well.
+- **Pale pink context** (`accent`): selected material destination, card hover and contextual states.
 
 ### Neutral
-- **Ink:** page background and editable field interiors.
-- **Warm paper:** principal text.
-- **Raised ink:** question and settings panels.
-- **Olive rule:** separators and quiet control boundaries.
-- **Muted paper:** supporting explanations and timestamps.
-- **Secondary ink / muted ink / active olive:** control, subdued surface, and hover layers.
-- **Field edge:** stronger input boundary.
 
-**The Bookmark Rule.** Use gold to identify reading links, action priority, and current position; retain written labels and an underline or other structural cue.
+- **Light gray ground** (`background`): the page and sticky top bar.
+- **White work surface** (`panel`): reusable cards, document sections and overlays.
+- **Charcoal text** (`foreground`), **muted plum gray** (`muted`): primary and supporting information.
+- **Secondary** and **surface-muted**: quiet controls, icon wells, inline code and disabled surfaces.
+- **Border**, **input** and **field-background**: surface separators, stronger form outlines and near-white fields.
+- **Success/error** and their surfaces: feedback with written status, never color alone.
+
+**The Action and Context Rule.** Black marks the primary action or top-level destination; plum and pale pink identify learning context. Preserve labels and `aria-current` or written status alongside color.
 
 ## Typography
 
-**Display Font:** Trainer Reading Serif, with Georgia and generic serif fallbacks. The full Korean WOFF2 is bundled, declared at regular weight, and preloaded in `frontend/index.html`; its OFL notice is distributed in `frontend/public/fonts/OFL-NanumMyeongjo.txt`.
+**Display and body font:** the original platform sans stack recorded in the frontmatter. No custom serif face or font preload is required. **Code font:** the existing mono stack; availability of its first family is platform-dependent.
 
-**Body Font:** The platform sans-serif stack in frontmatter. **Code Font:** The mono stack in frontmatter; IBM Plex Mono is a preferred family name, not a bundled-font guarantee.
+Page headings use the page role and shrink to (1.7rem) on mobile. Section headings use the section role; repeated section headers use (1.1rem). Action and activity titles use the title role; document-card titles use (1.1rem). Supporting card copy is usually (.8rem–.9rem). Body inherits the shared role; page paragraphs use line-height (1.65), with reading content retaining its own reading role. Metadata and mobile menu labels use the label scale.
 
-Page titles use the reading serif. Interface headings retain sans-serif clarity, with semibold hierarchy. Font synthesis is disabled; do not request invented bold variants of the regular bundled face.
-
-### Hierarchy
-- **Display:** Page h1, responsive serif heading.
-- **Headline:** General h2. Learning section headers use a smaller local size (1.2rem).
-- **Title:** General h3 and reference-list h2. Learning-row h3 is locally smaller (1.1rem).
-- **Body:** Effective base body role. Paragraph leading expands to the reading rhythm (1.85).
-- **Reading:** Existing long-form reading role; the general body remains smaller.
-- **Label:** Compact metadata and form-label role; navigation stays near body size.
-- **Code:** Monospace blocks and editor content, distinct from prose.
-
-**The Reading Measure Rule.** Keep introductory prose and reading copy within 72ch; longer lesson and reference chapters use a related 74ch limit.
+**The Reading Measure Rule.** Introductory and shared reading copy stop at (72ch); lesson articles and reference chapters use (74ch). Keep long content readable inside the task-oriented shell.
 
 ## Layout
 
-The header and navigation use a centered 1200px envelope. Pages use an 1100px maximum with desktop padding (52px 32px 100px). Reference reading and editing narrow further to 900px. Reading rows have vertical padding (24px), thin bottom rules, and a horizontal title/action relationship; sections separate by 48px.
+The centered shell and pages share a maximum width of (1180px), desktop side gutters of (28px), and mobile side gutters of (20px). Page padding ends at (72px) on desktop. Cards commonly use (20px–24px) padding and (12px–24px) grid gaps. Sections start with (32px) separation, reduced to (26px) on mobile.
 
-At the shared narrow breakpoint (700px), page padding becomes 32px 20px 72px, row contents stack, action groups wrap, sections separate by 36px, and settings move below the three navigation links. At 900px, lesson and practice columns stack. Header stickiness and scroll padding preserve access to the question entry point.
+Desktop content collections use two columns; task entry groups use three. The Today launch pairs a wider resume surface with a column of task entries. At (900px), Today stacks and its quick actions become three compact tiles; practice and lesson layouts stack with the problem before the editor. At (700px), content collections become one column while the three compact task entries and four Materials destinations remain directly visible.
 
-Use reading lists and document sections for the primary learning surfaces. The user's rejection of dashboard/table-centered composition does not ban every table, bordered field, diagram, or code panel inside technical learning content.
+At (700px), primary navigation becomes a fixed three-destination bottom dock with labeled icons, (16px) side insets, and a bottom inset of (12px + safe area). Pages reserve (112px + safe area) at the bottom. The settings disclosure remains accessible at the top right. Materials navigation keeps four labeled entries: 원자료, 문제집, 개념 과정, 실습.
 
 ## Elevation & Depth
 
-Reading lists are flat, using type, spacing, and rules rather than raised cards. Settings use an opaque panel and border. The floating question panel has an ambient shadow (`0 12px 32px #0008`) to distinguish its overlap; ordinary reading rows do not inherit that shadow. Focus is a functional outline/ring, not decorative depth.
+Work surfaces are flat at rest: gray surroundings and white cards provide separation without decorative shadows. Shadows identify floating controls and overlays, rather than making every card appear raised.
 
-**The Ruled List Rule.** Keep recurring reading rows transparent with separators; reserve enclosed surfaces for controls, editable material, code, and overlays that need their own boundary.
+- **Settings menu:** `0 12px 32px #18181820`.
+- **Question panel:** `0 12px 40px #18181826`.
+- **Mobile dock:** `0 8px 28px #1818181c`.
+
+**The Floating Layer Rule.** Keep recurring work cards tonal and flat; use the recorded shadows for the menu, dock and question panel.
 
 ## Shapes
 
-Rows and reading links are square and transparent. Shared UI controls derive their gentle corner from the theme radius: the base is 6px and Tailwind's medium radius resolves to 4px. Badges use a full pill. Legacy `.button` links retain 7px corners; the floating question panel has its own overlay silhouette (12px, with a narrow-screen top-corner treatment). These coexist in the source; do not silently normalize the product through documentation.
+Soft rectangular controls use the control radius; action cards use a slightly larger corner and document containers a larger surface corner. The resume surface is broader and more rounded; mobile reduces its radius to the dock radius. Status labels use compact corners, while shared badges remain pills. Thin form borders remain visible against the light ground. Lucide stroke icons accompany written labels; do not replace accessible names with decorative glyphs.
 
 ## Components
 
 ### Buttons
 
-Explicit actions use filled controls. The shared Button defaults to secondary; gold is used for primary emphasis. Default shared controls have a minimum height (36px), compact padding from frontmatter, and medium text. Hover uses the active surface for secondary controls; keyboard focus retains a visible outline and gold ring. Active buttons move down slightly (1px); disabled controls are visibly muted. Action-styled links remain appropriate for explicit continuation, creation, and opening actions.
-
-### Reading links
-
-In-page text links and unclassed page anchors are gold, transparent, borderless, square, and underlined with a visible offset (5px); hover turns them to principal text. Introductory reading links retain their underline and small vertical hit-area padding. Do not turn a reading link into a filled button by inheriting a broad page-anchor selector.
-
-### Chips
-
-The shared Badge supplies compact status/category pills. Use existing default, secondary, or outline roles; state must remain readable in text. The old language variant's purple literals are legacy drift, not a new palette role.
-
-### Cards / Containers
-
-Reading containers are transparent ruled rows, not a tiled card system. The learning row aligns content and explicit actions on desktop and stacks them on narrow screens. Retain explanatory text and metadata without making them competing headings.
+Use the existing shared Button and existing button-styled navigation links. Primary actions are black with white text and turn plum on hover. Shared Button defaults to the bordered secondary variant, with a pale pink hover; ordinary page link-buttons are white and hover to surface-muted. Controls have a minimum height of (44px) in the workspace. Pressed buttons move down (1px). Disabled shared buttons use muted surfaces and text; retain busy labels such as 저장 중…. Destructive actions use the error color.
 
 ### Inputs / Fields
 
-Shared Input, Textarea, and NativeSelect keep their existing semantic behavior and labels. Inside the app shell, effective fields use ink interiors, principal text, a stronger field edge, and muted placeholders. Input minimum height is 44px. Focus shifts the edge and adds a gold ring; invalid and disabled states come from the shared primitives. Do not remove the focus outline when copying a visual pattern.
+Use the shared labeled Input, Textarea and NativeSelect. Fields have a near-white fill, stronger input border, control corners and minimum height of (44px). Input horizontal padding is (20px); textarea keeps a (90px) minimum height and vertical resizing. Shared fields show a plum focus border and a three-pixel translucent ring; invalid fields use the destructive border and ring. Placeholder text is muted and never replaces the label. Forced-color mode restores the native select appearance.
+
+### Chips
+
+Shared secondary badges are compact metadata pills. Language badges use pale pink context with plum text and a border. Activity status labels use pale pink and plum with written status. These labels describe content; interactive filters retain buttons and `aria-pressed`.
+
+### Cards / Containers
+
+ActionCard combines a stroke icon well, concise task title, optional description and a directional icon. The entire card is a link; hover changes the white surface to pale pink. Compact mobile entry cards retain the title and icon while hiding secondary description and arrow. EmptyState reuses the icon well, honest title, supporting copy and optional action.
+
+ActivityItem places a title and wrapping metadata beside explicit actions; on narrow layouts the actions move below. Related activities share a white rounded list with separators. Document, reference and problem-book cards use white rounded containers and explicit open/edit actions. The document reading view separates user writing, linked evidence and AI explanation.
 
 ### Navigation
 
-Three destinations occupy a horizontal text navigation: 오늘의 학습, 학습 자료, 내 레퍼런스. Inactive links use muted text; `aria-current` adds principal text and a gold bottom rule (2px). Settings and records remain a labeled disclosure. On narrow screens, the three links share the full width and settings sit on the next line.
+Keep the three labeled primary destinations: 오늘의 학습, 자료, 레퍼런스. Current primary navigation is black with white text; hover is pale pink with plum text. Materials current state is pale pink with plum text. Use `aria-current="page"` and decorative SVG icons with `aria-hidden`. Settings is a disclosure containing secondary destinations, including restricted administration entries when authorized.
 
-### Question panel
+### Resume and question capture
 
-The contextual question panel uses raised ink, a border, internal scrolling, and sticky form actions. Narrow screens use an inset fixed panel whose height/bottom can follow viewport-related CSS variables. This describes the implementation; real mobile keyboard behavior has not been visually verified in this pass.
+The resume surface carries a real task title, last-learning timestamp and a working continuation button; when empty it offers materials instead. Loading uses a labeled skeleton, errors show a written notice and retry where provided. Do not add a repeated noninteractive label above the title.
+
+Question capture retains the current learning context, labeled textarea, save and close controls. The panel is scrollable and its action area sticks to the bottom. On mobile its available height and bottom position follow VisualViewport; the bottom dock hides while capture is open. Busy or context-loading states prevent duplicate submission. Closing or saving restores trigger focus; Escape respects Korean composition. Draft storage errors remain visible.
+
+### Interaction and accessibility
+
+All interactive elements keep visible focus: the shared outline is (2px) plum with (4px) offset, supplemented by shared control rings. Preserve semantic headings, labeled menus, written states and keyboard interaction. Reuse existing reduced-motion and forced-colors treatments. Action-card background changes use (160ms ease); buttons use existing (180ms ease) state transitions. Detailed code/editor surfaces remain dark charcoal with light code text inside the light workspace.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use the bundled regular serif for page titles and sans-serif for interface text.
-- **Do** preserve transparent underlined reading links and distinct explicit action buttons.
-- **Do** use ruled rows and limited reading measures for primary learning content.
-- **Do** retain keyboard focus, written states, labeled inputs, and reduced-motion behavior.
+
+- **Do** reuse the shared headings, action cards, activity items, empty states and controls.
+- **Do** expose problem books and practice as visible Materials destinations.
+- **Do** retain task actions, labels, focus and safe-area space when layouts collapse.
+- **Do** distinguish saved user writing, source evidence and AI explanation.
 
 ### Don't:
-- **Don't** make primary learning surfaces depend on dashboard tiles or table-centered composition.
-- **Don't** promote legacy purple literals or every isolated radius into reusable theme decisions.
-- **Don't** extend the scoped post-fix ship verdict into broad product approval or actual-device keyboard verification.
+
+- **Don't** restore the rejected serif, gold palette or paragraph-link directory as the main workspace.
+- **Don't** turn the primary learning screens into statistics dashboards or management tables.
+- **Don't** use decorative eyebrows, repeated labels or hover-only task discovery.
+- **Don't** extend component-preview or fixture-render evidence into real-device, paid-AI or whole-product approval.
+
+Evidence scope: source-derived system, with actual Firefox renders of synthetic examples for Today, Materials, problem books, reference list/detail, practice and a short-viewport question panel. The post-fix review returned a scoped ship verdict for removal of the duplicate Today resume label, with no visible fix-batch regressions; it is not a whole-product approval. No new shipping raster assets were introduced. Real mobile OS keyboard behavior and paid AI were not exercised. Older ink/gold captures are not evidence for this world. Remaining isolated legacy route styles are not promoted into shared tokens; this record does not claim those routes received a complete visual audit.

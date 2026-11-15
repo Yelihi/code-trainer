@@ -16,10 +16,10 @@ test('three learning menus preserve current page and admin visibility', async ()
     assert.match(render('/admin/operations', true), /href="\/admin\/operations"/);
     assert.match(render('/admin/sources/source-id', true), /href="\/admin\/sources"/);
     const cases = [
-      ['/', '/'], ['/learn/context/units/unit', '/'], ['/practice/set-id', '/'], ['/questions/id', '/'],
+      ['/', '/'], ['/learn/context/units/unit', '/library'], ['/practice/set-id', '/library'], ['/questions/id', '/'],
       ['/library/source-id/edit', '/library'], ['/library/new/reference', '/library'], ['/references/new', '/library'],
       ['/interpretations/id', '/library'], ['/explore?page=2', '/library'], ['/courses', '/library'],
-      ['/technical-references/id', '/technical-references'], ['/reviews/material/id', '/'],
+      ['/problem-books', '/library'], ['/problem-books/problems/new', '/library'], ['/foundations', '/library'], ['/worksheets/id', '/library'], ['/technical-references/id', '/technical-references'], ['/reviews/material/id', '/'],
     ];
     for (const [path, target] of cases) {
       const active = [...render(path).matchAll(/<a\b[^>]*aria-current="page"[^>]*>/g)];
@@ -29,10 +29,21 @@ test('three learning menus preserve current page and admin visibility', async ()
     assert.doesNotMatch(render('/library-unknown'), /aria-current="page"/);
     assert.doesNotMatch(render('/settings/ai').match(/<a[^>]*href="\/settings\/ai"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
     assert.doesNotMatch(render('/apply').match(/<a[^>]*href="\/apply"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
+    const { MaterialsNavigation } = await server.ssrLoadModule('/src/WorkspaceUI.tsx');
+    const materialMenu = (path: string) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(MaterialsNavigation)));
+    for (const path of ['/library', '/library/id', '/problem-books/problems/new', '/courses', '/foundations', '/interpretations/id']) {
+      const menu = materialMenu(path);
+      assert.match(menu, /aria-label="자료 메뉴"/);
+      assert.match(menu, /href="\/problem-books"/);
+      assert.doesNotMatch(menu, /<details/);
+      assert.equal([...menu.matchAll(/aria-current="page"/g)].length, 1);
+    }
+    assert.equal(materialMenu('/'), '');
+    assert.match(materialMenu('/problem-books/id'), /<a[^>]*aria-current="page"[^>]*href="\/problem-books"/);
     const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Routes, null,
       createElement(Route, { element: createElement(Outlet, { context: { userId: 'fixture-owner', health: null } }) },
         createElement(Route, { path: '*', element: createElement(PracticeEntry) })))));
     assert.match(practice, /href="\/foundations"/);
-    assert.match(practice, /href="\/"/);
+    assert.match(practice, /href="\/courses"/);
   } finally { await server.close(); }
 });

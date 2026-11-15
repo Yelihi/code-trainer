@@ -335,6 +335,15 @@ class AppTest(unittest.TestCase):
         self.assertTrue(record['exercises'][0]['deleted'])
         self.assertNotIn('submitted_code', service.dump(record))
 
+    def test_local_preview_origin_allows_writes_without_relaxing_boundaries(self):
+        for host in ('127.0.0.1', 'localhost'):
+            response = self.client.post('/api/auth', json=self.credentials, headers={'origin': f'http://{host}:4173'})
+            self.assertEqual(response.status_code, 200, response.text)
+        for origin in ('https://attacker.example', 'http://127.0.0.1:4174', 'https://localhost:4173', 'http://localhost.attacker.example:4173'):
+            self.assertEqual(self.client.post('/api/auth', json=self.credentials, headers={'origin': origin}).status_code, 403)
+        self.assertEqual(self.client.post('/api/auth', json=self.credentials,
+            headers={'origin': 'http://127.0.0.1:4173', 'sec-fetch-site': 'cross-site'}).status_code, 403)
+
     def test_auth_origin_validation_and_private_data(self):
         for name in ('a', '한', '이름 !', 'x' * 41):
             self.assertEqual(Credentials(username=name, password='password123').username, name)

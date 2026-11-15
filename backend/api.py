@@ -75,7 +75,7 @@ async def local_boundary(request: Request, call_next):
         return JSONResponse({'detail': '로컬 주소로 접속해주세요.'}, status_code=403)
     if request.method not in ('GET', 'HEAD', 'OPTIONS'):
         origin = request.headers.get('origin')
-        allowed = {access.origin()} if deployed else {str(request.base_url).rstrip('/'), 'http://127.0.0.1:5173', 'http://localhost:5173'}
+        allowed = {access.origin()} if deployed else {str(request.base_url).rstrip('/'), 'http://127.0.0.1:5173', 'http://localhost:5173', 'http://127.0.0.1:4173', 'http://localhost:4173'}
         if (deployed and not origin) or (origin and origin not in allowed) or request.headers.get('sec-fetch-site') == 'cross-site':
             return JSONResponse({'detail': '허용되지 않은 요청 출처입니다.'}, status_code=403)
         if request.headers.get('content-type', '').split(';')[0] != 'application/json':

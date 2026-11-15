@@ -49,6 +49,7 @@ class DeploymentTest(unittest.TestCase):
                     self.assertEqual(client.post('/api/auth', json={'username': 'new', 'password': 'password123'}, headers=headers).status_code, 403)
                     self.assertEqual(client.post('/api/logout', json={}, headers={'x-trainer-user-jwt': token()}).status_code, 403)
                     self.assertEqual(client.post('/api/logout', json={}, headers={**headers, 'origin': 'https://evil.example'}).status_code, 403)
+                    self.assertEqual(client.post('/api/logout', json={}, headers={**headers, 'origin': 'http://127.0.0.1:4173'}).status_code, 403)
                     self.assertEqual(client.post('/api/logout', json={}, headers=headers).json()['logout_url'], '/cdn-cgi/access/logout')
                     for override in ({'aud': 'resume-agent'}, {'iss': 'https://evil.example'}, {'exp': 1}, {'nbf': int(time.time()) + 1000}):
                         self.assertEqual(client.get('/api/session', headers={'x-trainer-user-jwt': token(**override)}).status_code, 401)

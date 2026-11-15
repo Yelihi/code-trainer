@@ -1,0 +1,316 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-15T10:03:08.586087+00:00",
+  "title": "Design System: Code Trainer",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "tonalRamp": [
+          "oklch(15% 0.0768 84.25)",
+          "oklch(26% 0.0768 84.25)",
+          "oklch(38% 0.0768 84.25)",
+          "oklch(49% 0.0768 84.25)",
+          "oklch(61% 0.0768 84.25)",
+          "oklch(72% 0.0768 84.25)",
+          "oklch(84% 0.0768 84.25)",
+          "oklch(95% 0.0768 84.25)"
+        ]
+      },
+      "primary-foreground": {
+        "role": "neutral",
+        "displayName": "Primary Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0180 131.32)",
+          "oklch(26% 0.0180 131.32)",
+          "oklch(38% 0.0180 131.32)",
+          "oklch(49% 0.0180 131.32)",
+          "oklch(61% 0.0180 131.32)",
+          "oklch(72% 0.0180 131.32)",
+          "oklch(84% 0.0180 131.32)",
+          "oklch(95% 0.0180 131.32)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Background",
+        "tonalRamp": [
+          "oklch(15% 0.0050 145.38)",
+          "oklch(26% 0.0050 145.38)",
+          "oklch(38% 0.0050 145.38)",
+          "oklch(49% 0.0050 145.38)",
+          "oklch(61% 0.0050 145.38)",
+          "oklch(72% 0.0050 145.38)",
+          "oklch(84% 0.0050 145.38)",
+          "oklch(95% 0.0050 145.38)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0169 88.00)",
+          "oklch(26% 0.0169 88.00)",
+          "oklch(38% 0.0169 88.00)",
+          "oklch(49% 0.0169 88.00)",
+          "oklch(61% 0.0169 88.00)",
+          "oklch(72% 0.0169 88.00)",
+          "oklch(84% 0.0169 88.00)",
+          "oklch(95% 0.0169 88.00)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "tonalRamp": [
+          "oklch(15% 0.0088 137.83)",
+          "oklch(26% 0.0088 137.83)",
+          "oklch(38% 0.0088 137.83)",
+          "oklch(49% 0.0088 137.83)",
+          "oklch(61% 0.0088 137.83)",
+          "oklch(72% 0.0088 137.83)",
+          "oklch(84% 0.0088 137.83)",
+          "oklch(95% 0.0088 137.83)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "tonalRamp": [
+          "oklch(15% 0.0182 129.04)",
+          "oklch(26% 0.0182 129.04)",
+          "oklch(38% 0.0182 129.04)",
+          "oklch(49% 0.0182 129.04)",
+          "oklch(61% 0.0182 129.04)",
+          "oklch(72% 0.0182 129.04)",
+          "oklch(84% 0.0182 129.04)",
+          "oklch(95% 0.0182 129.04)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0196 113.45)",
+          "oklch(26% 0.0196 113.45)",
+          "oklch(38% 0.0196 113.45)",
+          "oklch(49% 0.0196 113.45)",
+          "oklch(61% 0.0196 113.45)",
+          "oklch(72% 0.0196 113.45)",
+          "oklch(84% 0.0196 113.45)",
+          "oklch(95% 0.0196 113.45)"
+        ]
+      },
+      "secondary": {
+        "role": "neutral",
+        "displayName": "Secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0160 133.69)",
+          "oklch(26% 0.0160 133.69)",
+          "oklch(38% 0.0160 133.69)",
+          "oklch(49% 0.0160 133.69)",
+          "oklch(61% 0.0160 133.69)",
+          "oklch(72% 0.0160 133.69)",
+          "oklch(84% 0.0160 133.69)",
+          "oklch(95% 0.0160 133.69)"
+        ]
+      },
+      "surface-muted": {
+        "role": "neutral",
+        "displayName": "Surface Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0140 131.74)",
+          "oklch(26% 0.0140 131.74)",
+          "oklch(38% 0.0140 131.74)",
+          "oklch(49% 0.0140 131.74)",
+          "oklch(61% 0.0140 131.74)",
+          "oklch(72% 0.0140 131.74)",
+          "oklch(84% 0.0140 131.74)",
+          "oklch(95% 0.0140 131.74)"
+        ]
+      },
+      "accent": {
+        "role": "neutral",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(15% 0.0276 130.62)",
+          "oklch(26% 0.0276 130.62)",
+          "oklch(38% 0.0276 130.62)",
+          "oklch(49% 0.0276 130.62)",
+          "oklch(61% 0.0276 130.62)",
+          "oklch(72% 0.0276 130.62)",
+          "oklch(84% 0.0276 130.62)",
+          "oklch(95% 0.0276 130.62)"
+        ]
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Input",
+        "tonalRamp": [
+          "oklch(15% 0.0333 122.57)",
+          "oklch(26% 0.0333 122.57)",
+          "oklch(38% 0.0333 122.57)",
+          "oklch(49% 0.0333 122.57)",
+          "oklch(61% 0.0333 122.57)",
+          "oklch(72% 0.0333 122.57)",
+          "oklch(84% 0.0333 122.57)",
+          "oklch(95% 0.0333 122.57)"
+        ]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Success",
+        "tonalRamp": [
+          "oklch(15% 0.0634 158.42)",
+          "oklch(26% 0.0634 158.42)",
+          "oklch(38% 0.0634 158.42)",
+          "oklch(49% 0.0634 158.42)",
+          "oklch(61% 0.0634 158.42)",
+          "oklch(72% 0.0634 158.42)",
+          "oklch(84% 0.0634 158.42)",
+          "oklch(95% 0.0634 158.42)"
+        ]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Error",
+        "tonalRamp": [
+          "oklch(15% 0.0946 28.05)",
+          "oklch(26% 0.0946 28.05)",
+          "oklch(38% 0.0946 28.05)",
+          "oklch(49% 0.0946 28.05)",
+          "oklch(61% 0.0946 28.05)",
+          "oklch(72% 0.0946 28.05)",
+          "oklch(84% 0.0946 28.05)",
+          "oklch(95% 0.0946 28.05)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Reading serif",
+        "purpose": "Bundled regular page titles."
+      }
+    },
+    "shadows": [
+      {
+        "name": "question-panel",
+        "value": "0 12px 32px #0008",
+        "purpose": "Ambient separation for the floating question form."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "180ms ease",
+        "purpose": "Control color and transform transitions; disabled under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "learning-narrow",
+        "value": "700px"
+      },
+      {
+        "name": "lesson-stack",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Gold emphasis for the principal explicit action. ",
+      "html": "<button class=\"ds-button-primary\">학습 이어서 하기</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:8px 16px;border-radius:4px;font:500 .875rem/1.7 var(--font-sans,sans-serif);cursor:pointer;transition:background-color 180ms ease,border-color 180ms ease,color 180ms ease,transform 180ms ease;background:var(--primary,#dcc18b);color:var(--primary-foreground,#20251c);border:1px solid transparent;}.ds-button-primary:hover{background:var(--primary,#dcc18b);}.ds-button-primary:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#dcc18b) 50%,transparent);}.ds-button-primary:active{transform:translateY(1px)}.ds-button-primary:disabled{cursor:not-allowed;color:#bec5b5;background:#272b21;border-color:#3f4537;box-shadow:none;}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none}}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Explicit action; secondary hover retains a legacy purple edge pending product cleanup.",
+      "html": "<button class=\"ds-button-secondary\">학습 이어서 하기</button>",
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:8px 16px;border-radius:4px;font:500 .875rem/1.7 var(--font-sans,sans-serif);cursor:pointer;transition:background-color 180ms ease,border-color 180ms ease,color 180ms ease,transform 180ms ease;background:var(--secondary,#252a22);color:var(--foreground,#eee9dd);border:1px solid var(--border,#393e34);}.ds-button-secondary:hover{background:var(--accent,#343c2d);border-color:#65517e;}.ds-button-secondary:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#dcc18b) 50%,transparent);}.ds-button-secondary:active{transform:translateY(1px)}.ds-button-secondary:disabled{cursor:not-allowed;color:#bec5b5;background:#272b21;border-color:#3f4537;box-shadow:none;}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none}}"
+    },
+    {
+      "name": "Reading link",
+      "kind": "custom",
+      "refersTo": "reading-link",
+      "description": "Transparent underlined navigation within reading content.",
+      "html": "<a class=\"ds-reading-link\" href=\"#reading\">학습 자료 찾아보기</a>",
+      "css": ".ds-reading-link{background:transparent;border:0;border-radius:0;padding:4px 0;color:var(--primary,#dcc18b);text-decoration:underline;text-underline-offset:5px;font:500 .9375rem/1.7 var(--font-sans,sans-serif)}.ds-reading-link:hover{color:var(--foreground,#eee9dd)}.ds-reading-link:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;}.ds-reading-link:active{color:var(--foreground,#eee9dd)}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Shared field with app-shell ink override.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-search\">레퍼런스 검색</label><input class=\"ds-field\" id=\"ds-search\" type=\"search\" placeholder=\"기술 주제에서 찾기\">",
+      "css": ".ds-field-label{display:block;margin-bottom:8px;color:var(--foreground,#eee9dd);font:500 .875rem/1.7 var(--font-sans,sans-serif)}.ds-field{min-height:44px;width:100%;min-width:0;padding:8px 20px;border:1px solid var(--input,#626954);border-radius:4px;background:var(--bg,#141614);color:var(--text,#eee9dd);font:.9375rem/1.7 var(--font-sans,sans-serif);caret-color:var(--primary,#dcc18b)}.ds-field::placeholder{color:var(--muted,#b4b6a8)}.ds-field:hover{border-color:var(--input,#626954)}.ds-field:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;border-color:var(--ring,#dcc18b);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring,#dcc18b) 50%,transparent)}.ds-field:disabled{opacity:.5;cursor:not-allowed}"
+    },
+    {
+      "name": "Secondary badge",
+      "kind": "chip",
+      "refersTo": "badge-secondary",
+      "description": "Existing shared compact metadata pill.",
+      "html": "<span class=\"ds-badge\">사용자 작성</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid transparent;border-radius:9999px;background:var(--secondary,#252a22);color:var(--foreground,#eee9dd);font:500 .75rem/1.7 var(--font-sans,sans-serif);white-space:nowrap}"
+    },
+    {
+      "name": "Reading row",
+      "kind": "card",
+      "refersTo": "reading-row",
+      "description": "Flat list container; no invented hover elevation.",
+      "html": "<article class=\"ds-row\"><div><h3>이어서 배울 개념</h3><p>마지막 학습 위치에서 계속 읽어보세요.</p></div></article>",
+      "css": ".ds-row{padding:24px 0;border:0;border-bottom:1px solid var(--line,#393e34);border-radius:0;background:transparent;color:var(--text,#eee9dd);font:.9375rem/1.7 var(--font-sans,sans-serif)}.ds-row h3{margin:0 0 8px;font-size:1.1rem;font-weight:600;line-height:1.4}.ds-row p{margin:5px 0;max-width:68ch;color:var(--muted,#b4b6a8);line-height:1.85}"
+    },
+    {
+      "name": "Primary navigation",
+      "kind": "nav",
+      "description": "Three destinations with text and active underline.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"주요 메뉴\"><a href=\"#today\" aria-current=\"page\">오늘의 학습</a><a href=\"#library\">학습 자료</a><a href=\"#references\">내 레퍼런스</a></nav>",
+      "css": ".ds-nav{display:flex;gap:32px;border-block:1px solid var(--line,#393e34);font:.9375rem/1.7 var(--font-sans,sans-serif)}.ds-nav a{padding:18px 0 15px;border-bottom:2px solid transparent;color:var(--muted,#b4b6a8);text-decoration:none}.ds-nav a[aria-current]{color:var(--text,#eee9dd);border-bottom-color:var(--primary,#dcc18b)}.ds-nav a:focus-visible{outline:2px solid var(--primary,#dcc18b);outline-offset:4px;}@media(max-width:700px){.ds-nav{gap:12px;justify-content:space-between}.ds-nav a{font-size:.9rem}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Technical reading notebook",
+    "overview": "The notebook metaphor comes from the recorded user direction in `docs/technical-learning-ui.md`: ink surroundings, warm paper-colored text, and restrained gold emphasis. The interface supports sustained Korean reading and deliberate learning actions. Paper describes the text's warmth; the implemented surface remains dark.\n\nThis is a source-derived record of the implemented system, not a retrospective direction approval. The formal THESIS, OWN-WORLD, STORY, FIRST VIEWPORT, and FORM blocks and concept-seed protocol were not completed. Existing review screenshots precede the final reading-link and bundled-font fixes; final visual review remains pending. Sources: `frontend/src/learning.css` (loaded last), `styles.css`, `typography.css`, `shadcn.css`, `components/ui`, `App.tsx`, `Navigation.tsx`, `Today.tsx`, and `TechnicalReferences.tsx`.",
+    "keyCharacteristics": [
+      "Dark ink surfaces with warm readable text and restrained gold actions.",
+      "Serif page titles paired with practical sans-serif interface text.",
+      "Ruled reading lists, limited prose measure, and generous vertical rhythm.",
+      "Three primary destinations with settings in a secondary disclosure."
+    ],
+    "rules": [
+      {
+        "name": "The Bookmark Rule",
+        "body": "Use gold to identify reading links, action priority, and current position; retain written labels and an underline or other structural cue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reading Measure Rule",
+        "body": "Keep introductory prose and reading copy within 72ch; longer lesson and reference chapters use a related 74ch limit.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled List Rule",
+        "body": "Keep recurring reading rows transparent with separators; reserve enclosed surfaces for controls, editable material, code, and overlays that need their own boundary.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the bundled regular serif for page titles and sans-serif for interface text.",
+      "**Do** preserve transparent underlined reading links and distinct explicit action buttons.",
+      "**Do** use ruled rows and limited reading measures for primary learning content.",
+      "**Do** retain keyboard focus, written states, labeled inputs, and reduced-motion behavior."
+    ],
+    "donts": [
+      "**Don't** make primary learning surfaces depend on dashboard tiles or table-centered composition.",
+      "**Don't** promote legacy purple literals or every isolated radius into reusable theme decisions.",
+      "**Don't** treat pre-fix screenshots or this source record as a completed final visual review."
+    ]
+  }
+}

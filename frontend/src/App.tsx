@@ -56,9 +56,9 @@ export function App() {
     <a className="skip-link" href="#workspace">본문으로 이동</a>
     <header className="topbar">
       <Link className="brand" to="/">code<span>trainer</span><span className="version">{session?.auth_mode === 'access' ? 'PRIVATE' : 'LOCAL'}</span></Link>
-      <div className="account">{session?.user && <><QuickQuestion key={session.user.id} userId={session.user.id} /><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span><Button className="text-button" onClick={logout}>로그아웃</Button></>}</div>
+      <div className="account">{session?.user && <><QuickQuestion key={session.user.id} userId={session.user.id} /><span className="avatar">{session.user.username.slice(0, 1).toUpperCase()}</span><span>{session.user.username}</span>{session.auth_mode !== 'preview' && <Button className="text-button" onClick={logout}>로그아웃</Button>}</>}</div>
     </header>
-    <div className="workspace-navigation"><Navigation isAdmin={!!session?.user?.admin} onNavigate={() => undefined} onLogout={() => void logout()} /></div>
+    <div className="workspace-navigation"><Navigation isAdmin={!!session?.user?.admin} onNavigate={() => undefined} onLogout={session?.auth_mode === 'preview' ? undefined : () => void logout()} /></div>
     <div className="workspace" id="workspace">
       {error && <div className="page"><ErrorNotice error={error} /><Button onClick={refreshSession}>다시 연결</Button></div>}
       {opened && <><StudyLocation /><Outlet context={{ health, refreshHealth, isAdmin: !!session?.user?.admin, userId: session?.user?.id ?? '' } satisfies AppContext} /><ContextQuestions /></>}

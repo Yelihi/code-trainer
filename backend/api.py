@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
-from . import project_brain, wiki, study, technical_references
+from . import project_brain, wiki, study, technical_references, preview
 from .project_brain import SourceInput as BrainSourceInput, RecordInput as BrainRecordInput, RevisionInput as BrainRevisionInput, LinkInput as BrainLinkInput, DraftInput as BrainDraftInput
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
@@ -33,8 +33,10 @@ from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInp
 
 @asynccontextmanager
 async def lifespan(app):
+    preview.validate_config()
     access.validate_config()
     service.initialize()
+    preview.initialize()
     collector = asyncio.create_task(feeds.poll())
     try:
         yield
@@ -87,6 +89,11 @@ async def local_boundary(request: Request, call_next):
                 return JSONResponse({'detail': '요청 크기 제한을 초과했습니다.'}, status_code=413)
             body.extend(chunk)
         request._body = bytes(body)
+    if preview.enabled():
+        try:
+            request.state.preview_user = preview.user(request)
+        except service.Error as error:
+            return JSONResponse({'detail': str(error)}, status_code=error.status, headers={'Cache-Control': 'no-store'})
     if deployed:
         try:
             # JWKS retrieval is blocking I/O; keep it off the ASGI event loop.
@@ -134,6 +141,8 @@ async def request_status(request: Request, call_next):
 def user(request: Request):
     if access.enabled():
         return request.state.user
+    if preview.enabled():
+        return request.state.preview_user
     return service.require_user(request.cookies.get('trainer_session', ''))
 
 
@@ -141,11 +150,15 @@ def user(request: Request):
 def session(request: Request):
     if access.enabled():
         return {'user': user(request), 'setup_required': False, 'auth_mode': 'access'}
+    if preview.enabled():
+        return {'user': user(request), 'setup_required': False, 'auth_mode': 'preview'}
     return service.session(request.cookies.get('trainer_session', ''))
 
 
 @app.post('/api/auth')
 def auth(body: Credentials):
+    if preview.enabled():
+        raise service.Error('미리보기는 개발 소유자에 자동 연결됩니다.', 403)
     if access.enabled():
         raise service.Error('이메일 인증을 사용해주세요.', 403)
     token = service.authenticate(body)
@@ -156,6 +169,8 @@ def auth(body: Credentials):
 
 @app.post('/api/logout')
 def logout(request: Request, current=Depends(user)):
+    if preview.enabled():
+        raise service.Error('미리보기에는 별도 로그아웃이 없습니다.', 403)
     if access.enabled():
         return {'logout_url': '/cdn-cgi/access/logout'}
     service.logout(request.cookies.get('trainer_session', ''))
@@ -166,7 +181,7 @@ def logout(request: Request, current=Depends(user)):
 
 @app.get('/api/health')
 def health(request: Request):
-    current = user(request) if access.enabled() else service.session(request.cookies.get('trainer_session', ''))['user']
+    current = user(request) if access.enabled() or preview.enabled() else service.session(request.cookies.get('trainer_session', ''))['user']
     return service.health(current['id'] if current else None)
 
 

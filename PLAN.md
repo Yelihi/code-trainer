@@ -405,3 +405,11 @@ React/FastAPI/SQLite를 활용하며 전체 재작성·새 그래프 DB·벡터 
 - [x] 디자인 문서 및 프리뷰 갱신
 
 구현·검증: [새 디자인 증거](docs/technical-learning-evidence/2026-11-15-components/README.md). 11개 캡처의 독립 전체 검토 및 1개 지적 수정 판정 `ship`, 프런트엔드 31개 검사·타입·린트·build 통과. DESIGN.md/sidecar를 실제 새 토큰에서 다시 기록했으며 로컬 로그인 없는 프리뷰도 갱신했다. 실기기 키보드·유료 AI·운영 배포는 미실행이다.
+
+## 20. 빈 상태와 복습 화면 사용성 보완 — 2026-11-16
+
+- 공통 EmptyState: 아이콘·제목·안내·다음 행동, 최소 220px/모바일 200px.
+- 복습: 자료·내 문제·코드·일정의 URL 연동 접근성 탭. 주기 설명은 펼침 안내로 이동.
+- 자료·질문·문제·노트·자동 수집의 빈 목록을 공통 컴포넌트로 통합.
+- 이어서 하기 카드·빈 상태 아이콘 배경에만 제한된 그라데이션.
+- 검증: frontend 32개 테스트·build·lint 통과, 실제 Chrome 모바일/데스크톱 확인. [증거와 한계](docs/technical-learning-evidence/2026-11-16-empty-tabs/README.md). 독립 검토의 문서 지적을 반영하고 수정 판정 `ship`을 받았다. DESIGN.md/sidecar 갱신 완료. 미배포.

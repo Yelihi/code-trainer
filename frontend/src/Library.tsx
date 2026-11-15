@@ -14,7 +14,7 @@ import { Button } from './components/ui/button';
 import { Textarea } from './components/ui/textarea';
 import { Label } from './components/ui/label';
 import { FilePlus2, FilePenLine, Link2, Rss } from 'lucide-react';
-import { ActionCard, PageHeading } from './WorkspaceUI';
+import { ActionCard, EmptyState, PageHeading } from './WorkspaceUI';
 
 export function Library() {
   const { userId } = useApp();
@@ -33,7 +33,7 @@ function LibraryList() {
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="자료를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '삭제된 원문과 기록' : '나의 원문과 기록'}</span><span>{data.total}개의 자료</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" to={'/library/' + item.id} key={item.id}><div><small>{resourceKinds[item.kind]} · {archived ? '삭제됨' : item.state === 'failed' ? '수집 실패 · 다시 가져오기 가능' : item.state === 'fetching' ? '원문 수집 중' : `본문 v${item.revision}`}</small><h2>{item.name}</h2><p>{item.excerpt || item.url || '아직 가져온 본문이 없습니다.'}</p><footer><span>{item.kind === 'note' ? '내 언어로 남긴 기록' : '원자료'}</span><span>{timestamp(item.updated_at)}</span></footer></div></Link>)}</div> : <section className="reference-empty"><h2>{query ? '검색한 자료가 없습니다.' : archived ? '삭제된 자료가 없습니다.' : '다음 배움의 재료를 모아보세요.'}</h2>{!archived && <><p>URL, 텍스트, Markdown 파일을 등록하거나<br />직접 노트를 작성할 수 있습니다.</p><Link className="button" to="/library/new/reference">레퍼런스 등록</Link></>}</section>}
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" to={'/library/' + item.id} key={item.id}><div><small>{resourceKinds[item.kind]} · {archived ? '삭제됨' : item.state === 'failed' ? '수집 실패 · 다시 가져오기 가능' : item.state === 'fetching' ? '원문 수집 중' : `본문 v${item.revision}`}</small><h2>{item.name}</h2><p>{item.excerpt || item.url || '아직 가져온 본문이 없습니다.'}</p><footer><span>{item.kind === 'note' ? '내 언어로 남긴 기록' : '원자료'}</span><span>{timestamp(item.updated_at)}</span></footer></div></Link>)}</div> : <EmptyState icon={FilePlus2} title={query ? '검색한 자료가 없습니다' : archived ? '삭제된 자료가 없습니다' : '첫 자료를 추가해보세요'} description={query ? '다른 검색어나 자료 종류로 찾아보세요.' : archived ? '삭제한 자료는 이곳에서 복원할 수 있습니다.' : 'URL, 텍스트, 파일을 저장하거나 직접 작성할 수 있습니다.'} action={!archived && !query ? <Link className="button" to="/library/new/reference">자료 추가</Link> : undefined} />}
       {data.pages > 1 && <nav className="pagination" aria-label="자료 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ q: query, kind, page: String(data.page - 1), ...(archived ? { archived: 'true' } : {}) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ q: query, kind, page: String(data.page + 1), ...(archived ? { archived: 'true' } : {}) })}>다음</Button></nav>}
     </>}
     <div className="library-notes-link"><Link className="text-link" to="/library?archived=true">삭제된 자료 보기</Link><Link className="button" to="/references">기존 노트 관리 · 보관한 노트 보기</Link></div>
@@ -201,7 +201,7 @@ function Detail({ id }: { id: string }) {
       {current.state === 'fetching' && <p role="status" className="notice">원문 수집 중입니다. <Button onClick={() => { setResult(null); reload(); }}>상태 확인</Button></p>}
       {message && <p className="reference-state" role="status">{message}</p>}
       {!current.archived && <ResourceInterpretations resourceId={id} revision={old?.revision ?? current.revision} content={old ? old.content : current.content} />}
-      {current.content !== null ? <article className="reference-reading"><Markdown language="" images={!!current.note_id}>{current.content}</Markdown></article> : <section className="reference-empty"><h2>아직 수집된 본문이 없습니다.</h2><p>원문 주소는 저장되어 있습니다. 다시 가져오기를 눌러 재시도하세요.</p></section>}
+      {current.content !== null ? <article className="reference-reading"><Markdown language="" images={!!current.note_id}>{current.content}</Markdown></article> : <EmptyState icon={FilePlus2} title="아직 수집된 본문이 없습니다" description="원문 주소는 저장되어 있습니다. 다시 가져오기를 눌러 재시도하세요." />}
       <section className="library-versions"><h2>본문 버전 · {current.versions.length}</h2>{current.kind !== 'note' && <p>본문이나 원문 URL이 변경되면 새 버전이 추가됩니다. 이전 원문은 그대로 보존됩니다.</p>}<div className="reference-version-list">{current.versions.map(v => <Button key={v.revision} onClick={() => void showVersion(v.revision)}>v{v.revision} · {timestamp(v.created_at)}</Button>)}</div></section>
       {old && <section className="reference-old-version"><header><h2>저장된 원문 v{old.revision} · {old.name}</h2><Button onClick={() => { versionRequest.current++; setOld(null); }}>닫기</Button></header>{safeSourceUrl(old.url ?? undefined) && <p className="library-version-url">당시 원문 URL · {old.url}</p>}<Markdown language="" images={!!current.note_id}>{old.content ?? '이 버전에는 수집된 본문이 없습니다.'}</Markdown></section>}
     </>}

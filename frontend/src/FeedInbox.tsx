@@ -1,3 +1,5 @@
+import { Rss } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { NativeSelect } from './components/ui/native-select';
 import { AnimatedDetails } from './AnimatedDetails';
 import { LoadingSkeleton } from './LoadingSkeleton';
@@ -71,7 +73,7 @@ export function FeedInbox() {
     <ErrorNotice error={error || actionError || data?.error || ''} />{notice && <p className="notice" role="status">{notice}</p>}
     {error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="포스팅을 불러오는 중…" />}
-    {data && !data.items.length && <div className="empty-state"><h2>대기 중인 글이 없습니다</h2><p>새 글이 수집되면 이곳에 표시됩니다. ‘수집 출처’에서 새 글을 직접 확인할 수도 있습니다.</p></div>}
+    {data && !data.items.length && <EmptyState icon={Rss} title="대기 중인 글이 없습니다" description="등록한 출처에서 새 글을 수집하면 여기에 표시됩니다. 수집 출처에서 직접 확인할 수도 있습니다." />}
     <div className="feed-list">{data?.items.map(post => {
       const pending = post.generation_state === 'generating' || post.generation_state === 'validating';
       const query = new URLSearchParams({ post: post.id, url: post.raw_url || post.url, title: post.title });

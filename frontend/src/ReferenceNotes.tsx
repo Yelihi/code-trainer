@@ -1,3 +1,5 @@
+import { NotebookPen } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { AddToReview } from './SpacedReviews';
 import { NativeSelect } from './components/ui/native-select';
 import { LoadingSkeleton } from './LoadingSkeleton';
@@ -31,7 +33,7 @@ export function ReferenceNotes() {
     {!data && !error && <LoadingSkeleton layout="list" label="노트를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '보관한 노트' : '나의 레퍼런스'}</span><span>{data.total}개의 기록</span></div>
       {data.items.length ? <div className="reference-list">{data.items.map(note => <Link className="reference-list-item" to={'/references/' + note.id} key={note.id}><div><small>{referenceKinds[note.metadata.kind]}{note.metadata.title ? ' · ' + note.metadata.title : ''}</small><h2>{note.title}</h2><p>{note.excerpt.replace(/!\[[^\]]*\]\([^)]*\)/g, '[이미지]')}</p><footer><span>{note.metadata.locator || '자유롭게 남긴 기록'}</span><span>{timestamp(note.updated_at)} · v{note.revision}</span></footer></div></Link>)}</div>
-        : <section className="reference-empty"><span aria-hidden="true">Aa</span><h2>{query ? '검색한 내용을 찾지 못했습니다.' : archived ? '보관한 노트가 없습니다.' : '한 문장부터 시작해보세요.'}</h2><p>완성된 정리가 아니어도 괜찮습니다.<br />기록을 남기고, 준비됐을 때 개념 지도에 연결하세요.</p>{!archived && <Link className="button" to="/references/new">첫 노트 작성</Link>}</section>}
+        : <EmptyState icon={NotebookPen} title={query ? '검색한 노트가 없습니다' : archived ? '보관한 노트가 없습니다' : '첫 노트를 작성해보세요'} description={query ? '다른 검색어로 찾아보세요.' : '짧은 메모부터 긴 설명까지 내 언어로 기록할 수 있습니다.'} action={!archived && !query ? <Link className="button" to="/references/new">노트 작성</Link> : undefined} />}
       {data.pages > 1 && <nav className="pagination" aria-label="노트 페이지"><Button disabled={page <= 1} onClick={() => setParams({ q: query, archived: String(archived), page: String(page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={page >= data.pages} onClick={() => setParams({ q: query, archived: String(archived), page: String(page + 1) })}>다음</Button></nav>}
     </>}
   </main>;

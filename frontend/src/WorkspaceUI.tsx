@@ -1,3 +1,4 @@
+import { Tabs } from 'radix-ui';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight, BookOpen, Code2, FileText, GraduationCap, type LucideIcon } from 'lucide-react';
@@ -37,4 +38,8 @@ export function MaterialsNavigation() {
 
 export function ActivityItem({ title, meta, children }: { title: string; meta?: ReactNode; children: ReactNode }) {
   return <article className="activity-item"><div className="activity-item-copy"><h3>{title}</h3>{meta && <div className="activity-item-meta">{meta}</div>}</div><div className="activity-item-actions">{children}</div></article>;
+}
+
+export function WorkspaceTabs({ label, value, onValueChange, items }: { label: string; value: string; onValueChange: (value: string) => void; items: { value: string; label: string; icon: LucideIcon; content: ReactNode }[] }) {
+  return <Tabs.Root className="workspace-tabs" value={value} onValueChange={onValueChange} activationMode="automatic"><Tabs.List className="workspace-tab-list" aria-label={label}>{items.map(({ value, label, icon: Icon }) => <Tabs.Trigger key={value} value={value}><Icon size={20} strokeWidth={1.7} aria-hidden="true" /><span>{label}</span></Tabs.Trigger>)}</Tabs.List>{items.map(item => <Tabs.Content className="workspace-tab-panel" key={item.value} value={item.value}>{item.content}</Tabs.Content>)}</Tabs.Root>;
 }

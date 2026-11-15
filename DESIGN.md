@@ -169,6 +169,8 @@ Work surfaces are flat at rest: gray surroundings and white cards provide separa
 - **Question panel:** `0 12px 40px #18181826`.
 - **Mobile dock:** `0 8px 28px #1818181c`.
 
+**The Restrained Gradient Rule.** Keep gradients limited to the resume surface and empty-state icon wells. Empty icons blend pale pink context into surface-muted (`linear-gradient(145deg, var(--accent), var(--surface-muted))`); recurring work surfaces remain white.
+
 **The Floating Layer Rule.** Keep recurring work cards tonal and flat; use the recorded shadows for the menu, dock and question panel.
 
 ## Shapes
@@ -191,7 +193,7 @@ Shared secondary badges are compact metadata pills. Language badges use pale pin
 
 ### Cards / Containers
 
-ActionCard combines a stroke icon well, concise task title, optional description and a directional icon. The entire card is a link; hover changes the white surface to pale pink. Compact mobile entry cards retain the title and icon while hiding secondary description and arrow. EmptyState reuses the icon well, honest title, supporting copy and optional action.
+ActionCard combines a stroke icon well, concise task title, optional description and a directional icon. The entire card is a link; hover changes the white surface to pale pink. Compact mobile entry cards retain the title and icon while hiding secondary description and arrow. EmptyState centers a decorative stroke icon, honest title, supporting copy and optional action in a white surface. It reserves a minimum height of (220px), reduced to (200px) at the mobile breakpoint, while allowing longer content to grow. The icon well is (56px) square with surface corners; copy stops at (48ch). Desktop padding is (28px 24px), mobile padding (24px 20px).
 
 ActivityItem places a title and wrapping metadata beside explicit actions; on narrow layouts the actions move below. Related activities share a white rounded list with separators. Document, reference and problem-book cards use white rounded containers and explicit open/edit actions. The document reading view separates user writing, linked evidence and AI explanation.
 
@@ -199,9 +201,15 @@ ActivityItem places a title and wrapping metadata beside explicit actions; on na
 
 Keep the three labeled primary destinations: 오늘의 학습, 자료, 레퍼런스. Current primary navigation is black with white text; hover is pale pink with plum text. Materials current state is pale pink with plum text. Use `aria-current="page"` and decorative SVG icons with `aria-hidden`. Settings is a disclosure containing secondary destinations, including restricted administration entries when authorized.
 
+### Tabs
+
+Use shared WorkspaceTabs for related review categories rather than stacking every category and its settings. Reviews has four URL-selected tabs: 자료, 내 문제, 코드, 일정. Radix Tabs supplies automatic activation, arrow keys, Home/End, tab semantics and one visible panel. Policy explanations stay in collapsed disclosures within their relevant panel.
+
+Four equal columns sit on a white track with (6px) padding and gaps, (16px) corners, and pale pink/plum active state. Triggers have control corners and a (52px) minimum height; at the mobile breakpoint they stack icon above label with a (70px) minimum height. Panels reserve (340px) minimum height with (24px) top padding, reduced to (20px) on mobile. Preserve visible focus and written labels.
+
 ### Resume and question capture
 
-The resume surface carries a real task title, last-learning timestamp and a working continuation button; when empty it offers materials instead. Loading uses a labeled skeleton, errors show a written notice and retry where provided. Do not add a repeated noninteractive label above the title.
+The resume surface uses a restrained plum gradient (`linear-gradient(120deg, #49144f 25%, #71306b 100%)`) and carries a real task title, last-learning timestamp and a working continuation button; when empty it offers materials instead. Loading uses a labeled skeleton, errors show a written notice and retry where provided. Do not add a repeated noninteractive label above the title.
 
 Question capture retains the current learning context, labeled textarea, save and close controls. The panel is scrollable and its action area sticks to the bottom. On mobile its available height and bottom position follow VisualViewport; the bottom dock hides while capture is open. Busy or context-loading states prevent duplicate submission. Closing or saving restores trigger focus; Escape respects Korean composition. Draft storage errors remain visible.
 
@@ -226,3 +234,5 @@ All interactive elements keep visible focus: the shared outline is (2px) plum wi
 - **Don't** extend component-preview or fixture-render evidence into real-device, paid-AI or whole-product approval.
 
 Evidence scope: source-derived system, with actual Firefox renders of synthetic examples for Today, Materials, problem books, reference list/detail, practice and a short-viewport question panel. The post-fix review returned a scoped ship verdict for removal of the duplicate Today resume label, with no visible fix-batch regressions; it is not a whole-product approval. No new shipping raster assets were introduced. Real mobile OS keyboard behavior and paid AI were not exercised. Older ink/gold captures are not evidence for this world. Remaining isolated legacy route styles are not promoted into shared tokens; this record does not claim those routes received a complete visual audit.
+
+Refinement evidence (2026-11-16): seven actual Chrome DevTools viewport captures in `.impeccable/review/refine/` cover all four Review tabs at mobile (390×844), Reviews at desktop (1440×1000), and Today at both sizes, using synthetic fixtures at DPR 2. These supplement the historical Firefox evidence above; they do not establish whole-product, real mobile OS keyboard or approved pixel-comp validation. The refinement introduces no shipping raster assets.

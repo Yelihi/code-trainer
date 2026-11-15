@@ -1,3 +1,5 @@
+import { MessageCircle } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { memo, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { timestamp } from './api';
@@ -36,7 +38,7 @@ export const QuestionRows = memo(function QuestionRows({ items }: { items: Quest
 });
 
 export function QuestionResults({ data, loading, query }: { data: QuestionPage | null; loading: boolean; query: string }) {
-  return <div className="question-results" aria-busy={loading}>{data ? <><QuestionRows items={data.items} />{!data.items.length && <p className="empty-state">{query ? '검색 결과가 없습니다.' : '아직 질문이 없습니다. 상단의 ‘질문 적기’로 시작하세요.'}</p>}</> : <QuestionListSkeleton />}</div>;
+  return <div className="question-results" aria-busy={loading}>{data ? <><QuestionRows items={data.items} />{!data.items.length && <EmptyState icon={MessageCircle} title={query ? '검색 결과가 없습니다' : '아직 질문이 없습니다'} description={query ? '다른 검색어나 필터로 찾아보세요.' : '상단의 질문 적기로 궁금한 내용을 남겨보세요.'} />}</> : <QuestionListSkeleton />}</div>;
 }
 
 export function QuestionList() {

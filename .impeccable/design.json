@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-15T14:28:17.687529+00:00",
+  "generatedAt": "2026-11-15T15:20:30.960555+00:00",
   "title": "Design System: Code Trainer",
   "extensions": {
     "colorMeta": {
@@ -138,49 +138,68 @@
     {
       "name": "Resume surface",
       "kind": "custom",
-      "description": "Real learning title, timestamp and an explicit continuation action.",
+      "description": "Real learning title, timestamp and explicit continuation action on a restrained plum gradient.",
       "html": "<section class=\"ds-resume\"><h2>학습 중인 개념</h2><p>마지막 학습 · 오늘</p><a href=\"#resume\">학습 이어서 하기</a></section>",
-      "css": ".ds-resume{display:flex;flex-direction:column;align-items:start;justify-content:center;min-height:268px;padding:28px;border-radius:22px;background:var(--brand,#49144f);color:#fff;font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-resume h2{font-size:1.65rem;line-height:1.4;max-width:32ch;margin:16px 0 8px}.ds-resume p{color:#f2deef;margin:0 0 22px;font-size:.85rem;line-height:1.65}.ds-resume a{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:12px;background:#fff;color:var(--brand,#49144f);font-weight:600;text-decoration:none}.ds-resume a:hover{background:var(--accent,#f6e1ef)}.ds-resume a:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-resume{min-height:234px;padding:24px;border-radius:20px}.ds-resume h2{font-size:1.4rem}}",
+      "css": ".ds-resume{display:flex;flex-direction:column;align-items:start;justify-content:center;min-height:268px;padding:28px;border-radius:22px;background:linear-gradient(120deg,#49144f 25%,#71306b 100%);color:#fff;font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-resume h2{font-size:1.65rem;line-height:1.4;max-width:32ch;margin:16px 0 8px}.ds-resume p{color:#f2deef;margin:0 0 22px;font-size:.85rem;line-height:1.65}.ds-resume a{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:12px;background:#fff;color:var(--brand,#49144f);font-weight:600;text-decoration:none}.ds-resume a:hover{background:var(--accent,#f6e1ef)}.ds-resume a:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-resume{min-height:234px;padding:24px;border-radius:20px}.ds-resume h2{font-size:1.4rem}}",
       "refersTo": "resume-card"
+    },
+    {
+      "name": "Empty state",
+      "kind": "custom",
+      "description": "Stable minimum footprint with a centered icon, honest copy and optional task action; grows with content.",
+      "html": "<section class=\"ds-empty\"><span class=\"ds-empty-icon\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z\"/><path d=\"M14 2v6h6M8 13h8M8 17h6\"/></svg></span><div><h3>복습에 추가한 자료가 없습니다</h3><p>자료의 해석이나 내 노트를 복습에 추가해보세요.</p></div><a href=\"#materials\">자료 살펴보기</a></section>",
+      "css": ".ds-empty{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:12px;min-height:220px;padding:28px 24px;border-radius:18px;background:var(--panel,#fff);color:var(--text,#181818);text-align:center;font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-empty>div{min-width:0;max-width:48ch}.ds-empty-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:56px;height:56px;border-radius:18px;color:var(--brand,#49144f);background:linear-gradient(145deg,var(--accent,#f6e1ef),var(--surface-muted,#efebf0))}.ds-empty h3{font-size:1rem;margin:0 0 6px}.ds-empty p{font-size:.85rem;color:var(--muted,#655d68);margin:0}.ds-empty>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:6px;padding:10px 16px;border:1px solid var(--line,#d2ccd4);border-radius:12px;background:var(--panel,#fff);color:inherit;text-decoration:none}.ds-empty>a:hover{background:var(--surface-muted,#efebf0)}.ds-empty>a:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-empty{min-height:200px;padding:24px 20px}}"
+    },
+    {
+      "name": "Workspace tabs",
+      "kind": "nav",
+      "description": "Four-category visual specimen. Live WorkspaceTabs uses Radix automatic keyboard activation and tab/panel semantics; Reviews persists selection in the URL.",
+      "html": "<div class=\"ds-tabs\" role=\"group\" aria-label=\"복습 종류 시각 예시\"><button type=\"button\" aria-pressed=\"true\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z\"/><path d=\"M14 2v6h6M8 13h8M8 17h6\"/></svg><span>자료</span></button><button type=\"button\" aria-pressed=\"false\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"M12 7v14M3 3h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6v17h-6a3 3 0 0 0-3 1 3 3 0 0 0-3-1H3Z\"/></svg><span>내 문제</span></button><button type=\"button\" aria-pressed=\"false\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m16 18 6-6-6-6M8 6l-6 6 6 6\"/></svg><span>코드</span></button><button type=\"button\" aria-pressed=\"false\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/></svg><span>일정</span></button></div>",
+      "css": ".ds-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:6px;border-radius:16px;background:var(--panel,#fff);font:.875rem/1.7 var(--font-sans,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"Noto Sans KR\",sans-serif)}.ds-tabs button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:10px;border:0;border-radius:12px;color:var(--muted,#655d68);background:transparent;font:inherit;font-weight:600;cursor:pointer}.ds-tabs button:hover{background:var(--surface-muted,#efebf0)}.ds-tabs button[aria-pressed=\"true\"]{background:var(--accent,#f6e1ef);color:var(--brand,#49144f)}.ds-tabs button:focus-visible{outline:2px solid var(--ring,#49144f);outline-offset:4px}@media(max-width:700px){.ds-tabs button{flex-direction:column;gap:6px;font-size:.8rem;min-height:70px;padding:10px 4px}}"
     }
   ],
   "narrative": {
     "northStar": "Learning workspace",
-    "overview": "Light gray surroundings and white work surfaces expose learning tasks through reusable labeled components. Plum identifies learning focus, pink supplies context, and black carries primary actions. The original Code Trainer system sans serves both Korean interface text and readable documents. This is a code-led replacement system, not a claim of comp approval.",
+    "overview": "A light gray workspace makes saved material, questions, practice and references easy to open. White reusable surfaces organize tasks; plum identifies the learning focus, pink adds context, and black carries decisive actions. The original Code Trainer system sans supports Korean headings, interface labels and sustained reading.\n\nThis records the implemented replacement world from source, following the user-pinned brief in PRODUCT.md and the surface direction contract. It does not claim image-comp approval or pixel reproduction. The rejected serif, ink and gold system is superseded. The source authority is `frontend/src/shadcn.css` for the shared light palette, `typography.css` for fonts and shared type roles, and `learning.css` for the final workspace treatment; `main.tsx` loads shadcn, base styles and learning styles in that order.",
     "keyCharacteristics": [
-      "Explicit labeled task menus",
-      "Reusable white rounded surfaces",
-      "Original system sans",
-      "Light workspace with dark detailed code editor"
+      "Explicit labeled task menus and reusable icon-led action cards.",
+      "Gray ground, white work surfaces, plum focus and restrained pink accents.",
+      "Rounded controls with visible boundaries and keyboard focus.",
+      "Mobile reading and question capture; a dark editor for detailed code work."
     ],
     "rules": [
       {
         "name": "The Action and Context Rule",
-        "body": "Black marks primary action or destination; plum and pale pink identify context. Preserve labels and written state.",
+        "body": "Black marks the primary action or top-level destination; plum and pale pink identify learning context. Preserve labels and `aria-current` or written status alongside color.",
         "section": "colors"
       },
       {
         "name": "The Reading Measure Rule",
-        "body": "Shared reading copy stops at 72ch; lesson articles and reference chapters use 74ch.",
+        "body": "Introductory and shared reading copy stop at (72ch); lesson articles and reference chapters use (74ch). Keep long content readable inside the task-oriented shell.",
         "section": "typography"
       },
       {
+        "name": "The Restrained Gradient Rule",
+        "body": "Keep gradients limited to the resume surface and empty-state icon wells. Empty icons blend pale pink context into surface-muted (`linear-gradient(145deg, var(--accent), var(--surface-muted))`); recurring work surfaces remain white.",
+        "section": "elevation"
+      },
+      {
         "name": "The Floating Layer Rule",
-        "body": "Keep work cards flat; use shadows for floating menus, the dock and question capture.",
+        "body": "Keep recurring work cards tonal and flat; use the recorded shadows for the menu, dock and question panel.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do reuse shared workspace components.",
-      "Do keep problem books and practice visible in Materials.",
-      "Do preserve focus, labels and safe-area spacing.",
-      "Do distinguish user writing, evidence and AI explanation."
+      "Do reuse the shared headings, action cards, activity items, empty states and controls.",
+      "Do expose problem books and practice as visible Materials destinations.",
+      "Do retain task actions, labels, focus and safe-area space when layouts collapse.",
+      "Do distinguish saved user writing, source evidence and AI explanation."
     ],
     "donts": [
-      "Don't restore the rejected serif and gold system.",
-      "Don't use dashboards or management tables as the main learning composition.",
-      "Don't add decorative eyebrows or duplicate labels.",
-      "Don't imply real-device or paid-AI validation from synthetic browser renders."
+      "Don't restore the rejected serif, gold palette or paragraph-link directory as the main workspace.",
+      "Don't turn the primary learning screens into statistics dashboards or management tables.",
+      "Don't use decorative eyebrows, repeated labels or hover-only task discovery.",
+      "Don't extend component-preview or fixture-render evidence into real-device, paid-AI or whole-product approval."
     ]
   }
 }

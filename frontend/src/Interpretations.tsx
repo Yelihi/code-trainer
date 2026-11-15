@@ -1,3 +1,5 @@
+import { FileText } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
@@ -68,7 +70,7 @@ function InterpretationList() {
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="해석 문서를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '삭제한 해석' : resourceId ? '선택한 자료의 해석 기록' : '나의 해석 문서'}</span><span>{data.total}개의 기록</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <section className="reference-empty"><h2>{archived ? '삭제한 해석이 없습니다.' : '아직 해석한 자료가 없습니다.'}</h2><p>{archived ? '삭제한 해석은 이곳에서 복원할 수 있습니다.' : '보관함에서 원문을 열고 해석을 시작해보세요.'}</p>{!archived && <Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원문 살펴보기</Link>}</section>}
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <EmptyState icon={FileText} title={archived ? '삭제한 해석이 없습니다' : '아직 해석한 자료가 없습니다'} description={archived ? '삭제한 해석은 이곳에서 복원할 수 있습니다.' : '원자료를 열고 필요한 내용의 해석을 시작해보세요.'} action={!archived ? <Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원자료 살펴보기</Link> : undefined} />}
       {data.pages > 1 && <nav className="pagination" aria-label="해석 기록 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), ...(archived ? { archived: 'true' } : {}), page: String(data.page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), ...(archived ? { archived: 'true' } : {}), page: String(data.page + 1) })}>다음</Button></nav>}</>}
   </main>;
 }

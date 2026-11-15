@@ -1,4 +1,5 @@
-import { MaterialsNavigation } from './WorkspaceUI';
+import { GraduationCap } from 'lucide-react';
+import { EmptyState, MaterialsNavigation } from './WorkspaceUI';
 import { ContextQuestions } from './ContextQuestions';
 import { StudyLocation } from './Today';
 import { ReadingPosition } from './ReadingPosition';
@@ -106,7 +107,7 @@ export function Home() {
     <header className="learning-intro"><h1>개념에서 코드까지.</h1><p>이전에 만든 학습 과정을 이어가세요. 필요한 단원만 읽거나 문제를 풀 수 있습니다.</p><div className="learning-links"><Link to="/library">자료에서 학습 시작</Link><Link to="/create">새 코딩 과정 만들기</Link></div></header>
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="cards" label="자료를 불러오는 중…" />}
-    {data?.total === 0 && <div className="empty-state"><h3>아직 생성한 코딩 과정이 없습니다.</h3><p>일반 자료는 보관함에서 원문을 열어 해석할 수 있습니다.<br />실행 언어에 맞춘 코딩 과정은 새 과정 만들기에서 시작하세요.</p><Link className="button" to="/create">기존 자료 분석 열기</Link></div>}
+    {data?.total === 0 && <EmptyState icon={GraduationCap} title="아직 생성한 개념 과정이 없습니다" description="자료를 분석해 개념과 단원별 코드 학습을 시작해보세요." action={<Link className="button" to="/create">자료 분석 시작</Link>} />}
     <div className="context-grid">{data?.items.map(context => <Link className="context-card" key={context.id} to={`/learn/${context.id}`}><div className="card-top"><Badge variant="language" className="language-tag">{languages[context.language]} · {difficulties[context.difficulty ?? 'beginner']}</Badge></div><h3>{context.title}</h3><p>{context.description}</p><div className="chips">{context.concepts.slice(0, 3).map(concept => <Badge variant="outline" key={concept} className="rounded-[5px] border-border bg-secondary px-2 py-[3px] text-[var(--text-caption)] text-secondary-foreground">{concept}</Badge>)}</div><div className="card-footer"><span>{context.completed} / {context.total} 완료</span><span>{timestamp(context.created_at)}</span></div></Link>)}</div>
     {data && data.total > 0 && <nav className="pagination" aria-label="학습 자료 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ page: String(data.page - 1) })}>이전</Button><span aria-live="polite">{data.page} / {data.pages} 페이지 · {data.total}개 자료</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ page: String(data.page + 1) })}>다음</Button></nav>}
     {health && !health.sandbox && <p className="notice">실행 환경이 아직 연결되지 않았습니다. 문제 생성 검증과 코드 실행에는 샌드박스가 필요합니다.</p>}

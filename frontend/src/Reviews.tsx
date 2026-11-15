@@ -1,6 +1,8 @@
 import { reviewCurve } from './reviewCurve';
 import type { SpacedReview } from './SpacedReviews';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { BookOpen, CalendarDays, Code2, FileText, Sparkles } from 'lucide-react';
+import { EmptyState, PageHeading, WorkspaceTabs } from './WorkspaceUI';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useState } from 'react';
@@ -13,7 +15,9 @@ type ReviewItem = { exercise_id: string; title: string; context_title: string; k
 export function Reviews() {
   const { data, error, reload } = useResource<{ items: ReviewItem[]; due_count: number }>('/me/reviews');
   const { data: materials, error: materialError, reload: reloadMaterials } = useResource<{ items: SpacedReview[]; due_count: number }>('/spaced-reviews');
-  const { data: authored } = useResource<{ items: { problem_id: string; title: string; due_at: string; due: boolean; archived: boolean }[] }>('/manual-problems/reviews');
+  const { data: authored, error: authoredError, reload: reloadAuthored } = useResource<{ items: { problem_id: string; title: string; due_at: string; due: boolean; archived: boolean }[] }>('/manual-problems/reviews');
+  const [params, setParams] = useSearchParams();
+  const tab = ['materials', 'problems', 'code', 'schedule'].includes(params.get('tab') ?? '') ? params.get('tab')! : 'materials';
   const [busy, setBusy] = useState('');
   const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
@@ -24,21 +28,25 @@ export function Reviews() {
       await navigate(`/reviews/${value.id}`);
     } catch (error) { setActionError(errorMessage(error)); } finally { setBusy(''); }
   }
-  return <main className="page narrow-page reviews-page"><div className="breadcrumb">탐구하기 / 다시 검토</div><h1>이해를 다시 꺼내보는 시간.</h1>
-    <p className="page-intro">코드와 자료의 복습 기한을 한곳에서 살펴보세요.</p>
-    {data && materials && <ReviewCurves codes={data.items} materials={materials.items} />}
-    <section className="review-section"><h2>자료 복습 {materials?.due_count ?? 0}개</h2><p>해석·내 답변·노트에서 직접 복습에 추가할 수 있습니다. 스스로 설명 가능하면 3·7·14일 뒤, 다시 확인이 필요하면 다음 날 살펴봅니다.</p><ErrorNotice error={materialError} />{materialError && <Button onClick={reloadMaterials}>자료 일정 다시 불러오기</Button>}{!materials && !materialError && <LoadingSkeleton layout="list" label="자료 복습을 불러오는 중…" />}
-      {materials && <>{!materials.items.length && <div className="empty-state">복습에 추가한 자료가 없습니다.<Link className="button" to="/explore">해석 살펴보기</Link></div>}{materials.items.some(x => x.due) && <h3>기한이 된 자료 · 미완료</h3>}<div className="list">{materials.items.filter(x => x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div>{materials.items.some(x => !x.due) && <h3>예정 · 다시 확인할 자료</h3>}<div className="list">{materials.items.filter(x => !x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div></>}
-    </section><section className="review-section"><h2>직접 만든 문제 복습 · {authored?.items.filter(item => item.due && !item.archived).length ?? 0}개</h2><p>풀이를 저장하고 자기 평가한 문제가 이곳에 나타납니다.</p><div className="list">{authored?.items.filter(item => !item.archived).map(item => <article className="list-row review-row" key={item.problem_id}><div><h3>{item.title}</h3><p>{item.due ? '복습할 시간 · ' : '예정 · '}{timestamp(item.due_at)}</p></div><Link className="button" to={'/problem-books/problems/' + item.problem_id + '/solve'}>{item.due ? '다시 풀기' : '문제 보기'}</Link></article>)}</div></section><section className="review-section"><h2>코드 복습</h2>
-    <p className="page-intro">이전 풀이를 보지 않고 다시 해결해보세요. 기존 코드와 진도는 그대로 보관됩니다.</p>
-    <p className="muted">첫 통과 다음 날부터 시작합니다. 도움 없이 통과하면 3일·7일·14일 뒤, 실패하거나 도움을 참고하면 다음 날 다시 연습합니다. 앱 밖에서 받은 도움은 기록하지 않습니다.</p>
-    <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}
-    {!data && !error && <LoadingSkeleton layout="list" label="복습 목록을 불러오는 중…" />}
-    {data && <><h2>복습할 문제 {data.due_count}개</h2>{!data.items.length && <div className="empty-state">문제를 통과하면 다음 날 복습 목록에 나타납니다.</div>}
-      {data.due_count === 0 && data.items.length > 0 && <p className="notice">오늘 예정된 복습을 마쳤습니다.</p>}
-      <div className="list">{data.items.map(item => <article className="list-row review-row" key={item.exercise_id}><div><small>{item.context_title} · {item.kind}</small><h3>{item.title}</h3><p>{assistanceLabels[item.assistance]} · {timestamp(item.due_at)} 예정</p></div>
-        <Button disabled={!!busy || (!item.due && !item.active_review_id)} onClick={() => void start(item)}>{busy === item.exercise_id ? '준비 중…' : item.active_review_id ? '복습 이어하기' : item.due ? '다시 풀기' : '복습 예정'}</Button></article>)}</div></>}
-    </section>
+  const problems = authored?.items.filter(item => !item.archived);
+  return <main className="page reviews-page"><PageHeading title="복습" description="다시 살펴볼 학습을 골라 시작하세요." />
+    <WorkspaceTabs label="복습 종류" value={tab} onValueChange={value => setParams({ tab: value })} items={[
+      { value: 'materials', label: '자료', icon: FileText, content: <section className="review-panel"><h2>자료 복습</h2>
+        <ErrorNotice error={materialError} />{materialError && <Button onClick={reloadMaterials}>다시 불러오기</Button>}{!materials && !materialError && <LoadingSkeleton layout="list" label="자료 복습을 불러오는 중…" />}
+        {materials && <>{!materials.items.length ? <EmptyState icon={FileText} title="복습에 추가한 자료가 없습니다" description="자료의 해석이나 내 노트를 복습에 추가해보세요." action={<Link className="button" to="/library">자료 살펴보기</Link>} /> : <><p className="muted">지금 복습할 자료 {materials.due_count}개</p>{materials.items.some(x => x.due) && <h3>지금 복습</h3>}<div className="list">{materials.items.filter(x => x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div>{materials.items.some(x => !x.due) && <h3>예정된 복습</h3>}<div className="list">{materials.items.filter(x => !x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div></>}</>}
+        <details className="review-help"><summary>자료 복습은 어떻게 진행하나요?</summary><p>해석·내 답변·노트에서 직접 추가합니다. 스스로 설명 가능하면 3·7·14일 뒤, 다시 확인이 필요하면 다음 날 살펴봅니다.</p></details>
+      </section> },
+      { value: 'problems', label: '내 문제', icon: BookOpen, content: <section className="review-panel"><h2>직접 만든 문제 복습</h2>
+        <ErrorNotice error={authoredError} />{authoredError && <Button onClick={reloadAuthored}>다시 불러오기</Button>}{!authored && !authoredError && <LoadingSkeleton layout="list" label="내 문제 복습을 불러오는 중…" />}
+        {problems && (problems.length ? <div className="list">{problems.map(item => <article className="list-row review-row" key={item.problem_id}><div><h3>{item.title}</h3><p>{item.due ? '복습할 시간 · ' : '예정 · '}{timestamp(item.due_at)}</p></div><Link className="button" to={'/problem-books/problems/' + item.problem_id + '/solve'}>{item.due ? '다시 풀기' : '문제 보기'}</Link></article>)}</div> : <EmptyState icon={BookOpen} title="복습할 내 문제가 없습니다" description="직접 만든 문제를 풀고 자기 평가를 남기면 복습이 시작됩니다." action={<Link className="button" to="/problem-books/problems">내 문제 열기</Link>} />)}
+      </section> },
+      { value: 'code', label: '코드', icon: Code2, content: <section className="review-panel"><h2>코드 복습</h2>
+        <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}{!data && !error && <LoadingSkeleton layout="list" label="코드 복습을 불러오는 중…" />}
+        {data && <>{!data.items.length ? <EmptyState icon={Code2} title="복습할 코드 문제가 없습니다" description="코드 문제를 통과하면 다음 날부터 다시 풀 수 있습니다." action={<Link className="button" to="/problem-books">문제집 열기</Link>} /> : <>{data.due_count === 0 ? <EmptyState icon={CalendarDays} title="오늘 예정된 코드 복습을 마쳤습니다" description="다음 복습 일정은 아래 목록에서 확인하세요." /> : <p className="muted">지금 복습할 문제 {data.due_count}개</p>}<div className="list">{data.items.map(item => <article className="list-row review-row" key={item.exercise_id}><div><small>{item.context_title} · {item.kind}</small><h3>{item.title}</h3><p>{assistanceLabels[item.assistance]} · {timestamp(item.due_at)} 예정</p></div><Button disabled={!!busy || (!item.due && !item.active_review_id)} onClick={() => void start(item)}>{busy === item.exercise_id ? '준비 중…' : item.active_review_id ? '복습 이어하기' : item.due ? '다시 풀기' : '복습 예정'}</Button></article>)}</div></>}</>}
+        <details className="review-help"><summary>코드 복습은 어떻게 진행하나요?</summary><p>이전 풀이를 보지 않고 다시 해결합니다. 기존 코드와 진도는 그대로 보관됩니다. 첫 통과 다음 날 시작하고, 도움 없이 통과하면 3·7·14일 뒤, 실패하거나 도움을 참고하면 다음 날 다시 연습합니다. 앱 밖에서 받은 도움은 기록하지 않습니다.</p></details>
+      </section> },
+      { value: 'schedule', label: '일정', icon: CalendarDays, content: <section className="review-panel"><h2>자료·코드 복습 일정</h2><ErrorNotice error={error || materialError} />{error && <Button onClick={reload}>코드 일정 다시 불러오기</Button>}{materialError && <Button onClick={reloadMaterials}>자료 일정 다시 불러오기</Button>}{data && materials ? <ReviewCurves codes={data.items} materials={materials.items} /> : !error && !materialError && <LoadingSkeleton layout="list" label="복습 일정을 불러오는 중…" />}</section> },
+    ]} />
   </main>;
 }
 
@@ -54,9 +62,10 @@ function ReviewCurves({ codes, materials }: { codes: ReviewItem[]; materials: Sp
     ...codes.map(item => ({ id: 'code:' + item.exercise_id, kind: 'code' as const, title: item.title, dueAt: item.due_at, streak: item.streak, due: item.due, requirement: item.active_review_id ? '진행 중인 복습 문제를 이어서 풀어보세요.' : item.due ? '이전 풀이를 보지 않고 문제를 다시 풀고 테스트를 통과하세요.' : '예정일이 되면 이전 풀이 없이 문제를 다시 풀어보세요.' })),
   ].sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
   const active = entries.find(item => item.id === activeId);
+  if (!entries.length) return <EmptyState icon={CalendarDays} title="아직 예정된 자료·코드 복습이 없습니다" description="자료를 복습에 추가하거나 코드 문제를 통과하면 일정과 곡선이 나타납니다." />;
   return <section className="review-curves" aria-labelledby="review-curves-title">
     <div className="review-curves-heading"><div><h2 id="review-curves-title">복습 곡선</h2><p>각 항목의 복습 간격과 예정일을 그렸습니다. 실제 기억률을 측정한 값은 아닙니다.</p></div><span>{entries.length}개 항목</span></div>
-    {entries.length ? <>
+    <>
       <div className="review-curve-axis" aria-hidden="true"><span>오늘</span><span>3일</span><span>7일</span><span>14일</span></div>
       <div className="review-curve-list" role="group" aria-label="복습 항목별 곡선">{entries.map(item => {
         const curve = reviewCurve(item.dueAt, item.streak, now);
@@ -66,7 +75,7 @@ function ReviewCurves({ codes, materials }: { codes: ReviewItem[]; materials: Sp
         </button>;
       })}</div>
       <div className="review-curve-detail" aria-live="polite">{active ? <><strong>{active.title}</strong><span>{active.due ? '복습 필요' : '복습 예정'} · {timestamp(active.dueAt)}</span><p>{active.requirement}</p></> : <p>곡선에 마우스를 올리거나 Tab 키로 선택하면 복습 요구사항을 볼 수 있습니다.</p>}</div>
-    </> : <p className="review-curve-empty">아직 예정된 복습이 없습니다. 자료를 복습에 추가하거나 코드 문제를 통과하면 이곳에 항목별 곡선이 나타납니다.</p>}
+    </>
   </section>;
 }
 
@@ -77,7 +86,7 @@ export function UsagePanel() {
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="summary" label="사용량을 불러오는 중…" />}
     {data && <><p>총 {data.totals.calls}회 · 입력 {data.totals.input_tokens.toLocaleString()} / 출력 {data.totals.output_tokens.toLocaleString()} 토큰 · 사용량 미확인 {data.totals.unknown_usage_calls}회</p>
-      <AnimatedDetails summary="작업·단원별 사용량"><div className="list">{data.items.length === 0 && <p>아직 기록된 AI 호출이 없습니다.</p>}{data.items.map((row, index) => <div className="list-row" key={index}><div><strong>{row.context_title ?? (row.operation === 'LearningSummary' ? '학습 정리' : row.operation === 'ExplanationFeedback' ? '기초 구현 · 설명 검토' : '자료 분석 · 삭제된 자료')}</strong><p>{row.unit_id ?? '과정 전체'} · {({ Suggestions: '다음 학습 추천', ReferenceDraft: '기술 레퍼런스 설명', SkillDraft: 'AI Skill 생성', CurriculumDraft: '자료 분석', LearningSummary: '학습 정리', ExplanationFeedback: '설명 피드백', FixStarterRepair: 'FIX 수정', ExerciseCodeRepair: '코드 수정' } as Record<string,string>)[row.operation] ?? row.operation} · {row.model}</p><small>{row.calls}회 호출 / 수정 {row.repair_calls}회 / 실패 {row.failed_calls}회 / 사용량 미확인 {row.unknown_usage_calls}회</small></div><span>입력 {row.input_tokens.toLocaleString()}<br />출력 {row.output_tokens.toLocaleString()}</span></div>)}</div></AnimatedDetails></>}
+      <AnimatedDetails summary="작업·단원별 사용량"><div className="list">{data.items.length === 0 && <EmptyState icon={Sparkles} title="기록된 AI 사용이 없습니다" description="AI 기능을 사용하면 호출과 토큰 기록이 여기에 표시됩니다." />}{data.items.map((row, index) => <div className="list-row" key={index}><div><strong>{row.context_title ?? (row.operation === 'LearningSummary' ? '학습 정리' : row.operation === 'ExplanationFeedback' ? '기초 구현 · 설명 검토' : '자료 분석 · 삭제된 자료')}</strong><p>{row.unit_id ?? '과정 전체'} · {({ Suggestions: '다음 학습 추천', ReferenceDraft: '기술 레퍼런스 설명', SkillDraft: 'AI Skill 생성', CurriculumDraft: '자료 분석', LearningSummary: '학습 정리', ExplanationFeedback: '설명 피드백', FixStarterRepair: 'FIX 수정', ExerciseCodeRepair: '코드 수정' } as Record<string,string>)[row.operation] ?? row.operation} · {row.model}</p><small>{row.calls}회 호출 / 수정 {row.repair_calls}회 / 실패 {row.failed_calls}회 / 사용량 미확인 {row.unknown_usage_calls}회</small></div><span>입력 {row.input_tokens.toLocaleString()}<br />출력 {row.output_tokens.toLocaleString()}</span></div>)}</div></AnimatedDetails></>}
   </section>;
 }
 

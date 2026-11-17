@@ -11,7 +11,7 @@ export function ReferenceEditor({ value, onChange, disabled = false, onUploading
   const fileInput = useRef<HTMLInputElement>(null);
   const currentValue = useRef(value);
   currentValue.current = value;
-  const [mode, setMode] = useState<'write' | 'split' | 'preview'>('split');
+  const [mode, setMode] = useState<'write' | 'split' | 'preview'>('write');
   const [uploading, setUploading] = useState(false);
   const uploadLock = useRef(false);
   const [error, setError] = useState('');
@@ -57,7 +57,7 @@ export function ReferenceEditor({ value, onChange, disabled = false, onUploading
         <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n> ', '', '인용문')} aria-label="인용">“ ”</Button>
         <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('[', '](https://)', '링크 이름')} aria-label="링크">링크</Button>
         <Button type="button" disabled={disabled || mode === 'preview'} onClick={() => insert('\n```\n', '\n```\n', '코드 또는 예시')} aria-label="코드 블록">{'<>'}</Button>
-        <Button type="button" disabled={disabled || uploading} onClick={() => fileInput.current?.click()}>사진 첨부</Button>
+        <Button type="button" loading={uploading} disabled={disabled || uploading} onClick={() => fileInput.current?.click()}>사진 첨부</Button>
         <Input ref={fileInput} hidden type="file" aria-label="첨부할 이미지" accept="image/png,image/jpeg,image/webp" multiple onChange={e => void upload(Array.from(e.target.files ?? []))} />
       </div>
       <div className="reference-editor-modes" role="group" aria-label="에디터 보기">
@@ -70,7 +70,7 @@ export function ReferenceEditor({ value, onChange, disabled = false, onUploading
       onDragOver={e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
       onDrop={e => { if (e.dataTransfer.files.length) { e.preventDefault(); void upload(Array.from(e.dataTransfer.files)); } }}>
       {mode !== 'preview' && <Textarea ref={input} aria-label="노트 본문" value={value} disabled={disabled || uploading} maxLength={60000}
-        placeholder={'오늘 이해한 내용을 자유롭게 적어보세요.\n\n## 핵심 내용\n\n## 내 생각과 예시\n\n## 남은 질문\n\n사진을 붙여넣거나 이곳에 끌어다 놓을 수 있습니다.'}
+        placeholder="내용을 작성하세요"
         onChange={e => onChange(e.target.value)}
         onPaste={e => { const files = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/')); if (files.length) { e.preventDefault(); void upload(files); } }}
         onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'b') { e.preventDefault(); insert('**', '**', '강조할 내용'); } }} />}

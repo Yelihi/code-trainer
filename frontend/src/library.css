@@ -13,7 +13,7 @@
 .library-file-summary { padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); }
 .library-file-summary span { min-width: 0; overflow-wrap: anywhere; }
 .library-file-summary svg { color: var(--green); }
-.library-drop-overlay { position: fixed; inset: 12px; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; pointer-events: none; border: 2px dashed var(--purple); border-radius: 16px; background: #100e21f2; color: var(--text); }
+.library-drop-overlay { position: fixed; inset: 12px; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; pointer-events: none; border: 2px dashed var(--purple); border-radius: 16px; background: var(--panel); color: var(--text); }
 .library-drop-overlay svg { color: var(--green); }
 .library-drop-overlay strong { font-size: var(--text-section); }
 .library-drop-overlay span { color: var(--muted); }
@@ -80,3 +80,10 @@
 .practice-comparison { padding: 1.5rem; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 12px; }
 .practice-record-text { overflow-wrap: anywhere; }
 @media (max-width: 600px) { .practice-save { flex-direction: column; align-items: stretch; } .practice-comparison { padding: 1rem; } }
+.library-register fieldset { gap: 24px; margin-top: 24px; }
+.library-register label { display: grid; gap: 8px; }
+.library-register label :is(input,textarea) { margin: 0; }
+.library-register .field-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; font-weight: 400; }
+.library-register .field-counter { text-align: right; }
+.library-register > .reference-state { padding: 12px 0; margin: 0; font-size: 12px; line-height: 1.5; }
+.library-register .library-file-actions { gap: 12px; }

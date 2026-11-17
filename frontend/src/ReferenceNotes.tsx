@@ -1,3 +1,5 @@
+import { NotebookPen } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { AddToReview } from './SpacedReviews';
 import { NativeSelect } from './components/ui/native-select';
 import { LoadingSkeleton } from './LoadingSkeleton';
@@ -8,7 +10,6 @@ import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { Markdown } from './Markdown';
 import { ReferenceEditor } from './ReferenceEditor';
-import { ReferenceKnowledge } from './ReferenceKnowledge';
 import { clearReferenceDraft, newReferenceId, referenceKinds, type ReferenceMetadata, type ReferenceNote } from './referenceTypes';
 import './referenceNotes.css';
 import { Input } from './components/ui/input';
@@ -31,7 +32,7 @@ export function ReferenceNotes() {
     {!data && !error && <LoadingSkeleton layout="list" label="노트를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '보관한 노트' : '나의 레퍼런스'}</span><span>{data.total}개의 기록</span></div>
       {data.items.length ? <div className="reference-list">{data.items.map(note => <Link className="reference-list-item" to={'/references/' + note.id} key={note.id}><div><small>{referenceKinds[note.metadata.kind]}{note.metadata.title ? ' · ' + note.metadata.title : ''}</small><h2>{note.title}</h2><p>{note.excerpt.replace(/!\[[^\]]*\]\([^)]*\)/g, '[이미지]')}</p><footer><span>{note.metadata.locator || '자유롭게 남긴 기록'}</span><span>{timestamp(note.updated_at)} · v{note.revision}</span></footer></div></Link>)}</div>
-        : <section className="reference-empty"><span aria-hidden="true">Aa</span><h2>{query ? '검색한 내용을 찾지 못했습니다.' : archived ? '보관한 노트가 없습니다.' : '한 문장부터 시작해보세요.'}</h2><p>완성된 정리가 아니어도 괜찮습니다.<br />기록을 남기고, 준비됐을 때 개념 지도에 연결하세요.</p>{!archived && <Link className="button" to="/references/new">첫 노트 작성</Link>}</section>}
+        : <EmptyState icon={NotebookPen} title={query ? '검색한 노트가 없습니다' : archived ? '보관한 노트가 없습니다' : '첫 노트를 작성해보세요'} description={query ? '다른 검색어로 찾아보세요.' : '짧은 메모부터 긴 설명까지 내 언어로 기록할 수 있습니다.'} action={!archived && !query ? <Link className="button" to="/references/new">노트 작성</Link> : undefined} />}
       {data.pages > 1 && <nav className="pagination" aria-label="노트 페이지"><Button disabled={page <= 1} onClick={() => setParams({ q: query, archived: String(archived), page: String(page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={page >= data.pages} onClick={() => setParams({ q: query, archived: String(archived), page: String(page + 1) })}>다음</Button></nav>}
     </>}
   </main>;
@@ -68,7 +69,7 @@ function NoteEditor({ initial, prefill }: { initial: ReferenceNote | null; prefi
   const [body, setBody] = useState(restored?.body ?? initial?.body ?? (prefill?.questionText ? `## 확인하려는 질문\n\n${prefill.questionText}\n\n## 내 설명\n\n` : ''));
   const [metadata, setMetadata] = useState(restored?.metadata ?? initial?.metadata ?? emptyMetadata);
   const [revision, setRevision] = useState(restored?.revision ?? initial?.revision ?? 0);
-  const [tab, setTab] = useState<'write' | 'read' | 'connect'>(initial && !restored ? 'read' : 'write');
+  const [tab, setTab] = useState<'write' | 'read'>(initial && !restored ? 'read' : 'write');
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -132,32 +133,26 @@ function NoteEditor({ initial, prefill }: { initial: ReferenceNote | null; prefi
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   return <main className="page reference-page reference-detail">
-    <div className="breadcrumb"><Link to="/library">자료 보관함</Link><span>/</span><Link to="/references">레퍼런스 노트</Link><span>/</span>{note ? '나의 기록' : '새 노트'}</div>
-    <header className="reference-detail-heading"><div><span className="eyebrow">REFERENCE NOTE</span><p className="reference-save-state" aria-live="polite">{dirty ? '저장하지 않은 변경사항' : note ? `v${note.revision} · ${timestamp(note.updated_at)} 저장` : '새로운 배움을 기록하세요'}</p></div><div className="reference-actions">
+    <div className="breadcrumb"><Link to="/library">자료 보관함</Link><span>/</span><span>직접 작성</span><span>/</span>{note ? '나의 기록' : '새 노트'}</div>
+    <header className="reference-detail-heading"><div><p className="reference-save-state" aria-live="polite">{dirty ? '저장하지 않은 변경사항' : note ? `v${note.revision} · ${timestamp(note.updated_at)} 저장` : '새 글'}</p></div><div className="reference-actions">
       {note && !note.archived && <Button disabled={busy || dirty} onClick={() => navigate(`/github/share?kind=note&id=${note.id}`)}>GitHub 이슈로 공유</Button>}
       {note && <Button disabled={busy || dirty || !!note.archived} onClick={() => void review()}>내 말로 설명해보기</Button>}
-      <Button className="primary" disabled={busy || uploading || !!note?.archived || !title.trim() || !body.trim() || (!!note && !dirty)} onClick={() => void save()}>{busy ? '처리 중…' : '노트 저장'}</Button>
+      <Button className="primary" loading={busy} disabled={busy || uploading || !!note?.archived || !title.trim() || !body.trim() || (!!note && !dirty)} onClick={() => void save()}>노트 저장</Button>
     </div></header>
     <ErrorNotice error={error} />{message && <p className="reference-state" role="status">{message}</p>}{linkFailed && <Button disabled={busy} onClick={() => void linkQuestion(linkFailed).then(() => navigate('/references/' + linkFailed, { replace: true })).catch(e => setError(errorMessage(e)))}>질문과 노트 연결 다시 시도</Button>}
     {note?.archived ? <p className="notice">보관한 노트입니다. <Button onClick={() => void archive()}>복원하기</Button></p> : null}
     {note && revision !== note.revision && <p className="notice">임시 글은 v{revision}에서 작성됐고 서버에는 v{note.revision}이 있습니다. 아래 글을 복사해 보관한 후 최신 버전과 비교해주세요.<Button onClick={() => { if (window.confirm('임시 글을 버리고 서버의 최신 내용을 불러올까요?')) { setTitle(note.title); setBody(note.body); setMetadata(note.metadata); setRevision(note.revision); clearReferenceDraft(storageKey); } }}>서버 내용 불러오기</Button></p>}
-    <div className="reference-tabs" role="group" aria-label="노트 작업">
+    {note && <div className="reference-tabs" role="group" aria-label="노트 작업">
       <Button aria-pressed={tab === 'write'} onClick={() => setTab('write')}>작성</Button><Button aria-pressed={tab === 'read'} onClick={() => setTab('read')}>읽기</Button>
-      <Button aria-pressed={tab === 'connect'} disabled={!note || dirty || !!note.archived} onClick={() => setTab('connect')}>개념 지도에 추가하기</Button>
-      {dirty && <small>노트를 저장한 후 연결·복습할 수 있습니다.</small>}
-    </div>
+    </div>}
     {tab === 'write' && <><Label className="reference-title"><span className="sr-only">노트 제목</span><Input placeholder="어떤 배움을 남길까요?" value={title} maxLength={160} disabled={busy || !!note?.archived} onChange={e => setTitle(e.target.value)} /></Label>
       <AnimatedDetails className="reference-metadata" summary={<>출처 기록 <span>{referenceKinds[metadata.kind]}{metadata.title ? ' · ' + metadata.title : ' · 선택 사항'}</span></>}><fieldset disabled={busy || !!note?.archived}><legend className="sr-only">출처 정보</legend>
         <div className="reference-fields"><Label>자료 종류<NativeSelect value={metadata.kind} onChange={e => updateMetadata({ kind: e.target.value as ReferenceMetadata['kind'] })}>{Object.entries(referenceKinds).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</NativeSelect></Label><Label>책 · 강의 · 자료 이름<Input value={metadata.title} maxLength={300} onChange={e => updateMetadata({ title: e.target.value })} /></Label><Label>저자 · 강사<Input value={metadata.author} maxLength={200} onChange={e => updateMetadata({ author: e.target.value })} /></Label><Label>페이지 · 회차 · 시간<Input value={metadata.locator} maxLength={300} placeholder="예: 3장, 42–48쪽 / 4강 12:30" onChange={e => updateMetadata({ locator: e.target.value })} /></Label></div><Label>출처 URL<Input type="url" value={metadata.url} maxLength={2000} placeholder="https://" onChange={e => updateMetadata({ url: e.target.value })} /></Label>
       </fieldset></AnimatedDetails>
       <ReferenceEditor value={body} onChange={setBody} disabled={busy || !!note?.archived} onUploading={setUploading} />
-      <p className="reference-state">작성 중인 글은 이 브라우저에 임시 보관됩니다. ‘노트 저장’을 눌러 계정에 저장하세요.</p>
+      <p className="reference-state">브라우저에 임시 보관 중 · 계정 저장은 노트 저장</p>
     </>}
     {tab === 'read' && <article className="reference-reading"><span className="eyebrow">{referenceKinds[metadata.kind]}</span><h1>{title || '제목 없는 노트'}</h1>{metadata.title && <p className="reference-attribution">{metadata.title}{metadata.author ? ' · ' + metadata.author : ''}{metadata.locator ? ' · ' + metadata.locator : ''}</p>}<Markdown language="" images>{body || '아직 작성한 내용이 없습니다.'}</Markdown></article>}
-    {tab === 'connect' && note && !dirty && <ReferenceKnowledge key={note.revision + ':' + note.registration?.id} note={note} onNoteChange={setNote} onNoteApplied={next => {
-      setNote(next); setTitle(next.title); setBody(next.body); setMetadata(next.metadata); setRevision(next.revision);
-      clearReferenceDraft(storageKey); setMessage(`선택한 변경을 노트 v${next.revision}에 저장했습니다. 새 본문에서 AI 후보 생성·내용 검토를 다시 진행해주세요.`);
-    }} onEdit={() => setTab('write')} />}
     {note && <AddToReview kind="note" id={note.id} revision={note.revision} disabled={busy || dirty || !!note.archived || revision !== note.revision} />}
     {note && <footer className="reference-note-footer"><AnimatedDetails summary={<>노트 버전 · {note.versions.length}</>}><div className="reference-version-list">{note.versions.map(v => <Button key={v.revision} onClick={() => { void api<{ revision: number; body: string; title: string }>(`/reference-notes/${note.id}/versions/${v.revision}`).then(setOldVersion).catch(e => setError(errorMessage(e))); }}>v{v.revision} · {timestamp(v.created_at)}</Button>)}</div></AnimatedDetails>
       <div className="reference-actions"><a className="button" href={`/api/reference-notes/${note.id}/export`} download>Markdown · 이미지 내보내기</a><Button disabled={busy || dirty} onClick={() => void archive()}>{note.archived ? '노트 복원' : '노트 보관'}</Button></div>

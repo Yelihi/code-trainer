@@ -86,6 +86,7 @@ with open(os.environ['START_CHECK_LOG'], 'a') as log:
         'db': os.environ.get('TRAINER_DB'), 'env': os.environ.get('UV_ENV_FILE'),
         'docker': os.environ.get('DOCKER_CONTEXT'), 'host': os.environ.get('DOCKER_HOST'),
         'config': os.environ.get('DOCKER_CONFIG'), 'mode': os.environ.get('TRAINER_MODE'),
+        'preview': os.environ.get('TRAINER_PREVIEW'),
         'runner': os.environ.get('TRAINER_RUNNER_URL'), 'image': os.environ.get('TRAINER_IMAGE'),
         'tls': os.environ.get('DOCKER_TLS_VERIFY'),
         'shared_ai': os.environ.get('AI_API_KEY') == 'test-shared-key'}) + '\\n')
@@ -131,7 +132,7 @@ if name == 'uv':
     assert launch['docker'] is None and launch['tls'] is None
     assert launch['host'] == 'unix://' + str(Path.home() / '.colima/code-trainer-dev/docker.sock')
     assert Path(launch['config']).resolve() == project.resolve() / 'data/dev/docker-cli'
-    assert launch['mode'] == 'local' and launch['runner'] == ''
+    assert launch['mode'] == 'local' and launch['runner'] == '' and launch['preview'] == '0'
     assert launch['image'] == 'code-trainer-runner:dev' and launch['shared_ai']
     assert launch['args'] == ['-m', 'uvicorn', 'backend.api:app',
                              '--host', '127.0.0.1', '--port', '8011', '--no-access-log', '--reload', '--reload-dir', 'backend']
@@ -152,6 +153,10 @@ if name == 'uv':
         assert result.returncode != 0 and not any(c['tool'] == 'uv' for c in calls)
     result, calls = run_dev(BUSY_PORT='1')
     assert result.returncode != 0 and not any(c['tool'] == 'uv' for c in calls)
+    result, calls = run_dev('preview')
+    assert result.returncode == 0 and calls[-1]['preview'] == '1' and calls[-1]['mode'] == 'local'
+    result, calls = run_dev(TRAINER_PREVIEW='1')
+    assert result.returncode == 0 and calls[-1]['preview'] == '0'
     result, calls = run_dev('restart')
     assert result.returncode == 0, result.stderr
     assert calls[0]['args'] == ['scripts/stop-dev-server.py']

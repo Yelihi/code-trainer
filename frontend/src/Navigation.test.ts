@@ -5,27 +5,21 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { createServer } from 'vite';
 
-test('five navigation areas preserve destination identity, current page and admin visibility', async () => {
+test('three learning menus preserve current page and admin visibility', async () => {
   const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
-    const { Navigation, PracticeEntry } = await server.ssrLoadModule('/src/Navigation.tsx');
+    const { Navigation, PracticeEntry, PracticeCatalog } = await server.ssrLoadModule('/src/Navigation.tsx');
     const render = (path: string, isAdmin = false) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Navigation, { isAdmin, onNavigate() {} })));
     const html = render('/library');
-    assert.deepEqual([...html.matchAll(/<nav aria-label="([^"]+)"/g)].map(match => match[1]), ['등록하기', '탐구하기', '데이터 쌓기', '응용하기', '설정']);
+    assert.deepEqual([...html.matchAll(/<nav aria-label="([^"]+)"/g)].map(match => match[1]), ['주요 메뉴', '설정과 기록']);
     assert.doesNotMatch(html, /\/admin\//);
     assert.match(render('/admin/operations', true), /href="\/admin\/operations"/);
     assert.match(render('/admin/sources/source-id', true), /href="\/admin\/sources"/);
     const cases = [
-      ['/', '/explore'], ['/explore?page=2', '/explore'], ['/learn/context/units/unit', '/explore'],
-      ['/interpretations/document-id', '/explore'],
-      ['/create?post=123&url=https%3A%2F%2Fexample.com&title=test', '/explore'],
-      ['/library/source-id/edit', '/library'], ['/library/new/reference', '/library/new/reference'],
-      ['/references/new', '/references/new'], ['/references/note-id', '/library'],
-      ['/foundations/arrays/practice', '/explore/practice'], ['/practice/set-id', '/explore/practice'],
-      ['/worksheets/worksheet-id', '/explore/practice'],
-      ['/reviews/material/id', '/reviews'], ['/reviews/set-id', '/reviews'], ['/reference-reviews/review-id', '/reviews'],
-      ['/knowledge/candidates', '/knowledge/candidates'], ['/knowledge', '/knowledge'],
-      ['/apply', '/apply'], ['/apply/explorations/id', '/apply/explorations'], ['/settings/ai', '/settings/ai'], ['/github/share', '/settings/github'],
+      ['/', '/'], ['/learn/context/units/unit', '/library'], ['/practice/set-id', '/library'], ['/questions/id', '/'],
+      ['/library/source-id/edit', '/library'], ['/library/new/reference', '/library'], ['/references/new', '/library'],
+      ['/interpretations/id', '/library'], ['/explore?page=2', '/library'], ['/courses', '/library'], ['/explore/practice/catalog', '/library'],
+      ['/problem-books', '/library'], ['/problem-books/problems/new', '/library'], ['/foundations', '/library'], ['/worksheets/id', '/library'], ['/technical-references/id', '/technical-references'], ['/reviews/material/id', '/'],
     ];
     for (const [path, target] of cases) {
       const active = [...render(path).matchAll(/<a\b[^>]*aria-current="page"[^>]*>/g)];
@@ -35,10 +29,27 @@ test('five navigation areas preserve destination identity, current page and admi
     assert.doesNotMatch(render('/library-unknown'), /aria-current="page"/);
     assert.doesNotMatch(render('/settings/ai').match(/<a[^>]*href="\/settings\/ai"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
     assert.doesNotMatch(render('/apply').match(/<a[^>]*href="\/apply"[\s\S]*?<\/a>/)?.[0] ?? '', /예정/);
+    const { MaterialsNavigation } = await server.ssrLoadModule('/src/WorkspaceUI.tsx');
+    const materialMenu = (path: string) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(MaterialsNavigation)));
+    for (const path of ['/library', '/library/id', '/problem-books/problems/new', '/courses', '/foundations', '/interpretations/id']) {
+      const menu = materialMenu(path);
+      assert.match(menu, /aria-label="자료 메뉴"/);
+      assert.doesNotMatch(menu, /href="\/problem-books"/);
+      assert.equal([...menu.matchAll(/<a /g)].length, 2);
+      assert.doesNotMatch(menu, /<details/);
+      assert.equal([...menu.matchAll(/aria-current="page"/g)].length, 1);
+    }
+    assert.equal(materialMenu('/'), '');
+    assert.match(materialMenu('/problem-books/id'), /<a[^>]*aria-current="page"[^>]*href="\/explore\/practice"/);
     const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Routes, null,
       createElement(Route, { element: createElement(Outlet, { context: { userId: 'fixture-owner', health: null } }) },
         createElement(Route, { path: '*', element: createElement(PracticeEntry) })))));
-    assert.match(practice, /href="\/foundations"/);
-    assert.match(practice, /href="\/"/);
+    assert.match(practice, /href="\/explore\/practice\/catalog"/);
+    assert.doesNotMatch(practice, /href="\/foundations"/);
+    const catalog = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(PracticeCatalog)));
+    assert.match(catalog, /href="\/foundations"/);
+    assert.match(catalog, /자료구조 · 알고리즘/);
+    assert.match(practice, /href="\/courses"/);
+    assert.doesNotMatch(practice, /framework-practice|질문지/);
   } finally { await server.close(); }
 });

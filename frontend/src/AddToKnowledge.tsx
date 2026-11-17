@@ -17,7 +17,7 @@ export function AddToKnowledge({ path, addedAt, disabled = false }: { path: stri
   }
   return <div className="knowledge-save">
     {saved || addedAt ? <><span role="status">✓ 개념 지도에 추가됨</span><Link className="text-link" to="/knowledge">지도에서 보기</Link></> :
-      <Button disabled={busy || disabled} onClick={() => void add()}>{busy ? '추가 중…' : '개념 지도에 추가하기'}</Button>}
+      <Button loading={!!(busy)} disabled={busy || disabled} onClick={() => void add()}>{busy ? '추가 중…' : '개념 지도에 추가하기'}</Button>}
     {error && <p className="notice error" role="alert">{error}</p>}
   </div>;
 }

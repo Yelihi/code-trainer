@@ -55,3 +55,7 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Local visual review captures; keep the durable design contract.
+/.impeccable/*
+!/.impeccable/design.json

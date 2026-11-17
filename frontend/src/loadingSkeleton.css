@@ -32,7 +32,7 @@
 .skeleton-graph-tools > div { height: 36px; width: 200px; }
 .skeleton-graph svg { display: block; width: 100%; height: 390px; }
 .skeleton-graph path { stroke: var(--line); stroke-width: 2; }
-.skeleton-graph circle { fill: #282238; stroke: #39304c; stroke-width: 2; animation: skeleton-breathe 1.8s ease-in-out infinite; }
+.skeleton-graph circle { fill: var(--surface-muted); stroke: var(--line); stroke-width: 2; animation: skeleton-breathe 1.8s ease-in-out infinite; }
 @keyframes skeleton-breathe { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
 @media (max-width: 1200px) { .skeleton-catalog .skeleton-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 800px) {

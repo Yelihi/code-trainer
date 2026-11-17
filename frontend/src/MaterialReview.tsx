@@ -28,7 +28,7 @@ function Review({ kind, id, revision, disabled }: { kind: Kind; id: string; revi
     <ErrorNotice error={error || loadError} />{loadError && <Button onClick={reload}>확인 상태 다시 불러오기</Button>}
     {disabled && <p role="status">변경한 내용을 먼저 저장하고 검토해주세요.</p>}
     {data?.material.reason && <p className="notice">{data.material.reason}</p>}
-    {reviewId ? <><p role="status">이 버전은 검토 완료로 표시했습니다.</p><Link to={'/knowledge/candidates/' + reviewId}>검토한 버전 보기</Link></> : <Button disabled={disabled || busy || !data || data.material.state !== 'eligible'} onClick={() => void confirm()}>{busy ? '확인 중…' : kind === 'interpretation' ? '이 버전 정리 확인' : '이 버전 검토 완료'}</Button>}
+    {reviewId ? <><p role="status">이 버전은 검토 완료로 표시했습니다.</p><Link to={'/knowledge/candidates/' + reviewId}>검토한 버전 보기</Link></> : <Button loading={!!(busy)} disabled={disabled || busy || !data || data.material.state !== 'eligible'} onClick={() => void confirm()}>{busy ? '확인 중…' : kind === 'interpretation' ? '이 버전 정리 확인' : '이 버전 검토 완료'}</Button>}
     <Link to="/knowledge/candidates">추출 가능 자료 목록</Link>
   </div></section><AddToReview kind={kind} id={id} revision={revision} disabled={disabled || !data || data.material.state !== 'eligible'} /></>;
 }

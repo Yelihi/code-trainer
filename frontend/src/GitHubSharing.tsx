@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { AnimatedDetails } from './AnimatedDetails';
+import { EmptyState, PageHeading } from './WorkspaceUI';
+import { GitBranch } from 'lucide-react';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { Markdown } from './Markdown';
 import './githubSharing.css';
@@ -83,7 +85,7 @@ function RepositoryCheck({ onChecked, disabled = false, registration = false }: 
     <div className="github-section-title"><span className="github-step">02</span><div><h2>공유할 저장소</h2><p>주소는 공유할 때마다 바꿀 수 있습니다.</p></div></div>
     {saved && <p className="github-caption">기본 저장소 · <a href={saved.url} target="_blank" rel="noreferrer">{saved.url}</a> · {saved.private ? '비공개' : '공개'}로 등록됨</p>}
     <ErrorNotice error={loadError} />{loadError && <Button type="button" onClick={() => setLoadVersion(v => v + 1)}>기본 저장소 다시 불러오기</Button>}
-    <Label htmlFor="github-repo">GitHub 저장소 주소</Label><div className="github-repo-input"><Input id="github-repo" type="url" value={url} onChange={e => change(e.target.value)} placeholder="https://github.com/owner/repository" maxLength={500} disabled={disabled} spellCheck={false} /><Button type="button" disabled={disabled || busy || !url.trim()} onClick={() => void check()}>{busy ? '확인 중…' : '권한 확인'}</Button></div>
+    <Label htmlFor="github-repo">GitHub 저장소 주소</Label><div className="github-repo-input"><Input id="github-repo" type="url" value={url} onChange={e => change(e.target.value)} placeholder="https://github.com/owner/repository" maxLength={500} disabled={disabled} spellCheck={false} /><Button loading={!!(busy)} type="button" disabled={disabled || busy || !url.trim()} onClick={() => void check()}>{busy ? '확인 중…' : '권한 확인'}</Button></div>
     {busy && <p className="github-checking" role="status"><span aria-hidden="true" />계정과 저장소를 확인하고 있습니다.</p>}
     <ErrorNotice error={error} />
     {message && <p role="status" className="notice">{message}</p>}
@@ -118,9 +120,8 @@ export function GitHubSettings() {
     try { await api('/github/connection', 'DELETE', {}); setToken(''); reload(); setMessage('저장된 토큰을 삭제했습니다.'); }
     catch (e) { setActionError(errorMessage(e)); } finally { setBusy(false); }
   }
-  return <main className="page github-page">
-    <div className="breadcrumb"><span>설정</span><span>/</span>GitHub 연동</div><span className="eyebrow">KNOWLEDGE, SHARED WITH INTENT.</span><h1>배운 내용을, 함께 나누기.</h1>
-    <p className="page-intro">레퍼런스 노트와 연결된 지식을 GitHub 이슈로 공유하세요.<br />공유할 때 저장소와 내용을 직접 확인한 뒤 등록합니다.</p>
+  return <main className="page github-page settings-page github-settings-page">
+    <div className="breadcrumb">설정<span>/</span>GitHub 연동</div><PageHeading title="GitHub 연동" />
     <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}{message && <p role="status" className="notice">{message}</p>}
     {!data && !error && <LoadingSkeleton layout="editor" label="GitHub 연결을 불러오는 중…" />}
     {data && <div className="github-settings-grid"><div className="github-stack"><section className="github-card">
@@ -130,13 +131,13 @@ export function GitHubSettings() {
       <form onSubmit={e => { e.preventDefault(); void connect(); }}>
         <Label htmlFor="github-token">{data.connection ? '토큰 교체' : 'Fine-grained 토큰'}</Label><Input id="github-token" type="password" autoComplete="off" spellCheck={false} placeholder="github_pat_…" value={token} onChange={e => setToken(e.target.value)} minLength={31} maxLength={251} disabled={busy || !data.storage_ready} required />
         <p className="github-caption">서버에서 암호화해 저장합니다. 저장한 토큰은 화면이나 브라우저 저장소에 보관하지 않습니다.</p>
-        <Button className="primary" disabled={busy || !data.storage_ready || !/^github_pat_[A-Za-z0-9_]{20,240}$/.test(token.trim())}>{busy ? '연결 확인 중…' : data.connection ? '새 토큰으로 연결' : 'GitHub 연결'}</Button>
+        <Button loading={!!(busy)} className="primary" disabled={busy || !data.storage_ready || !/^github_pat_[A-Za-z0-9_]{20,240}$/.test(token.trim())}>{busy ? '연결 확인 중…' : data.connection ? '새 토큰으로 연결' : 'GitHub 연결'}</Button>
       </form>
     </section><RepositoryCheck key={data.connection?.id ?? 'disconnected'} registration disabled={!data.connection || !data.storage_ready || busy} /></div>
-    <aside className="github-guide"><span className="eyebrow">BEFORE YOU CONNECT</span><h2>필요한 권한만 선택하세요.</h2><ol><li><strong>Resource owner 선택</strong><p>공유할 저장소의 개인 또는 조직을 선택합니다.</p></li><li><strong>대상 저장소 선택</strong><p>Only select repositories에서 공유할 저장소를 지정합니다.</p></li><li><strong>Issues → Read and write</strong><p>Repository permissions에 설정합니다. Contents 쓰기 권한은 필요하지 않습니다.</p></li><li><strong>만료일과 조직 승인 확인</strong><p>조직에서 승인을 요구하면 승인 완료 후 사용할 수 있습니다.</p></li></ol><a className="button" href={tokenHelp} target="_blank" rel="noreferrer">GitHub에서 토큰 만들기</a><p>토큰이 허용하는 저장소 안에서 매번 다른 주소를 사용할 수 있습니다.</p>
-      <div className="github-guide-footer"><h3>공유는 어디에서 하나요?</h3><p>저장된 레퍼런스 노트 또는 지식 그래프의 상세 패널에서 <strong>GitHub 이슈로 공유</strong>를 선택하세요.</p><Link className="text-link" to="/references">레퍼런스 노트로</Link></div>
-    </aside></div>}
-    <section className="github-history"><h2>최근 공유 기록</h2><ErrorNotice error={history.error} />{history.error && <Button onClick={history.reload}>기록 다시 불러오기</Button>}{!history.data && !history.error && <LoadingSkeleton layout="list" label="공유 기록을 불러오는 중…" />}{history.data?.length === 0 && <p className="muted">아직 공유한 지식이 없습니다. 첫 이슈를 등록하면 이곳에 기록됩니다.</p>}{history.data?.map(item => <ShareRecord key={item.id} item={item} onRecovered={history.reload} />)}</section>
+    <aside className="github-guide"><AnimatedDetails summary="토큰 발급·권한 안내"><ol><li><strong>Resource owner 선택</strong><p>공유할 저장소의 개인 또는 조직을 선택합니다.</p></li><li><strong>대상 저장소 선택</strong><p>Only select repositories에서 공유할 저장소를 지정합니다.</p></li><li><strong>Issues → Read and write</strong><p>Repository permissions에 설정합니다. Contents 쓰기 권한은 필요하지 않습니다.</p></li><li><strong>만료일과 조직 승인 확인</strong><p>조직에서 승인을 요구하면 승인 완료 후 사용할 수 있습니다.</p></li></ol><a className="button" href={tokenHelp} target="_blank" rel="noreferrer">GitHub에서 토큰 만들기</a><p>토큰이 허용하는 저장소 안에서 매번 다른 주소를 사용할 수 있습니다.</p>
+      <div className="github-guide-footer"><h3>공유는 어디에서 하나요?</h3><p>저장된 기록의 읽기 화면에서 <strong>GitHub 이슈로 공유</strong>를 선택하세요.</p><Link className="text-link" to="/library">원자료 열기</Link></div>
+    </AnimatedDetails></aside></div>}
+    <section className="github-history"><h2>최근 공유 기록</h2><ErrorNotice error={history.error} />{history.error && <Button onClick={history.reload}>기록 다시 불러오기</Button>}{!history.data && !history.error && <LoadingSkeleton layout="list" label="공유 기록을 불러오는 중…" />}{history.data?.length === 0 && <EmptyState icon={GitBranch} title="아직 공유한 기록이 없습니다" />}{history.data?.map(item => <ShareRecord key={item.id} item={item} onRecovered={history.reload} />)}</section>
   </main>;
 }
 
@@ -219,7 +220,7 @@ function ShareEditor({ initial }: { initial: Preview }) {
     <section className="github-publish"><div><h2>확인한 내용으로 등록</h2>{repo && <p><strong>@{repo.login}</strong> 계정으로 <strong>{repo.repo}</strong>에 등록합니다.</p>}{repo && <p className={repo.private ? '' : 'github-public-notice'}>{repo.private ? '저장소에 접근할 수 있는 구성원에게 공유됩니다.' : '공개 저장소입니다. 등록한 내용은 누구나 볼 수 있습니다.'}</p>}
       <Label className="github-consent" htmlFor="github-permission-consent"><Checkbox id="github-permission-consent" className="mt-1 size-[17px] shrink-0" checked={permissions} onCheckedChange={checked => setPermissions(checked === true)} disabled={locked || !repo?.can_attempt} /><span>토큰에 이 저장소와 <strong>Issues: Read and write</strong>를 설정했고, 필요한 조직 승인을 받았습니다.</span></Label>
       <Label className="github-consent" htmlFor="github-content-consent"><Checkbox id="github-content-consent" className="mt-1 size-[17px] shrink-0" checked={content} onCheckedChange={checked => setContent(checked === true)} disabled={locked || !repo?.can_attempt} /><span>본문·개념 데이터·출처와 위 공개 범위를 확인했습니다.</span></Label></div>
-      <Button className="primary" disabled={locked || stale || !repo?.can_attempt || !permissions || !content || !title.trim() || !body.trim() || body.length > 60000 || draftOwner !== userId} onClick={() => void publish()}>{busy ? '권한 재확인 · 등록 중…' : result?.state === 'published' ? '등록 완료' : 'GitHub 이슈 등록'}</Button><p className="github-caption">등록 직전에 계정과 저장소 상태를 다시 확인합니다. 같은 원본 버전은 같은 저장소에 한 번만 등록합니다.</p>
+      <Button loading={!!(busy)} className="primary" disabled={locked || stale || !repo?.can_attempt || !permissions || !content || !title.trim() || !body.trim() || body.length > 60000 || draftOwner !== userId} onClick={() => void publish()}>{busy ? '권한 재확인 · 등록 중…' : result?.state === 'published' ? '등록 완료' : 'GitHub 이슈 등록'}</Button><p className="github-caption">등록 직전에 계정과 저장소 상태를 다시 확인합니다. 같은 원본 버전은 같은 저장소에 한 번만 등록합니다.</p>
     </section>
     <section className="github-history"><h2>이 지식의 공유 기록</h2>{history.map(item => <ShareRecord key={item.id + item.state} item={item} onRecovered={value => { setHistory(h => h.map(r => r.id === value.id ? value : r)); if (result?.id === value.id) setResult(value); }} />)}</section>
   </main>;
@@ -238,6 +239,6 @@ function ShareRecord({ item, onRecovered }: { item: Share; onRecovered: (item: S
   return <article className="github-share-record"><div className="github-record-heading"><div><small>{item.repo} · @{item.login} · {timestamp(item.created_at)}</small><h3>{item.title}</h3></div><Badge variant="outline" className={`github-badge ${item.state}`}>{stateLabels[item.state]}</Badge></div>
     {item.issue_url && <a className="text-link" href={item.issue_url} target="_blank" rel="noreferrer">등록한 이슈 열기</a>}{item.error && <p className="notice" role="status">{item.error}</p>}
     {item.state === 'sending' && <p>등록 중인 요청입니다. 잠시 후 이 페이지를 다시 열어 결과를 확인해주세요.</p>}
-    {item.state === 'unknown' && <><p>먼저 <a href={`https://github.com/${item.repo}/issues`} target="_blank" rel="noreferrer">GitHub 이슈 목록</a>을 확인해주세요. 등록된 이슈가 없다면 아래 본문을 복사해 GitHub에서 직접 등록할 수 있습니다.</p><AnimatedDetails summary="등록 요청 본문 확인"><p>수동으로 등록할 때 마지막 확인용 표식도 함께 복사해주세요.</p><Textarea readOnly aria-label="등록 요청 원문" value={item.body + '\n\n<!-- code-trainer-share:' + item.id + ' -->'} /><Button onClick={() => { void navigator.clipboard.writeText(item.body + '\n\n<!-- code-trainer-share:' + item.id + ' -->').then(() => setMessage('본문을 복사했습니다.')).catch(() => setError('복사하지 못했습니다. 위 원문을 직접 선택해 복사해주세요.')); }}>원문 복사</Button>{message && <p role="status">{message}</p>}</AnimatedDetails><Label>등록된 이슈 주소<Input type="url" value={url} onChange={e => setUrl(e.target.value)} placeholder={`https://github.com/${item.repo}/issues/123`} maxLength={500} /></Label><Button disabled={busy || !url.trim()} onClick={() => void recover()}>{busy ? '확인 중…' : '이슈 확인 · 기록 연결'}</Button><ErrorNotice error={error} /></>}
+    {item.state === 'unknown' && <><p>먼저 <a href={`https://github.com/${item.repo}/issues`} target="_blank" rel="noreferrer">GitHub 이슈 목록</a>을 확인해주세요. 등록된 이슈가 없다면 아래 본문을 복사해 GitHub에서 직접 등록할 수 있습니다.</p><AnimatedDetails summary="등록 요청 본문 확인"><p>수동으로 등록할 때 마지막 확인용 표식도 함께 복사해주세요.</p><Textarea readOnly aria-label="등록 요청 원문" value={item.body + '\n\n<!-- code-trainer-share:' + item.id + ' -->'} /><Button onClick={() => { void navigator.clipboard.writeText(item.body + '\n\n<!-- code-trainer-share:' + item.id + ' -->').then(() => setMessage('본문을 복사했습니다.')).catch(() => setError('복사하지 못했습니다. 위 원문을 직접 선택해 복사해주세요.')); }}>원문 복사</Button>{message && <p role="status">{message}</p>}</AnimatedDetails><Label>등록된 이슈 주소<Input type="url" value={url} onChange={e => setUrl(e.target.value)} placeholder={`https://github.com/${item.repo}/issues/123`} maxLength={500} /></Label><Button loading={!!(busy)} disabled={busy || !url.trim()} onClick={() => void recover()}>{busy ? '확인 중…' : '이슈 확인 · 기록 연결'}</Button><ErrorNotice error={error} /></>}
   </article>;
 }

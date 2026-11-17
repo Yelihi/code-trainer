@@ -1,9 +1,9 @@
-import { InsightSchedule } from './InsightSchedule';
 import { CircleCheck, CircleOff, ServerCog, TriangleAlert } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
+import { PageHeading } from './WorkspaceUI';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import './githubSharing.css';
 import './aiSettings.css';
@@ -20,14 +20,13 @@ export function AISettings() {
 
 function SettingsLoader() {
   const { data, error, reload } = useResource<Settings>('/ai/settings');
-  return <main className="page github-page ai-settings-page">
+  return <main className="page github-page ai-settings-page settings-page">
     <div className="breadcrumb">설정 <span>/</span> AI 연결</div>
-    <header className="ai-settings-page-heading"><h1>나의 AI 연결</h1><p>자료 해석과 실습, 지식 정리에 사용할 모델을 관리합니다.</p></header>
+    <PageHeading title="AI 연결과 사용량" actions={<Link className="button" to="/me#ai-usage">사용량 보기</Link>} />
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     <div className="ai-settings-sections">
       {!data && !error && <LoadingSkeleton layout="editor" label="AI 연결을 불러오는 중…" />}
       {data && <SettingsForm key={data.revision} initial={data} onReload={reload} />}
-      <InsightSchedule />
     </div>
   </main>;
 }
@@ -78,7 +77,7 @@ function SettingsForm({ initial, onReload }: { initial: Settings; onReload: () =
         <div><Label htmlFor="ai-key">{data.source === 'personal' ? '새 API 키' : 'API 키'}</Label><Input id="ai-key" type="password" value={key} onChange={event => { setKey(event.target.value); setMessage(''); }} required maxLength={1000} disabled={busy} spellCheck={false} autoComplete="off" /></div></div>
         <p className="ai-key-hint">저장된 키는 다시 표시하지 않습니다. 입력칸이 비어 있어도 현재 연결은 유지되며, 모델을 바꿔 저장할 때는 키를 다시 입력해야 합니다.</p>
         <div className="flex flex-wrap items-center gap-3">
-          <Button className="primary" disabled={busy || !data.storage_ready || !data.provider_url || !key || !model}>{busy ? '처리 중…' : 'AI 연결 저장'}</Button>
+          <Button loading={!!(busy)} className="primary" disabled={busy || !data.storage_ready || !data.provider_url || !key || !model}>{busy ? '처리 중…' : 'AI 연결 저장'}</Button>
           {(data.source === 'personal' || data.source === 'environment') && <Button type="button" disabled={busy} onClick={() => void disconnect()}>AI 연결 해제</Button>}
         </div>
       </form>

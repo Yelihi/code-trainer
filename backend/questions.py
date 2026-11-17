@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from pydantic import Field, model_validator
 from .schema import Model
+from .learning_links import Target, resolve
 from . import ai, ai_settings, db, insight_context, resources, service, source, usage
 
 
@@ -18,6 +19,8 @@ class Create(Model):
     request_id: str = Field(min_length=8, max_length=80)
     text: str = Field(min_length=1, max_length=500)
     parent_id: str | None = Field(default=None, pattern=r'^[a-f0-9]{32}$')
+    targets: list[Target] = Field(default_factory=list, max_length=5)
+    origin: str = Field(default='', max_length=300)
 
     @model_validator(mode='after')
     def nonempty(self):
@@ -27,6 +30,7 @@ class Create(Model):
 
 
 class Update(Model):
+    targets: list[Target] | None = Field(default=None, max_length=5)
     revision: int = Field(ge=1)
     text: str = Field(min_length=1, max_length=500)
     context: str = Field(default='', max_length=4000)
@@ -74,6 +78,9 @@ def initialize(c):
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(owner,request_id))''')
     if 'parent_id' not in {row['name'] for row in c.execute('PRAGMA table_info(question_memos)')}:
         c.execute('ALTER TABLE question_memos ADD COLUMN parent_id TEXT REFERENCES question_memos(id) ON DELETE SET NULL')
+    for column, default in (('targets', '[]'), ('origin', '')):
+        if column not in {row['name'] for row in c.execute('PRAGMA table_info(question_memos)')}:
+            c.execute(f"ALTER TABLE question_memos ADD COLUMN {column} TEXT NOT NULL DEFAULT '{default}'")
     c.execute('CREATE INDEX IF NOT EXISTS question_parent ON question_memos(owner,parent_id)')
     c.execute('''CREATE TABLE IF NOT EXISTS question_guides (
         id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), question_id TEXT NOT NULL REFERENCES question_memos(id),
@@ -218,6 +225,7 @@ def save_daily(owner, body):
 def row_view(row):
     value = dict(row); value.pop('owner', None); value.pop('request_id', None)
     value['links'] = json.loads(value['links'])
+    value['targets'] = json.loads(value.get('targets', '[]'))
     return value
 
 
@@ -232,14 +240,15 @@ def create(owner, body):
     with db.connect(write=True) as c:
         old = c.execute('SELECT * FROM question_memos WHERE owner=? AND request_id=?', (owner, body.request_id)).fetchone()
         if old:
-            if old['text'] != body.text.strip() or old['parent_id'] != body.parent_id:
+            if old['text'] != body.text.strip() or old['parent_id'] != body.parent_id or old['origin'] != body.origin or [(t['kind'],t['id'],t['unit_id']) for t in json.loads(old['targets'])] != [(t.kind,t.id,t.unit_id) for t in body.targets]:
                 raise service.Error('같은 저장 요청의 질문이 다릅니다.', 409)
             return row_view(old)
         if body.parent_id:
             owned(c, owner, body.parent_id)
+        targets = [resolve(owner, target, c) for target in body.targets]
         clock, identifier = service.now(), service.uid()
-        c.execute('INSERT INTO question_memos(id,owner,request_id,text,parent_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
-                  (identifier, owner, body.request_id, body.text.strip(), body.parent_id, clock, clock))
+        c.execute('INSERT INTO question_memos(id,owner,request_id,text,parent_id,created_at,updated_at,targets,origin) VALUES (?,?,?,?,?,?,?,?,?)',
+                  (identifier, owner, body.request_id, body.text.strip(), body.parent_id, clock, clock, service.dump(targets), body.origin))
         return row_view(owned(c, owner, identifier))
 
 
@@ -314,6 +323,9 @@ def update(owner, identifier, body):
                 raise service.Error('선택한 구절이 현재 자료 본문에 없습니다.', 409)
         if body.note_id and not c.execute('SELECT 1 FROM reference_notes WHERE owner=? AND id=? AND archived=0', (owner, body.note_id)).fetchone():
             raise service.Error('연결할 노트를 찾을 수 없습니다.', 404)
+        if body.targets is not None:
+            targets = [resolve(owner, target, c) for target in body.targets]
+            c.execute('UPDATE question_memos SET targets=? WHERE owner=? AND id=?', (service.dump(targets), owner, identifier))
         c.execute('''UPDATE question_memos SET text=?,context=?,status=?,links=?,note_id=?,revision=revision+1,updated_at=?
                      WHERE owner=? AND id=?''', (body.text.strip(), body.context, body.status, service.dump([v.model_dump() for v in body.links]),
                                                    body.note_id, service.now(), owner, identifier))

@@ -1,12 +1,13 @@
+import { AddToReview } from './SpacedReviews';
+import { FileText } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useApp, useResource } from './App';
 import { LoadingSkeleton } from './LoadingSkeleton';
-import { MaterialReview } from './MaterialReview';
-import { InterpretationPractice } from './InterpretationPractice';
 import { Markdown } from './Markdown';
-import { libraryPage } from './libraryTypes';
+import { libraryPage, type ResourceVersion } from './libraryTypes';
 import './library.css';
 import { Button } from './components/ui/button';
 
@@ -43,7 +44,7 @@ function StartInterpretation({ resourceId, revision, disabled = false, retryId =
     } catch (e) { if (alive.current) setError(errorMessage(e)); }
     finally { sending.current = false; if (alive.current) setBusy(false); }
   }
-  return <><ErrorNotice error={error} /><Button className="primary" disabled={disabled || busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : `v${revision} ${retryId ? '다시 해석하기' : '해석 시작'}`}</Button>
+  return <><ErrorNotice error={error} /><Button loading={!!(busy)} className="primary" disabled={disabled || busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : `v${revision} ${retryId ? '다시 해석하기' : '해석 시작'}`}</Button>
     {health && !health.ai && <p className="reference-state">AI 설정이 필요합니다. 저장한 원문은 그대로 보관됩니다.</p>}</>;
 }
 
@@ -68,7 +69,7 @@ function InterpretationList() {
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="해석 문서를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '삭제한 해석' : resourceId ? '선택한 자료의 해석 기록' : '나의 해석 문서'}</span><span>{data.total}개의 기록</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <section className="reference-empty"><h2>{archived ? '삭제한 해석이 없습니다.' : '아직 해석한 자료가 없습니다.'}</h2><p>{archived ? '삭제한 해석은 이곳에서 복원할 수 있습니다.' : '보관함에서 원문을 열고 해석을 시작해보세요.'}</p>{!archived && <Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원문 살펴보기</Link>}</section>}
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" key={item.id} to={'/interpretations/' + item.id}><div><small>{states[item.state]} · 원문 v{item.revision}</small><h2>{item.title}</h2><p>{item.source_name}</p><footer><span>AI 해석</span><span>{timestamp(item.created_at)}</span></footer></div></Link>)}</div> : <EmptyState icon={FileText} title={archived ? '삭제한 해석이 없습니다' : '아직 해석한 자료가 없습니다'} description={archived ? '삭제한 해석은 이곳에서 복원할 수 있습니다.' : '원자료를 열고 필요한 내용의 해석을 시작해보세요.'} action={!archived ? <Link className="button" to={resourceId ? '/library/' + resourceId : '/library'}>원자료 살펴보기</Link> : undefined} />}
       {data.pages > 1 && <nav className="pagination" aria-label="해석 기록 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), ...(archived ? { archived: 'true' } : {}), page: String(data.page - 1) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ ...(resourceId ? { resource: resourceId } : {}), ...(archived ? { archived: 'true' } : {}), page: String(data.page + 1) })}>다음</Button></nav>}</>}
   </main>;
 }
@@ -101,7 +102,7 @@ function Detail({ id }: { id: string }) {
   }
   async function changeArchive(archived: boolean) {
     if (busy || !data) return;
-    if (archived && !window.confirm('이 해석 자료를 목록에서 삭제할까요? 연결된 질문지와 복습 기록은 보존되며, 삭제한 해석에서 복원할 수 있습니다.')) return;
+    if (archived && !window.confirm('이 해석 자료를 목록에서 삭제할까요? 기존 기록은 보존되며, 삭제한 해석에서 복원할 수 있습니다.')) return;
     setBusy(true); setError('');
     try {
       const result = await api<Interpretation>(`/interpretations/${id}/archive`, 'POST', { archived });
@@ -112,7 +113,7 @@ function Detail({ id }: { id: string }) {
   }
   useEffect(() => {
     // Cross-page section links arrive before the fetched document is rendered.
-    if (data?.document && /^#s[1-6]$/.test(hash)) document.getElementById(hash.slice(1))?.scrollIntoView();
+    if (data?.document && /^#(?:s[1-6]|interpretation-(?:summary|source|next))$/.test(hash)) document.getElementById(hash.slice(1))?.scrollIntoView();
   }, [data?.document, hash]);
   useEffect(() => {
     const controller = new AbortController();
@@ -135,17 +136,32 @@ function Detail({ id }: { id: string }) {
       <aside className="interpretation-provenance"><strong>{data.source_name} · 본문 v{data.revision}</strong><p>AI가 작성한 해석입니다. 인용한 원문과 비교하며 읽어보세요.{data.current_revision !== data.revision && ` 원문에는 더 최신인 v${data.current_revision}가 있습니다. 이 문서는 v${data.revision} 해석을 그대로 보존합니다.`}</p></aside>
       {data.state === 'ready' && !data.archived && <div className="interpretation-retry"><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></div>}
       {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
-      {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>같은 원문 v{data.revision}에서 이 해석 자료를 다시 생성합니다.</p>{!data.archived && <Button className="primary" disabled={busy || !health?.ai} onClick={() => void retry()}>{busy ? '요청 중…' : '이 해석에서 다시 시도'}</Button>}</section>}
-      {data.document && <InterpretationDocument document={data.document} interpretationId={data.id} />}
-      {data.state === 'ready' && data.document && <MaterialReview kind="interpretation" id={data.id} revision={data.revision} />}
-      {data.state === 'ready' && data.document && <InterpretationPractice interpretationId={data.id} />}
+      {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>같은 원문 v{data.revision}에서 이 해석 자료를 다시 생성합니다.</p>{!data.archived && <Button className="primary" loading={busy} disabled={busy || !health?.ai} onClick={() => void retry()}>{busy ? '요청 중…' : '이 해석에서 다시 시도'}</Button>}</section>}
+      {data.document && <div className="reading-workspace">
+        <aside className="reading-navigation" aria-label="해석 목차"><h2>이 문서에서</h2><a className="reading-link" href="#interpretation-summary">핵심 개념</a><InterpretationOutline document={data.document} /><a className="reading-link" href="#interpretation-source">원문 확인</a>{data.state === 'ready' && <a className="reading-link" href="#interpretation-next">읽은 다음</a>}<Link className="reading-link" to={'/explore?resource=' + data.resource_id}>이 자료의 해석 기록</Link></aside>
+        <div className="reading-content"><InterpretationDocument document={data.document} interpretationId={data.id} outline={false} />
+          {data.state === 'ready' && <section id="interpretation-next" className="reading-next"><h2>복습</h2><AddToReview kind="interpretation" id={data.id} revision={data.revision} /></section>}
+        </div>
+        <aside id="interpretation-source" className="reading-context" aria-label="해석의 원문"><h2>함께 읽는 원문</h2><p className="reading-meta">{data.source_name} · v{data.revision}</p><p className="reading-hint">해석에 사용한 버전입니다. 인용과 설명을 원문에 비춰 확인하세요.</p><InterpretationSource key={data.resource_id + ':' + data.revision} resourceId={data.resource_id} revision={data.revision} /><a className="reading-link" href="#interpretation-summary">해석 본문으로 돌아가기</a><Link className="reading-link" to={'/library/' + data.resource_id}>자료 상세 · 전체 버전 보기</Link></aside>
+      </div>}
     </>}
   </main>;
 }
 
-export function InterpretationDocument({ document, interpretationId }: { document: Document; interpretationId?: string }) {
-  return <><section className="interpretation-summary"><span className="eyebrow">AI 해석 · 핵심 개념</span><Markdown language="">{document.summary}</Markdown><ul className="interpretation-concepts">{document.concepts.map((concept, i) => <li key={i}>{concept}</li>)}</ul></section>
-    <nav className="interpretation-outline" aria-label="해석 섹션">{document.sections.map((section, i) => <a key={section.id} href={'#' + section.id}><span>{String(i + 1).padStart(2, '0')}</span>{section.title}</a>)}</nav>
+function InterpretationSource({ resourceId, revision }: { resourceId: string; revision: number }) {
+  const { data, error, reload } = useResource<ResourceVersion>(`/resources/${resourceId}/versions/${revision}`);
+  return <><ErrorNotice error={error} />{error && <Button onClick={reload}>원문 다시 불러오기</Button>}
+    {!data && !error && <LoadingSkeleton layout="list" label="해석에 사용한 원문을 불러오는 중…" />}
+    {data && <div className="reading-source" tabIndex={0} role="region" aria-label={'원문 v' + revision}><Markdown language="" images>{data.content ?? '이 버전에는 수집된 본문이 없습니다.'}</Markdown></div>}</>;
+}
+
+function InterpretationOutline({ document }: { document: Document }) {
+  return <nav className="interpretation-outline" aria-label="해석 섹션">{document.sections.map(section => <a className="reading-link" key={section.id} href={'#' + section.id}>{section.title}</a>)}</nav>;
+}
+
+export function InterpretationDocument({ document, interpretationId, outline = true }: { document: Document; interpretationId?: string; outline?: boolean }) {
+  return <><section className="interpretation-summary" id="interpretation-summary"><h2>핵심 개념</h2><Markdown language="">{document.summary}</Markdown><ul className="interpretation-concepts">{document.concepts.map((concept, i) => <li key={i}>{concept}</li>)}</ul></section>
+    {outline && <InterpretationOutline document={document} />}
     {document.sections.map(section => <section className="interpretation-section" id={section.id} key={section.id}>
       <span className="eyebrow">AI 해석</span><h2>{section.title}</h2>
       {!!section.prerequisites.length && <p>먼저 읽기: {section.prerequisites.map(id => <a key={id} href={'#' + id}>{document.sections.find(s => s.id === id)?.title} </a>)}</p>}

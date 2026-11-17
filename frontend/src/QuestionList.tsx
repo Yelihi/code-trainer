@@ -1,3 +1,5 @@
+import { ChevronRight, Circle, CircleCheck, MessageCircle } from 'lucide-react';
+import { EmptyState } from './WorkspaceUI';
 import { memo, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { timestamp } from './api';
@@ -28,7 +30,7 @@ export const QuestionRows = memo(function QuestionRows({ items }: { items: Quest
   }
   function branch(parent: string | null): React.ReactNode {
     return <ul className="question-tree">{children.get(parent)?.map(item => <li key={item.id}>
-      <Link className="question-row" style={{ '--question-depth': Math.min(item.depth ?? 0, 4) } as CSSProperties} title={item.text} to={'/questions/' + item.id}><span><strong>{item.text}</strong><small>{item.parent_id ? '꼬리질문 · ' : ''}{item.status === 'done' ? '정리 완료' : '열린 질문'}{item.matches_filter === false ? ' · 맥락을 위한 상위 질문' : ''} · {timestamp(item.updated_at)} · 연결 자료 {item.links.length}개{item.note_id ? ' · 노트 연결됨' : ''}</small></span><span>열기</span></Link>
+      <Link className="question-row" style={{ '--question-depth': Math.min(item.depth ?? 0, 4) } as CSSProperties} title={item.text} to={'/questions/' + item.id}>{item.status === 'done' ? <CircleCheck className="question-row-status" size={19} aria-hidden="true" /> : <Circle className="question-row-status" size={19} aria-hidden="true" />}<span className="question-row-copy"><strong>{item.text}</strong><small>{item.parent_id ? '꼬리질문 · ' : ''}{item.status === 'done' ? '정리 완료' : '열린 질문'}{item.matches_filter === false ? ' · 맥락을 위한 상위 질문' : ''} · {timestamp(item.updated_at)}{item.links.length ? ` · 자료 ${item.links.length}` : ''}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
       {children.has(item.id) && branch(item.id)}
     </li>)}</ul>;
   }
@@ -36,7 +38,7 @@ export const QuestionRows = memo(function QuestionRows({ items }: { items: Quest
 });
 
 export function QuestionResults({ data, loading, query }: { data: QuestionPage | null; loading: boolean; query: string }) {
-  return <div className="question-results" aria-busy={loading}>{data ? <><QuestionRows items={data.items} />{!data.items.length && <p className="empty-state">{query ? '검색 결과가 없습니다.' : '아직 질문이 없습니다. 상단의 ‘질문 적기’로 시작하세요.'}</p>}</> : <QuestionListSkeleton />}</div>;
+  return <div className="question-results" aria-busy={loading}>{data ? <><QuestionRows items={data.items} />{!data.items.length && <EmptyState icon={MessageCircle} title={query ? '검색 결과가 없습니다' : '아직 질문이 없습니다'} description={query ? '다른 검색어나 필터로 찾아보세요.' : '상단의 질문 적기로 궁금한 내용을 남겨보세요.'} />}</> : <QuestionListSkeleton />}</div>;
 }
 
 export function QuestionList() {

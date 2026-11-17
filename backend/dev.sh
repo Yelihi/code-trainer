@@ -2,12 +2,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [[ $# -eq 1 && "$1" == '--help' ]]; then
-  echo '사용법: cd backend && ./dev.sh [start|stop|restart]'
+  echo '사용법: cd backend && ./dev.sh [start|stop|restart|preview]'
+  echo 'preview: 개발 소유자에 자동 연결 (로컬 전용, 쿠키·비밀번호 불필요)'
   echo '기본 start: 실행 / stop: 정상 종료 / restart: 종료 후 현재 작업 폴더에서 다시 실행'
   echo '루트 .env의 AI 설정 사용, API :8011, DB/로그: data/dev/, 실행 VM: code-trainer-dev'
   exit 0
 fi
-if [[ $# -gt 1 || ! "${1:-start}" =~ ^(start|stop|restart)$ ]]; then
+if [[ $# -gt 1 || ! "${1:-start}" =~ ^(start|stop|restart|preview)$ ]]; then
   echo '사용법: ./dev.sh [start|stop|restart|--help]' >&2
   exit 1
 fi
@@ -59,10 +60,12 @@ if ! docker image inspect code-trainer-runner:dev >/dev/null 2>&1; then
   fi
   docker build -t code-trainer-runner:dev sandbox
 fi
+preview_mode=0
+if [[ "${1:-start}" == 'preview' ]]; then preview_mode=1; fi
 # Apply isolation after dotenv loading while retaining the existing AI settings.
 exec uv run --no-project env -u DOCKER_CONTEXT -u DOCKER_TLS_VERIFY -u DOCKER_CERT_PATH \
   DOCKER_HOST="$DOCKER_HOST" DOCKER_CONFIG="$DOCKER_CONFIG" \
-  TRAINER_MODE=local TRAINER_RUNNER_URL= TRAINER_IMAGE=code-trainer-runner:dev \
+  TRAINER_MODE=local TRAINER_PREVIEW="$preview_mode" TRAINER_RUNNER_URL= TRAINER_IMAGE=code-trainer-runner:dev \
   TRAINER_DB="$PWD/data/dev/trainer.sqlite3" \
   .venv/bin/python -m uvicorn backend.api:app \
   --host 127.0.0.1 --port 8011 --no-access-log --reload --reload-dir backend

@@ -35,6 +35,6 @@ export function ReferenceContentReview({ note, proposal, pending, onApply, onEdi
         {current && <><Label className="reference-replacement-choice" htmlFor={`reference-choice-${i}`}><Checkbox id={`reference-choice-${i}`} className="size-[18px] shrink-0" checked={checked.includes(i)} disabled={pending || !!blocked} onCheckedChange={value => setChecked(value === true ? [...checked, i] : checked.filter(n => n !== i))} /><span>{i + 1}번 추천 문장을 본문에 반영</span></Label>{blocked && <p className="muted">{blocked}</p>}</>}
       </article>;
     })}
-    {review.issues.length > 0 && <footer><p>체크만으로 본문이 바뀌지는 않습니다. 선택한 변경을 반영하면 새 버전으로 저장되며, 이전 본문은 버전 기록에 남습니다. 새 본문에 맞는 개념과 근거를 확인해주세요.</p><ErrorNotice error={error} /><div className="reference-actions"><Button type="button" className="primary" disabled={pending || !current || checked.length === 0} onClick={() => void apply()}>{pending ? '처리 중…' : `선택한 변경 ${checked.length}개 반영`}</Button><Button type="button" disabled={pending} onClick={onEdit}>본문 직접 수정</Button></div></footer>}
+    {review.issues.length > 0 && <footer><p>체크만으로 본문이 바뀌지는 않습니다. 선택한 변경을 반영하면 새 버전으로 저장되며, 이전 본문은 버전 기록에 남습니다. 새 본문에 맞는 개념과 근거를 확인해주세요.</p><ErrorNotice error={error} /><div className="reference-actions"><Button loading={!!(pending)} type="button" className="primary" disabled={pending || !current || checked.length === 0} onClick={() => void apply()}>{pending ? '처리 중…' : `선택한 변경 ${checked.length}개 반영`}</Button><Button type="button" disabled={pending} onClick={onEdit}>본문 직접 수정</Button></div></footer>}
   </section>;
 }

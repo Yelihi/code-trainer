@@ -20,9 +20,9 @@ function NativeSelect({
         size={typeof size === "number" ? size : undefined}
         multiple={multiple}
         className={cn(
-          "min-h-11 w-full min-w-0 rounded-md border border-input bg-[#0c0a18] px-5 py-2.5 text-[var(--text-body)] text-foreground [color-scheme:dark] transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground disabled:cursor-not-allowed data-[size=sm]:min-h-8 data-[size=sm]:py-1",
+          "min-h-11 w-full min-w-0 rounded-md border border-input bg-background px-5 py-2.5 text-[var(--text-body)] text-foreground transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground disabled:cursor-not-allowed data-[size=sm]:min-h-8 data-[size=sm]:py-1",
           !listbox && "appearance-none pr-11",
-          "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+          "focus-visible:border-ring",
           "aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
           className
         )}

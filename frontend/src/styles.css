@@ -127,7 +127,7 @@ select:focus-visible {
   border-color: var(--ring);
   outline: 2px solid transparent;
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px #18181818, 0 0 16px #18181818;
+  box-shadow: none;
 }
 @media (prefers-reduced-motion: reduce) {
   input, textarea, select { transition: none !important; }
@@ -674,7 +674,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
   font-size: var(--text-caption);
 }
 .source-input {
-  min-height: 245px;
+  min-height: 320px;
   line-height: var(--leading-reading);
   font-size: var(--text-body);
 }
@@ -690,32 +690,6 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 }
 .source-form .primary {
   justify-self: start;
-}
-.sample-card {
-  margin: 27px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 24px;
-  background: var(--panel);
-}
-.sample-card h3 {
-  margin-bottom: 6px;
-}
-.sample-card p {
-  font-size: var(--text-body);
-  margin-bottom: 0;
-}
-.sample-card .eyebrow {
-  font-size: var(--text-caption);
-  margin-bottom: 8px;
-}
-.sample-card button {
-  white-space: nowrap;
-  font-size: var(--text-caption);
 }
 .generation-status {
   padding: 24px;
@@ -1518,14 +1492,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
   .source-input {
     min-height: 230px;
   }
-  .sample-card {
-    padding: 20px;
-    display: block;
-  }
-  .sample-card button {
-    margin-top: 18px;
-  }
-  .generation-steps {
+      .generation-steps {
     gap: 12px;
     font-size: var(--text-caption);
   }
@@ -1817,7 +1784,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .learning-disclosure > summary[aria-expanded='true'] > .disclosure-indicator { color: var(--brand); background: var(--panel); border-color: var(--ring); }
 .learning-disclosure > summary[aria-expanded='true'] > .disclosure-indicator svg { transform: rotate(90deg); }
 @media (hover: hover) {
-  .learning-disclosure > summary:hover { background: var(--accent); color: var(--text); }
+  .learning-disclosure > summary:hover { background: var(--surface-hover); color: var(--text); }
   .learning-disclosure > summary:hover > .disclosure-indicator { color: var(--text); border-color: var(--line); }
 }
 .learning-disclosure > summary:focus-visible { outline-offset: 3px; background: var(--panel); }
@@ -1890,15 +1857,38 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .feed-actions { margin-top: 20px; }
 .feed-pagination { justify-content: center; margin-top: 28px; }
 @media (max-width: 600px) { .feed-card { padding: 18px; } .feed-actions .button { width: 100%; text-align: center; } }
-.feed-settings { margin: 24px 0; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
-.feed-settings summary { cursor: pointer; font-weight: var(--weight-semibold); }
-.feed-source-list { display: grid; gap: 18px; }
-.feed-source { padding: 16px 0; border-bottom: 1px solid var(--line); min-width: 0; }
-.feed-source a { display: block; color: var(--muted); overflow-wrap: anywhere; }
-.feed-source .feed-actions { justify-content: flex-start; margin-top: 10px; }
-.feed-add-form { display: grid; gap: 10px; margin-top: 24px; }
-.feed-add-form h2 { margin: 0; font-size: var(--text-subheading); }
-.feed-add-form input, .feed-filter select { width: 100%; min-width: 0; }
+.feed-settings { margin: 24px 0; padding: 0; border: 0; border-radius: 16px; background: var(--panel); overflow: hidden; }
+.feed-settings.learning-disclosure > summary { padding: 18px 20px; border: 0; border-radius: 0; background: transparent; font-weight: var(--weight-semibold); }
+.feed-settings.learning-disclosure > summary:hover { background: var(--surface-hover); }
+.feed-settings.learning-disclosure > summary > .disclosure-indicator { border: 0; background: transparent; }
+.feed-settings.learning-disclosure > summary[aria-expanded] > .disclosure-indicator { border: 0; background: transparent; color: var(--muted); }
+.feed-settings .disclosure-body { padding: 4px 24px 24px; }
+.feed-settings-hint { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 20px; }
+.feed-source-list { display: grid; gap: 16px; }
+.feed-settings .feed-source { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px; border: 0; border-radius: 12px; background: var(--surface-muted); min-width: 0; }
+.feed-source-info { display: grid; gap: 8px; min-width: 0; }
+.feed-source-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.feed-source-heading strong { overflow-wrap: anywhere; }
+.feed-status { flex: none; padding: 3px 8px; border-radius: 6px; color: var(--muted); background: var(--panel); font-size: 12px; line-height: 1.5; }
+.feed-status.is-active { color: var(--success, #236442); }
+.feed-settings .feed-source a { display: block; color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.feed-source-info small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.feed-settings .feed-source .feed-actions { flex: none; justify-content: flex-end; gap: 8px; margin: 0; }
+.feed-settings .feed-add-form { display: grid; gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+.feed-add-form h2 { margin: 0; font-size: 16px; }
+.feed-add-fields { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,2fr); gap: 16px; }
+.feed-add-fields label { display: grid; gap: 8px; font-size: 13px; }
+.feed-add-fields input, .feed-filter select { width: 100%; min-width: 0; margin: 0; }
+.feed-add-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.feed-add-footer p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.feed-add-footer > button { flex: none; }
+@media (max-width: 700px) {
+  .feed-settings .disclosure-body { padding: 4px 16px 20px; }
+  .feed-settings .feed-source { align-items: stretch; flex-direction: column; padding: 16px; gap: 16px; }
+  .feed-settings .feed-source .feed-actions { justify-content: flex-start; }
+  .feed-add-fields { grid-template-columns: minmax(0,1fr); }
+  .feed-add-footer { flex-direction: column; align-items: stretch; }
+}
 .feed-filter { display: grid; gap: 6px; margin: 24px 0; }
 
 /* Foundations follows the workspace palette; motion represents state changes. */
@@ -1913,7 +1903,7 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .foundation-category { margin-top: 34px; }
 .foundation-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .foundation-card { padding: 22px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; transition: border-color 180ms ease, background-color 180ms ease; }
-.foundation-card:hover { border-color: var(--line); background: var(--accent); }
+.foundation-card:hover { border-color: var(--line); background: var(--surface-hover); }
 .foundation-card h3 { font-size: var(--text-subheading); margin: 20px 0 10px; }
 .foundation-card p { color: var(--muted); min-height: 44px; }
 .foundation-card > small { display: block; border-top: 1px solid var(--line); padding-top: 15px; color: var(--muted); }
@@ -2233,3 +2223,6 @@ dialog[open] { animation: dialog-enter 180ms ease-out both; }
 .insight-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
 .insight-steps h3 { font-size: 1rem; } .insight-evidence { padding: 1rem 0; border-bottom: 1px solid var(--line); }
 @media (max-width: 800px) { .insight-request { align-items: stretch; flex-direction: column; gap: 1rem; } .insight-steps { grid-template-columns: 1fr; gap: .75rem; } }
+
+.source-form textarea.source-input { min-height: 320px; padding: 16px 20px; }
+@media (max-width: 700px) { .source-form textarea.source-input { min-height: 260px; } }

@@ -64,13 +64,31 @@ test('follow-up rows keep semantic nesting, detail links and ancestor context', 
 });
 
 
-test('initial detail skeleton reserves the follow-up section before related sources', async () => {
+test('initial question detail reserves only description and reference material', async () => {
   const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { QuestionDetailSkeleton } = await server.ssrLoadModule('/src/QuestionSkeletons.tsx');
     const html = render(QuestionDetailSkeleton, {});
-    assert.match(html, /question-follow-ups/);
-    assert.match(html, /question-relation-skeleton/);
-    assert.ok(html.indexOf('이어지는 질문') < html.indexOf('관련 자료'));
+    assert.match(html, /설명/);
+    assert.match(html, /참고 자료/);
+    assert.doesNotMatch(html, /이어지는 질문|AI 탐구 가이드|내 언어로 정리/);
+  } finally { await server.close(); }
+});
+
+test('question reading keeps saved context and reference links without downstream tools or forms', async () => {
+  const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { QuestionReading } = await server.ssrLoadModule('/src/QuestionDetail.tsx');
+    const html = render(QuestionReading, { question: { ...question, context: '저장한 설명\n다음 줄', targets: [{ kind: 'resource', id: 'source', unit_id: '', title: '참고할 원문', href: '/library/source', revision: 1 }] } });
+    assert.match(html, /저장한 설명\n다음 줄/);
+    assert.match(html, /href="\/library\/source"/);
+    assert.doesNotMatch(html, /<textarea|<input|AI 탐구 가이드|레퍼런스로 정리|이어지는 질문/);
+    const { Button } = await server.ssrLoadModule('/src/components/ui/button.tsx');
+    const busy = renderToStaticMarkup(createElement(Button, { loading: true }, '질문 저장'));
+    assert.match(busy, /aria-busy="true"/);
+    assert.match(busy, /disabled=""/);
+    assert.match(busy, /button-spinner/);
+    assert.match(busy, /button-loading-label">질문 저장/);
+    assert.doesNotMatch(renderToStaticMarkup(createElement(Button, null, '질문 저장')), /button-spinner|aria-busy/);
   } finally { await server.close(); }
 });

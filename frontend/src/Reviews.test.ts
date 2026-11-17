@@ -9,10 +9,10 @@ test('review URL selects one accessible panel and preserves loading instead of s
   const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { Reviews } = await server.ssrLoadModule('/src/Reviews.tsx');
-    const cases = [['materials', '자료 복습을 불러오는 중'], ['problems', '내 문제 복습을 불러오는 중'], ['code', '코드 복습을 불러오는 중'], ['schedule', '복습 일정을 불러오는 중']];
+    const cases = [['materials', '자료 복습을 불러오는 중'], ['code', '코드 복습을 불러오는 중'], ['schedule', '복습 일정을 불러오는 중']];
     for (const [tab, loading] of cases) {
       const html = renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: ['/reviews?tab=' + tab] }, createElement(Reviews)));
-      assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
+      assert.equal((html.match(/role="tab"/g) ?? []).length, 3);
       assert.equal((html.match(/aria-selected="true"/g) ?? []).length, 1);
       assert.match(html, new RegExp(loading));
       for (const [, other] of cases.filter(([key]) => key !== tab)) assert.doesNotMatch(html, new RegExp(other));

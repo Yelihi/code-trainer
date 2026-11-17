@@ -18,5 +18,11 @@ test('general interpretation separates literal evidence and AI content without c
     assert.match(html, /href="#s1"/);
     assert.match(html, /&lt;script&gt;/);
     assert.doesNotMatch(html, /<script|문제 생성|실행 언어|<textarea/);
+    const workspaceBody = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(InterpretationDocument, { document, interpretationId: 'saved', outline: false })));
+    assert.doesNotMatch(workspaceBody, /aria-label="해석 섹션"/);
+    assert.match(workspaceBody, /id="interpretation-summary"/);
+    assert.match(workspaceBody, /href="#s1"/);
+    assert.match(workspaceBody, /href="\/interpretations\/saved\/code\/s2"/);
+    assert.ok(workspaceBody.includes('원문 인용'));
   } finally { await server.close(); }
 });

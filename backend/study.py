@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from typing import Literal
 from pydantic import Field
 from .schema import Model
-from . import ai, db, learning_links, practice, service, spaced_reviews, usage, problem_books
+from . import ai, db, learning_links, practice, service, spaced_reviews, usage
 
 
 class Policy(Model):
@@ -105,6 +105,8 @@ def today(owner):
     resume = []
     for row in db.all('SELECT * FROM study_locations WHERE owner=? ORDER BY updated_at DESC LIMIT 20', (owner,)):
         target = json.loads(row['target'])
+        if target['kind'] in ('problem', 'worksheet'):
+            continue
         try:
             target = learning_links.resolve(owner, learning_links.Target(**{key: target[key] for key in ('kind', 'id', 'unit_id')}))
         except service.Error:
@@ -133,14 +135,6 @@ def today(owner):
             continue
         if not db.one("SELECT id FROM foundation_attempts WHERE owner=? AND lesson_id=? AND state='passed'", (owner, row['lesson_id'])) and not any(item['href'] == target['href'] for item in resume):
             resume.append({**target, 'updated_at': row['updated_at']})
-    for row in db.all('SELECT worksheet_id,updated_at FROM practice_record_versions WHERE owner=? GROUP BY worksheet_id HAVING revision=MAX(revision) ORDER BY updated_at DESC LIMIT 5', (owner,)):
-        try:
-            target = learning_links.resolve(owner, learning_links.Target(kind='worksheet', id=row['worksheet_id']))
-        except service.Error:
-            continue
-        target['href'] += '/practice'
-        if not any(item['href'] == target['href'] for item in resume):
-            resume.append({**target, 'updated_at': row['updated_at']})
     resume.sort(key=lambda item: item['updated_at'], reverse=True)
     resume = resume[:3]
     codes = practice.queue(owner)['items']
@@ -149,7 +143,6 @@ def today(owner):
         'exercise_id': item['exercise_id'], 'in_progress': bool(item['active_review_id'])} for item in codes if item['due'] or item['active_review_id']]
     reviews += [{'key': 'material:' + item['id'], 'title': item['snapshot']['title'], 'due_at': item['due_at'],
         'href': '/reviews/material/' + item['id'], 'in_progress': False} for item in spaced_reviews.queue(owner)['items'] if item['due']]
-    reviews += [{'key': 'problem:' + item['problem_id'], 'title': item['title'], 'due_at': item['due_at'], 'href': '/problem-books/problems/' + item['problem_id'] + '/solve', 'in_progress': False} for item in problem_books.review_queue(owner)['items'] if item['due'] and not item['archived']]
     reviews.sort(key=lambda item: (not item['in_progress'], item['due_at'], item['key']))
     choices = {row['key']: row for row in db.all('SELECT * FROM study_choices WHERE owner=?', (owner,))}
     candidates = db.all("SELECT id,text,created_at,targets FROM question_memos WHERE owner=? AND status='open' AND created_at<=? ORDER BY created_at,id",
@@ -177,6 +170,8 @@ def snapshot(owner):
                       'kind': 'unresolved_question', 'created_at': row['created_at'], 'revision': row['revision'], 'targets': json.loads(row['targets'])})
     for row in db.all('SELECT * FROM study_locations WHERE owner=? ORDER BY updated_at DESC LIMIT 10', (owner,)):
         target = json.loads(row['target'])
+        if target['kind'] in ('problem', 'worksheet'):
+            continue
         try:
             target = learning_links.resolve(owner, learning_links.Target(**{key: target[key] for key in ('kind', 'id', 'unit_id')}))
         except service.Error:

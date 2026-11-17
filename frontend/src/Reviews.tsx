@@ -1,7 +1,7 @@
 import { reviewCurve } from './reviewCurve';
 import type { SpacedReview } from './SpacedReviews';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BookOpen, CalendarDays, Code2, FileText, Sparkles } from 'lucide-react';
+import { CalendarDays, Code2, FileText, Sparkles } from 'lucide-react';
 import { EmptyState, PageHeading, WorkspaceTabs } from './WorkspaceUI';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
@@ -15,9 +15,8 @@ type ReviewItem = { exercise_id: string; title: string; context_title: string; k
 export function Reviews() {
   const { data, error, reload } = useResource<{ items: ReviewItem[]; due_count: number }>('/me/reviews');
   const { data: materials, error: materialError, reload: reloadMaterials } = useResource<{ items: SpacedReview[]; due_count: number }>('/spaced-reviews');
-  const { data: authored, error: authoredError, reload: reloadAuthored } = useResource<{ items: { problem_id: string; title: string; due_at: string; due: boolean; archived: boolean }[] }>('/manual-problems/reviews');
   const [params, setParams] = useSearchParams();
-  const tab = ['materials', 'problems', 'code', 'schedule'].includes(params.get('tab') ?? '') ? params.get('tab')! : 'materials';
+  const tab = ['materials', 'code', 'schedule'].includes(params.get('tab') ?? '') ? params.get('tab')! : 'materials';
   const [busy, setBusy] = useState('');
   const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
@@ -28,7 +27,6 @@ export function Reviews() {
       await navigate(`/reviews/${value.id}`);
     } catch (error) { setActionError(errorMessage(error)); } finally { setBusy(''); }
   }
-  const problems = authored?.items.filter(item => !item.archived);
   return <main className="page reviews-page"><PageHeading title="복습" description="다시 살펴볼 학습을 골라 시작하세요." />
     <WorkspaceTabs label="복습 종류" value={tab} onValueChange={value => setParams({ tab: value })} items={[
       { value: 'materials', label: '자료', icon: FileText, content: <section className="review-panel"><h2>자료 복습</h2>
@@ -36,13 +34,9 @@ export function Reviews() {
         {materials && <>{!materials.items.length ? <EmptyState icon={FileText} title="복습에 추가한 자료가 없습니다" description="자료의 해석이나 내 노트를 복습에 추가해보세요." action={<Link className="button" to="/library">자료 살펴보기</Link>} /> : <><p className="muted">지금 복습할 자료 {materials.due_count}개</p>{materials.items.some(x => x.due) && <h3>지금 복습</h3>}<div className="list">{materials.items.filter(x => x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div>{materials.items.some(x => !x.due) && <h3>예정된 복습</h3>}<div className="list">{materials.items.filter(x => !x.due).map(item => <MaterialReviewRow key={item.id} item={item} />)}</div></>}</>}
         <details className="review-help"><summary>자료 복습은 어떻게 진행하나요?</summary><p>해석·내 답변·노트에서 직접 추가합니다. 스스로 설명 가능하면 3·7·14일 뒤, 다시 확인이 필요하면 다음 날 살펴봅니다.</p></details>
       </section> },
-      { value: 'problems', label: '내 문제', icon: BookOpen, content: <section className="review-panel"><h2>직접 만든 문제 복습</h2>
-        <ErrorNotice error={authoredError} />{authoredError && <Button onClick={reloadAuthored}>다시 불러오기</Button>}{!authored && !authoredError && <LoadingSkeleton layout="list" label="내 문제 복습을 불러오는 중…" />}
-        {problems && (problems.length ? <div className="list">{problems.map(item => <article className="list-row review-row" key={item.problem_id}><div><h3>{item.title}</h3><p>{item.due ? '복습할 시간 · ' : '예정 · '}{timestamp(item.due_at)}</p></div><Link className="button" to={'/problem-books/problems/' + item.problem_id + '/solve'}>{item.due ? '다시 풀기' : '문제 보기'}</Link></article>)}</div> : <EmptyState icon={BookOpen} title="복습할 내 문제가 없습니다" description="직접 만든 문제를 풀고 자기 평가를 남기면 복습이 시작됩니다." action={<Link className="button" to="/problem-books/problems">내 문제 열기</Link>} />)}
-      </section> },
       { value: 'code', label: '코드', icon: Code2, content: <section className="review-panel"><h2>코드 복습</h2>
         <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}{!data && !error && <LoadingSkeleton layout="list" label="코드 복습을 불러오는 중…" />}
-        {data && <>{!data.items.length ? <EmptyState icon={Code2} title="복습할 코드 문제가 없습니다" description="코드 문제를 통과하면 다음 날부터 다시 풀 수 있습니다." action={<Link className="button" to="/problem-books">문제집 열기</Link>} /> : <>{data.due_count === 0 ? <EmptyState icon={CalendarDays} title="오늘 예정된 코드 복습을 마쳤습니다" description="다음 복습 일정은 아래 목록에서 확인하세요." /> : <p className="muted">지금 복습할 문제 {data.due_count}개</p>}<div className="list">{data.items.map(item => <article className="list-row review-row" key={item.exercise_id}><div><small>{item.context_title} · {item.kind}</small><h3>{item.title}</h3><p>{assistanceLabels[item.assistance]} · {timestamp(item.due_at)} 예정</p></div><Button disabled={!!busy || (!item.due && !item.active_review_id)} onClick={() => void start(item)}>{busy === item.exercise_id ? '준비 중…' : item.active_review_id ? '복습 이어하기' : item.due ? '다시 풀기' : '복습 예정'}</Button></article>)}</div></>}</>}
+        {data && <>{!data.items.length ? <EmptyState icon={Code2} title="복습할 코드 문제가 없습니다" description="코드 문제를 통과하면 다음 날부터 다시 풀 수 있습니다." action={<Link className="button" to="/explore/practice">실습 선택</Link>} /> : <>{data.due_count === 0 ? <EmptyState icon={CalendarDays} title="오늘 예정된 코드 복습을 마쳤습니다" description="다음 복습 일정은 아래 목록에서 확인하세요." /> : <p className="muted">지금 복습할 문제 {data.due_count}개</p>}<div className="list">{data.items.map(item => <article className="list-row review-row" key={item.exercise_id}><div><small>{item.context_title} · {item.kind}</small><h3>{item.title}</h3><p>{assistanceLabels[item.assistance]} · {timestamp(item.due_at)} 예정</p></div><Button loading={busy === item.exercise_id} disabled={!!busy || (!item.due && !item.active_review_id)} onClick={() => void start(item)}>{busy === item.exercise_id ? '준비 중…' : item.active_review_id ? '복습 이어하기' : item.due ? '다시 풀기' : '복습 예정'}</Button></article>)}</div></>}</>}
         <details className="review-help"><summary>코드 복습은 어떻게 진행하나요?</summary><p>이전 풀이를 보지 않고 다시 해결합니다. 기존 코드와 진도는 그대로 보관됩니다. 첫 통과 다음 날 시작하고, 도움 없이 통과하면 3·7·14일 뒤, 실패하거나 도움을 참고하면 다음 날 다시 연습합니다. 앱 밖에서 받은 도움은 기록하지 않습니다.</p></details>
       </section> },
       { value: 'schedule', label: '일정', icon: CalendarDays, content: <section className="review-panel"><h2>자료·코드 복습 일정</h2><ErrorNotice error={error || materialError} />{error && <Button onClick={reload}>코드 일정 다시 불러오기</Button>}{materialError && <Button onClick={reloadMaterials}>자료 일정 다시 불러오기</Button>}{data && materials ? <ReviewCurves codes={data.items} materials={materials.items} /> : !error && !materialError && <LoadingSkeleton layout="list" label="복습 일정을 불러오는 중…" />}</section> },
@@ -82,10 +76,10 @@ function ReviewCurves({ codes, materials }: { codes: ReviewItem[]; materials: Sp
 type Usage = { items: { generation_id: string | null; operation: string; model: string; context_title: string | null; unit_id: string | null; calls: number; repair_calls: number; input_tokens: number; output_tokens: number; unknown_usage_calls: number; failed_calls: number }[]; totals: { calls: number; input_tokens: number; output_tokens: number; unknown_usage_calls: number } };
 export function UsagePanel() {
   const { data, error, reload } = useResource<Usage>('/me/ai-usage');
-  return <section className="usage-panel"><h2>AI 사용량</h2><Button onClick={reload}>사용량 새로고침</Button><p className="muted">이 기능 적용 이후의 제공자 응답 기준입니다. 토큰은 비용 확정액이 아니며, 사용량을 받지 못한 호출은 별도로 표시합니다.</p>
+  return <section className="usage-panel" id="ai-usage"><header className="section-heading"><h2>AI 사용량</h2><Button onClick={reload}>새로고침</Button></header><p className="muted">이 기능 적용 이후의 제공자 응답 기준입니다. 토큰은 비용 확정액이 아니며, 사용량을 받지 못한 호출은 별도로 표시합니다.</p>
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="summary" label="사용량을 불러오는 중…" />}
-    {data && <><p>총 {data.totals.calls}회 · 입력 {data.totals.input_tokens.toLocaleString()} / 출력 {data.totals.output_tokens.toLocaleString()} 토큰 · 사용량 미확인 {data.totals.unknown_usage_calls}회</p>
+    {data && <><dl className="usage-facts"><div><dt>AI 호출</dt><dd>{data.totals.calls}회</dd></div><div><dt>입력 토큰</dt><dd>{data.totals.input_tokens.toLocaleString()}</dd></div><div><dt>출력 토큰</dt><dd>{data.totals.output_tokens.toLocaleString()}</dd></div><div><dt>사용량 미확인</dt><dd>{data.totals.unknown_usage_calls}회</dd></div></dl>
       <AnimatedDetails summary="작업·단원별 사용량"><div className="list">{data.items.length === 0 && <EmptyState icon={Sparkles} title="기록된 AI 사용이 없습니다" description="AI 기능을 사용하면 호출과 토큰 기록이 여기에 표시됩니다." />}{data.items.map((row, index) => <div className="list-row" key={index}><div><strong>{row.context_title ?? (row.operation === 'LearningSummary' ? '학습 정리' : row.operation === 'ExplanationFeedback' ? '기초 구현 · 설명 검토' : '자료 분석 · 삭제된 자료')}</strong><p>{row.unit_id ?? '과정 전체'} · {({ Suggestions: '다음 학습 추천', ReferenceDraft: '기술 레퍼런스 설명', SkillDraft: 'AI Skill 생성', CurriculumDraft: '자료 분석', LearningSummary: '학습 정리', ExplanationFeedback: '설명 피드백', FixStarterRepair: 'FIX 수정', ExerciseCodeRepair: '코드 수정' } as Record<string,string>)[row.operation] ?? row.operation} · {row.model}</p><small>{row.calls}회 호출 / 수정 {row.repair_calls}회 / 실패 {row.failed_calls}회 / 사용량 미확인 {row.unknown_usage_calls}회</small></div><span>입력 {row.input_tokens.toLocaleString()}<br />출력 {row.output_tokens.toLocaleString()}</span></div>)}</div></AnimatedDetails></>}
   </section>;
 }
@@ -93,8 +87,8 @@ export function UsagePanel() {
 type Status = { services?: { api?: boolean; runner?: boolean }; available: boolean; stale: boolean; warnings: string[]; collected_at?: string; backup_at?: string; internal_free_gib?: number; external_free_gib?: number; certificates?: { name: string; days_left: number | null; expires_at: string | null }[]; checks?: { full_reboot: string; off_device_recovery: string } };
 export function Operations() {
   const { data, error, reload } = useResource<Status>('/admin/operations');
-  return <main className="page narrow-page"><div className="breadcrumb">Workspace / 관리자</div><h1>운영 상태</h1><p>Mac에서 5분마다 수집합니다. 오래된 정보는 정상 상태로 표시하지 않습니다.</p><Button onClick={reload}>다시 불러오기</Button>
+  return <main className="page settings-page operations-page"><div className="breadcrumb">관리자<span>/</span>운영 상태</div><PageHeading title="운영 상태" actions={<Button onClick={reload}>다시 불러오기</Button>} />
     <ErrorNotice error={error} />{!data && !error && <LoadingSkeleton layout="cards" label="운영 상태를 불러오는 중…" />}
-    {data && <>{data.warnings.map(w => <p key={w} className="notice" role="status">{w}</p>)}{data.available && <><p className="muted">수집 시각 {timestamp(data.collected_at!)}</p><dl className="operation-facts">{Object.entries({ api: 'API 응답', runner: '코드 실행기 연결' }).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{data.stale ? '정보 오래됨' : data.services?.[key as 'api' | 'runner'] === true ? '정상' : data.services?.[key as 'api' | 'runner'] === false ? '연결 실패' : '미확인'}</dd></div>)}<div><dt>내장 SSD 여유</dt><dd>{data.internal_free_gib} GiB</dd></div><div><dt>외장 SSD 여유</dt><dd>{data.external_free_gib} GiB</dd></div><div><dt>마지막 백업 성공</dt><dd>{data.backup_at ? timestamp(data.backup_at) : '확인 필요'}</dd></div>{data.certificates?.map(cert => <div key={cert.name}><dt>{cert.name} 인증서</dt><dd>{cert.days_left === null ? '확인 필요' : `${cert.days_left}일 남음`}{cert.expires_at && <small> · {timestamp(cert.expires_at)} 만료</small>}</dd></div>)}<div><dt>Mac 전체 재부팅 복구</dt><dd>{data.checks?.full_reboot ?? '미확인'}</dd></div><div><dt>장치 밖 복구 사본</dt><dd>{data.checks?.off_device_recovery ?? '미확인'}</dd></div></dl><p className="muted">인증서는 자동 갱신되지 않습니다. 내장 디스크 10GiB 미만·백업 36시간 경과·인증서 14일 이내 만료 시 안내합니다.</p></>}</>}
+    {data && <>{!data.available && <EmptyState icon={CalendarDays} title="수집된 운영 정보가 없습니다" />}{data.warnings.map(w => <p key={w} className="notice" role="status">{w}</p>)}{data.available && <><p className="muted">{data.stale ? '오래된 정보 · ' : ''}수집 시각 {timestamp(data.collected_at!)} · 5분 간격</p><dl className="operation-facts">{Object.entries({ api: 'API 응답', runner: '코드 실행기 연결' }).map(([key, label]) => <div key={key}><dt>{label}</dt><dd data-state={data.stale ? 'unknown' : data.services?.[key as 'api' | 'runner'] === true ? 'ok' : data.services?.[key as 'api' | 'runner'] === false ? 'error' : 'unknown'}>{data.stale ? '정보 오래됨' : data.services?.[key as 'api' | 'runner'] === true ? '정상' : data.services?.[key as 'api' | 'runner'] === false ? '연결 실패' : '미확인'}</dd></div>)}<div><dt>내장 SSD 여유</dt><dd>{data.internal_free_gib} GiB</dd></div><div><dt>외장 SSD 여유</dt><dd>{data.external_free_gib} GiB</dd></div><div><dt>마지막 백업 성공</dt><dd>{data.backup_at ? timestamp(data.backup_at) : '확인 필요'}</dd></div>{data.certificates?.map(cert => <div key={cert.name}><dt>{cert.name} 인증서</dt><dd>{cert.days_left === null ? '확인 필요' : `${cert.days_left}일 남음`}{cert.expires_at && <small> · {timestamp(cert.expires_at)} 만료</small>}</dd></div>)}<div><dt>Mac 전체 재부팅 복구</dt><dd>{data.checks?.full_reboot ?? '미확인'}</dd></div><div><dt>장치 밖 복구 사본</dt><dd>{data.checks?.off_device_recovery ?? '미확인'}</dd></div></dl><p className="muted">인증서는 자동 갱신되지 않습니다. 내장 디스크 10GiB 미만·백업 36시간 경과·인증서 14일 이내 만료 시 안내합니다.</p></>}</>}
   </main>;
 }

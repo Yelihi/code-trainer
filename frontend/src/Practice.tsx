@@ -463,7 +463,7 @@ function PracticeEditor({
             )}
           </div>
           <div className="run-toolbar">
-            <Button
+            <Button loading={!!(busy === "run")}
               onClick={() => void execute("run")}
               disabled={
                 !!busy || finishing ||
@@ -474,14 +474,14 @@ function PracticeEditor({
               {busy === "run" ? "실행 중…" : actionLabels.run}
             </Button>
             {exercise.kind !== "READ" && (
-              <Button
+              <Button loading={!!(busy === "test")}
                 onClick={() => void execute("test")}
                 disabled={!!busy || finishing || problemSet.withdrawn}
               >
                 {busy === "test" ? "검사 중…" : actionLabels.test}
               </Button>
             )}
-            <Button
+            <Button loading={!!(busy === "submit")}
               className="primary"
               onClick={() => void execute("submit")}
               disabled={
@@ -522,7 +522,7 @@ function PracticeEditor({
               <div className="stdin-label">
                 <div className="test-code-heading">
                   <strong>풀이 코드 + 아래 테스트 코드 → 실행 결과</strong>
-                  <Button onClick={() => void execute("run")} disabled={!!busy || finishing || problemSet.withdrawn}>
+                  <Button loading={!!(busy === "run")} onClick={() => void execute("run")} disabled={!!busy || finishing || problemSet.withdrawn}>
                     {busy === "run" ? "실행 중…" : "이 테스트 코드 실행"}
                   </Button>
                 </div>

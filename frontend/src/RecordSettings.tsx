@@ -1,8 +1,16 @@
 import { Link } from 'react-router-dom';
+import { Download } from 'lucide-react';
+import { AnimatedDetails } from './AnimatedDetails';
+import { PageHeading } from './WorkspaceUI';
 export function RecordSettings() {
-  return <main className="page narrow-page"><h1>내 기록 보관하기</h1><p>원자료와 버전, 질문과 꼬리질문, 풀이·제출·도움 기록, 복습 초안과 기존 위키·개인 기록을 보존합니다.</p>
-    <section className="learning-section"><h2>내 기록 다운로드</h2><p>원래 ID와 연결 정보를 담은 JSON 파일과 이미지가 ZIP으로 저장됩니다. 계정 비밀번호와 외부 서비스 키는 포함하지 않습니다. 개인 자료가 담기므로 안전한 장소에 보관해주세요.</p><a className="button primary" href="/api/records/export" download>내 기록 ZIP 다운로드</a><p className="muted">이 파일은 이동 가능한 기록입니다. 서비스 전체 복구에는 운영자의 SQLite 백업이 필요합니다.</p></section>
-    <section className="learning-section"><h2>이전 위키 기록</h2><p>Code Trainer는 기술 학습과 레퍼런스에 집중합니다. 기존 위키와 개인 기록은 삭제하지 않으며 내보낼 수 있습니다.</p><a className="button" href="/api/wiki/export" download>위키 Markdown과 이력 다운로드</a><div className="learning-links"><Link to="/library">학습 자료 열기</Link><Link to="/technical-references">내 레퍼런스 열기</Link></div></section>
+  return <main className="page settings-page export-settings-page">
+    <div className="breadcrumb">설정<span>/</span>기록 내보내기</div><PageHeading title="기록 내보내기" />
+    <section className="settings-section"><header className="section-heading"><h2>내 학습 기록</h2><span className="settings-format">ZIP</span></header>
+      <dl className="settings-facts"><div><dt>포함 기록</dt><dd>원자료·버전·질문·풀이·제출·도움 기록·복습 초안·이전 기록</dd></div><div><dt>파일 형식</dt><dd>원래 ID와 연결 정보를 담은 JSON · 첨부 이미지</dd></div><div><dt>제외 정보</dt><dd>계정 비밀번호 · 외부 서비스 키</dd></div></dl>
+      <footer className="settings-section-footer"><p>개인 자료가 포함됩니다. 안전한 장소에 보관하세요.</p><a className="button primary" href="/api/records/export" download><Download size={18} aria-hidden="true" />내 기록 다운로드</a></footer>
+    </section>
+    <p className="settings-help">기록 이동용 파일입니다. 서비스 전체 복구에는 운영자의 SQLite 백업이 필요합니다.</p>
+    <AnimatedDetails className="settings-legacy" summary="이전 위키 기록"><p>기존 위키와 개인 기록을 Markdown과 이력으로 내려받습니다.</p><a className="button" href="/api/wiki/export" download>위키 기록 다운로드</a></AnimatedDetails>
   </main>;
 }
 export function LegacyTransition() {

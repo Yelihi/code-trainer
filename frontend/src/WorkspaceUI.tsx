@@ -1,7 +1,7 @@
 import { Tabs } from 'radix-ui';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpRight, BookOpen, Code2, FileText, GraduationCap, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, Code2, FileText, type LucideIcon } from 'lucide-react';
 
 export function PageHeading({ title, description, meta, actions }: { title: string; description?: string; meta?: ReactNode; actions?: ReactNode }) {
   return <header className="workspace-heading"><div><h1>{title}</h1>{description && <p>{description}</p>}{meta && <div className="workspace-heading-meta">{meta}</div>}</div>{actions && <div className="workspace-heading-actions">{actions}</div>}</header>;
@@ -21,9 +21,7 @@ export function EmptyState({ icon: Icon, title, description, action }: { icon: L
 
 const materials = [
   { to: '/library', title: '원자료', icon: FileText, paths: ['/library', '/references', '/inbox', '/interpretations', '/explore'] },
-  { to: '/problem-books', title: '문제집', icon: BookOpen, paths: ['/problem-books'] },
-  { to: '/courses', title: '개념 과정', icon: GraduationCap, paths: ['/courses', '/learn', '/create'] },
-  { to: '/explore/practice', title: '실습', icon: Code2, paths: ['/explore/practice', '/foundations', '/framework-practice', '/worksheets', '/practice'] },
+  { to: '/explore/practice', title: '실습', icon: Code2, paths: ['/explore/practice', '/courses', '/learn', '/create', '/foundations', '/practice', '/problem-books', '/framework-practice', '/worksheets'] },
 ];
 const matches = (path: string, prefix: string) => path === prefix || path.startsWith(prefix + '/');
 export function materialSection(path: string) {

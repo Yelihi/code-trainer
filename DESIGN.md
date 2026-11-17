@@ -157,9 +157,9 @@ Page headings use the page role and shrink to (1.7rem) on mobile. Section headin
 
 The centered shell and pages share a maximum width of (1180px), desktop side gutters of (28px), and mobile side gutters of (20px). Page padding ends at (72px) on desktop. Cards commonly use (20px–24px) padding and (12px–24px) grid gaps. Sections start with (32px) separation, reduced to (26px) on mobile.
 
-Desktop content collections use two columns; task entry groups use three. The Today launch pairs a wider resume surface with a column of task entries. At (900px), Today stacks and its quick actions become three compact tiles; practice and lesson layouts stack with the problem before the editor. At (700px), content collections become one column while the three compact task entries and four Materials destinations remain directly visible.
+Desktop content collections use two columns; task entry groups use three. Today uses a compact horizontal resume surface, with task shortcuts beside the page heading. Below it, reviews and other active learning occupy the wider column; questions and AI suggestions occupy the narrower column. At (900px), practice and lesson layouts stack with the problem before the editor. At (700px), content collections become one column while the three compact task entries and four Materials destinations remain directly visible.
 
-At (700px), primary navigation becomes a fixed three-destination bottom dock with labeled icons, (16px) side insets, and a bottom inset of (12px + safe area). Pages reserve (112px + safe area) at the bottom. The settings disclosure remains accessible at the top right. Materials navigation keeps four labeled entries: 원자료, 문제집, 개념 과정, 실습.
+At (700px), primary navigation becomes a fixed three-destination bottom dock with labeled icons, (16px) side insets, and a bottom inset of (12px + safe area). Pages reserve (112px + safe area) at the bottom. The settings disclosure remains accessible at the top right. Materials navigation keeps two equal-width entries: 원자료, 실습. Practice contains 사전 생성 문제집 and 자료기반 코드 실습; its creation action is 자료 기반 실습문제 생성.
 
 ## Elevation & Depth
 
@@ -175,7 +175,7 @@ Work surfaces are flat at rest: gray surroundings and white cards provide separa
 
 ## Shapes
 
-Soft rectangular controls use the control radius; action cards use a slightly larger corner and document containers a larger surface corner. The resume surface is broader and more rounded; mobile reduces its radius to the dock radius. Status labels use compact corners, while shared badges remain pills. Thin form borders remain visible against the light ground. Lucide stroke icons accompany written labels; do not replace accessible names with decorative glyphs.
+Soft rectangular controls use the control radius; action cards use a slightly larger corner and document containers a larger surface corner. The resume surface uses the shared surface radius and compact padding; mobile stacks the copy and continuation action. Status labels use compact corners, while shared badges remain pills. Thin form borders remain visible against the light ground. Lucide stroke icons accompany written labels; do not replace accessible names with decorative glyphs.
 
 ## Components
 
@@ -203,7 +203,7 @@ Keep the three labeled primary destinations: 오늘의 학습, 자료, 레퍼런
 
 ### Tabs
 
-Use shared WorkspaceTabs for related review categories rather than stacking every category and its settings. Reviews has four URL-selected tabs: 자료, 내 문제, 코드, 일정. Radix Tabs supplies automatic activation, arrow keys, Home/End, tab semantics and one visible panel. Policy explanations stay in collapsed disclosures within their relevant panel.
+Use shared WorkspaceTabs for related review categories rather than stacking every category and its settings. Reviews has three URL-selected tabs: 자료, 코드, 일정. Radix Tabs supplies automatic activation, arrow keys, Home/End, tab semantics and one visible panel. Policy explanations stay in collapsed disclosures within their relevant panel.
 
 Four equal columns sit on a white track with (6px) padding and gaps, (16px) corners, and pale pink/plum active state. Triggers have control corners and a (52px) minimum height; at the mobile breakpoint they stack icon above label with a (70px) minimum height. Panels reserve (340px) minimum height with (24px) top padding, reduced to (20px) on mobile. Preserve visible focus and written labels.
 
@@ -236,3 +236,47 @@ All interactive elements keep visible focus: the shared outline is (2px) plum wi
 Evidence scope: source-derived system, with actual Firefox renders of synthetic examples for Today, Materials, problem books, reference list/detail, practice and a short-viewport question panel. The post-fix review returned a scoped ship verdict for removal of the duplicate Today resume label, with no visible fix-batch regressions; it is not a whole-product approval. No new shipping raster assets were introduced. Real mobile OS keyboard behavior and paid AI were not exercised. Older ink/gold captures are not evidence for this world. Remaining isolated legacy route styles are not promoted into shared tokens; this record does not claim those routes received a complete visual audit.
 
 Refinement evidence (2026-11-16): seven actual Chrome DevTools viewport captures in `.impeccable/review/refine/` cover all four Review tabs at mobile (390×844), Reviews at desktop (1440×1000), and Today at both sizes, using synthetic fixtures at DPR 2. These supplement the historical Firefox evidence above; they do not establish whole-product, real mobile OS keyboard or approved pixel-comp validation. The refinement introduces no shipping raster assets.
+
+## UI reference decisions · 2026-11-16
+
+[Observed references and page decisions](docs/ui-reference-directions.md) records the UIBowl evidence for this iteration. Today uses a compact continuation action with a review queue and a question/suggestion column. Material and interpretation lists favor title scanning over repeated large cards. Reading screens separate navigation, prose and source evidence; reference details separate the user/AI document from linked evidence, Skill and history. At 900px reading views stack; at 700px Today stacks. These layouts retain the existing palette, native mobile dock, draft guards, archive controls and explicit AI requests.
+
+
+## 2026-11-16 user correction
+
+- Question detail is a read view of the saved question, description and reference material. Only 수정 exposes inputs. Save and cancel are explicit; revision conflicts and unsaved-change guards remain. AI guides, follow-up creation and reference creation do not live here.
+- Questions use one white list surface with 88px minimum rows, 24px side padding (16px mobile), title/metadata and trailing chevron. No empty title-height reservation or individual floating cards.
+- Input focus is a single 1px plum outline inside the input boundary; never highlight the containing form. Buttons and links retain visible keyboard focus. No glow.
+- Async buttons use Button.loading: disabled, aria-busy, centered spinner, label retained for accessible naming and width stability. Never infer loading from disabled alone.
+- Form label/input gap is 8px, field gap 24px, helper/counter text 12px with 1.5 line height. A counter belongs to its input; browser draft status sits 12px below the form.
+- Note writing opens in write-only mode with at least 64dvh of body space. Optional source metadata uses a neutral disclosure and equal-width, 44px fields. No concept map, decorative left border or promotional heading.
+- Retire manual problem-book screens, React/Vue preview and worksheet generation entry points. Keep historical database records and export compatibility. Prior domain decisions are superseded by this correction.
+
+
+### 2026-11-16 practice catalog and feed management
+
+Practice modes fill the page in two equal columns above 700px and stack below. Each mode has one icon, title, short purpose and a bottom action. Pre-generated practice navigates to `/explore/practice/catalog`, which lists available books; `/foundations` is the current 자료구조·알고리즘 book's unit list. Add future books to this catalog instead of changing the mode landing page or inventing placeholder books.
+
+Feed settings use a neutral disclosure without a bottom accent border or a framed chevron. Keep source name/status, URL and collection time on separate rows; align source actions to the right on desktop and below on mobile. New source fields share a row on desktop and stack on mobile. Only separate the source list and add form with a neutral rule.
+
+Hover surfaces use `--surface-hover: #efd2e7`, distinct from the gray page, white panel, muted blocks and selected pale-pink navigation. Cards, rows, neutral buttons and disclosure headers share it. Primary actions keep their plum hover; disabled controls do not gain hover feedback.
+
+### Settings surfaces
+
+Keep native settings disclosure semantics. Dismiss on outside pointer click, Esc (return focus to the summary), route change and any destination selection including the current page. Limit menu height to the viewport and retain keyboard focus styling.
+
+Use PageHeading with functional destination names. Connection pages separate current state, saved values and editable fields; readonly facts align in label/value rows. Neutral content sections use 24px padding, 20px on mobile, with 24px separation. Group permissions/how-to instructions in disclosures. Operations show real state, including stale/unknown; never paint old data green. Export describes contents and exclusions beside an explicit download. See `docs/settings-ui-review.md` for route coverage, references and before/after captures.
+
+### Foundation concept and implementation surfaces
+
+Use the same 1180px page boundary for concept and practice. Section gap is 24px, visual-to-experiment gap 16px, content inset 24px/20px mobile. Give the visual, experiment prompt and chapters equal outer width. Tabs are explicit inline-flex controls without body-link underlines. The diagram has bounded height; captions grow from content rather than flex-filling a tall column. Four equal playback buttons stay grouped. Wide linked-list diagrams occupy a full desktop row. Mobile diagram overflow belongs inside the focusable visual region.
+
+Active learning navigation and visual nodes use plum; success/failure keeps semantic green/red. Feedback has a neutral separator rather than a decorative left rail. Preserve frame coordinates, node identities, linked-list comparison, graph rules, public examples, versioned saves and solution attribution. See `docs/foundation-ui-review.md` for verified lesson coverage.
+
+### Home correction · 2026-11-17
+
+The home page prioritizes resume, due reviews, saved questions and other ongoing learning, in that DOM order for mobile. Resume uses a plain white content surface and one primary action. Optional AI suggestions sit below the daily learning board, never above the core tasks. Render evidence links directly instead of surrounding every fragment in disclosures. No automatic AI calls on page view.
+
+Home does not embed recommendation policy forms or expansion animations. `/settings/questions` owns the four question revisit values. Use one neutral row per setting, label and short description on the left, a compact 64–86px numeric field plus unbroken unit on the right. Preserve arbitrary valid integer values and server limits. Inputs use required/min/max/step and the shared focus treatment. Settings save is explicit, keeps edits on failure and disables unchanged saves. Reference and evidence: `docs/home-ui-review.md`.
+
+2026-11-17 create-form follow-up: remove the sample-start card and its frontend generation branch. Keep normal text/URL/file registration and generation. The source textarea has 10 rows with a 320px desktop / 260px mobile minimum and a concise placeholder. Home question-inbox footer links keep 8px vertical and 12px horizontal padding in normal and hover states; never remove one side merely to align text.

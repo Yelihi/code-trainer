@@ -6,7 +6,6 @@ import { api, errorMessage, isPending, languages, difficulties, safeSourceUrl, t
 import { ErrorNotice, GenerationStatus, useApp, useResource } from './App';
 import { CodeBlock } from './CodeBlock';
 import { Markdown, InlineMarkdown } from './Markdown';
-import { AddToKnowledge } from './AddToKnowledge';
 import { Button } from './components/ui/button';
 import { Textarea } from './components/ui/textarea';
 import { Label } from './components/ui/label';
@@ -94,7 +93,7 @@ export function Context() {
   const [deleting, setDeleting] = useState(false);
   const { health } = useApp();
   async function remove() {
-    if (!data || !window.confirm(`“${data.title}” 자료를 삭제할까요?\n\n이 자료의 개념 설명, 문제 세트, 저장한 코드, 제출·제보 기록이 함께 삭제됩니다. 개념 지도에 추가한 내용과 나의 기록에 생성해 둔 학습 요약은 유지됩니다. 삭제 후에는 되돌릴 수 없습니다.`)) return;
+    if (!data || !window.confirm(`“${data.title}” 자료를 삭제할까요?\n\n이 자료의 개념 설명, 문제 세트, 저장한 코드, 제출·제보 기록이 함께 삭제됩니다. 나의 기록에 생성해 둔 학습 요약은 유지됩니다. 삭제 후에는 되돌릴 수 없습니다.`)) return;
     setDeleting(true); setActionError('');
     try {
       await api(`/contexts/${data.id}`, 'DELETE', {});
@@ -126,14 +125,13 @@ export function Context() {
         <p className="unit-rationale">{unit.rationale}</p>
         {!!unit.prerequisites.length && <p className="muted">먼저 배울 내용: {unit.prerequisites.map(p => units.find(u => u.id === p)?.title).join(' · ')}</p>}
         <div className="unit-actions"><Link className="button primary" to={`/learn/${data.id}/units/${unit.id}`}>개념 학습</Link>
-          <AddToKnowledge key={`${data.id}:${unit.id}`} path={`/contexts/${data.id}/units/${unit.id}/knowledge`} addedAt={data.knowledge_added_units?.[unit.id]} disabled={deleting} />
         </div>
         <UnitPractice course={course} unitId={unit.id} disabled={deleting} />
       </div></li>;
     })}</ol>
     {!units.length && <>
       {course.jobs.filter(job => !job.unit_id).map(job => <GenerationStatus key={job.id} generation={job} />)}
-      <Button className="primary" onClick={() => void generate()} disabled={busy || deleting || !!pending || health?.ai === false}>
+      <Button loading={!!(busy)} className="primary" onClick={() => void generate()} disabled={busy || deleting || !!pending || health?.ai === false}>
         {busy ? '요청 중…' : '학습 과정 구성하기'}
       </Button>
     </>}

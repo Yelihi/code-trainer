@@ -51,6 +51,7 @@
   --secondary: #f4f1f5;
   --secondary-foreground: var(--text);
   --surface-muted: #efebf0;
+  --surface-hover: #efd2e7;
   --muted-foreground: var(--muted);
   --accent: #f6e1ef;
   --accent-foreground: var(--brand);

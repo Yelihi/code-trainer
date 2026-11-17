@@ -1,0 +1,148 @@
+/* Keep every lesson within one reading grid; the trace retains its own coordinates. */
+.foundation-lesson.page { max-width: 1180px; }
+.foundation-lesson .foundation-lesson-heading { align-items: start; gap: 24px; margin: 0 0 24px; }
+.foundation-lesson .foundation-lesson-heading > div { min-width: 0; }
+.foundation-lesson .foundation-lesson-heading h1 { font-size: clamp(25px,3vw,32px); line-height: 1.4; margin: 0 0 12px; }
+.foundation-lesson-heading p { margin: 0; font-size: 15px; line-height: 1.65; max-width: 72ch; }
+.foundation-lesson-heading > :is(a,button) { flex: none; }
+.foundation-lesson .foundation-mode { gap: 4px; padding: 4px; border: 0; border-radius: 12px; background: var(--surface-muted); margin: 0 0 24px; width: fit-content; max-width: 100%; }
+.foundation-lesson .foundation-mode > * { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 16px; border: 0; border-radius: 8px; color: var(--muted); font-size: 14px; }
+.foundation-lesson .foundation-mode [aria-current] { background: var(--panel); color: var(--brand); }
+.foundation-lesson .foundation-mode a:hover { background: var(--surface-hover); color: var(--brand); }
+.foundation-concept .concept-intro { max-width: none; padding: 20px 24px; margin: 0 0 24px; background: var(--panel); border-radius: 16px; }
+.foundation-concept .concept-intro h2 { font-size: 14px; color: var(--brand); margin: 0 0 8px; }
+.foundation-concept .concept-intro p { font-size: 17px; line-height: 1.7; margin: 0; }
+.concept-visual { display: grid; gap: 16px; margin-bottom: 32px; }
+.foundation-lesson .foundation-visual { border: 0; border-radius: 16px; padding: 24px; }
+.foundation-visual .section-heading { align-items: center; margin: 0 0 20px; gap: 16px; }
+.foundation-visual .section-heading h2 { font-size: 18px; margin: 0; }
+.foundation-visual .visual-counter { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border-radius: 6px; background: var(--surface-muted); color: var(--brand); font-family: var(--font-sans); font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.foundation-visual .visual-counter small { font-size: 12px; }
+.foundation-visual .visual-stage-layout { grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 24px; align-items: start; }
+.foundation-visual .visual-stage { width: 100%; max-width: none; margin: 0; padding: 16px; border-radius: 12px; background: var(--field-background); overflow-x: auto; }
+.foundation-visual .visual-legend { gap: 8px 16px; font-size: 12px; line-height: 1.5; }
+.foundation-visual .visual-legend > span { display: inline-flex; align-items: center; }
+.foundation-visual .visual-legend i { flex: none; background: var(--brand); }
+.foundation-visual .visual-stage > svg { width: 100%; height: auto; max-height: 300px; margin: 16px 0 0; background: transparent; }
+.foundation-visual .visual-node.active :is(rect,circle) { stroke: var(--brand); fill: var(--accent); filter: none; }
+.foundation-visual .diagram-label { fill: var(--brand); }
+.foundation-visual .visual-edge.active { stroke: var(--brand); }
+.foundation-visual .visual-console { display: grid; align-content: start; gap: 16px; padding: 0; }
+.foundation-visual .visual-caption { flex: none; margin: 0; padding: 0; border: 0; min-height: 0; }
+.foundation-visual .visual-caption strong { font-size: 18px; line-height: 1.5; margin: 0 0 8px; }
+.foundation-visual .visual-caption p { margin: 0; font-size: 14px; line-height: 1.7; }
+.foundation-visual .trace-operation { border: 0; border-radius: 10px; padding: 14px 16px; margin-top: 16px; background: var(--surface-muted); }
+.foundation-visual .trace-operation > span { font-size: 12px; margin-bottom: 8px; }
+.foundation-visual .trace-operation > code { font-size: 15px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.foundation-visual .visual-timeline { margin: 0; gap: 12px; font-size: 12px; }
+.foundation-visual [data-slot="slider"] { min-height: 24px; }
+.foundation-visual [data-slot="slider-range"] { background: var(--brand); }
+.foundation-visual [data-slot="slider-thumb"] { border-color: var(--brand); box-shadow: none; }
+.foundation-visual [data-slot="slider-thumb"]:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; box-shadow: none; }
+.foundation-visual .visual-controls { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; justify-content: start; }
+.foundation-visual .visual-controls button { min-width: 0; padding: 8px; font-size: 13px; }
+.foundation-visual .visual-inputs { display: flex; gap: 12px; align-items: end; }
+.foundation-visual .visual-inputs label { display: grid; gap: 8px; font-size: 12px; }
+.foundation-visual .visual-inputs input { margin: 0; }
+.foundation-visual .visual-applied { min-height: 0; margin: 0; font-size: 12px; }
+.foundation-visual .visual-options { margin: 0 0 20px; }
+.foundation-visual .visual-options > p { margin: 12px 0 0; font-size: 13px; line-height: 1.6; }
+.foundation-visual .visual-options button[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: var(--brand); }
+.foundation-visual .trace-shelf, .foundation-visual .heap-array { padding: 16px 0 0; margin-top: 16px; }
+.foundation-concept .visual-experiment { display: flex; align-items: baseline; gap: 16px; width: 100%; padding: 16px 24px; margin: 0; border: 0; border-radius: 12px; background: var(--accent); color: var(--brand); }
+.foundation-concept .visual-experiment strong { flex: none; color: inherit; font-size: 13px; margin: 0; }
+.foundation-concept .visual-experiment p { margin: 0; color: inherit; font-size: 14px; line-height: 1.6; }
+.foundation-concept .concept-chapter { padding: 24px; border: 0; border-radius: 16px; background: var(--panel); margin: 0 0 24px; font-size: 16px; line-height: 1.8; }
+.foundation-concept .chapter-label { margin-bottom: 16px; }
+.foundation-concept .chapter-label h2 { font-size: 20px; margin: 0; }
+.foundation-concept .concept-lead { font-size: 16px; line-height: 1.8; max-width: 72ch; margin: 0 0 20px; }
+.foundation-concept .concept-steps { grid-template-columns: minmax(0,1fr); gap: 0; margin-top: 16px; }
+.foundation-concept .concept-steps article { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 8px 12px; padding: 20px 0; }
+.foundation-concept .concept-number { grid-row: 1 / 3; border: 0; border-radius: 8px; background: var(--surface-muted); color: var(--brand); }
+.foundation-concept .concept-steps h3 { margin: 0; font-size: 16px; line-height: 1.75; }
+.foundation-concept .concept-steps p { grid-column: 2; margin: 0; font-size: 15px; line-height: 1.8; max-width: 72ch; }
+.foundation-concept .concept-cost-body { border: 0; padding: 0; max-width: 72ch; }
+.foundation-concept .concept-cost-body strong { color: var(--brand); font-size: 16px; }
+.foundation-concept .concept-cost-body p { margin: 12px 0 0; font-size: 15px; }
+.foundation-concept .concept-caution { border: 0; background: var(--accent); color: var(--brand); padding: 20px 24px; margin: 0 0 24px; }
+.foundation-concept .concept-caution h2 { font-size: 16px; margin: 0 0 8px; }
+.foundation-concept .concept-caution p { font-size: 15px; line-height: 1.8; margin: 0; max-width: 72ch; }
+.foundation-concept .foundation-sources { margin: 0; padding: 8px 0; border: 0; gap: 12px; }
+.foundation-concept .concept-start { padding: 24px; margin-top: 24px; border-radius: 16px; background: var(--panel); }
+.foundation-concept .concept-start h2 { font-size: 18px; margin: 0 0 8px; }
+.foundation-concept .concept-start p { font-size: 14px; margin: 0; }
+.foundation-lesson .foundation-practice { max-width: none; }
+.foundation-lesson .foundation-work { padding: 24px; background: var(--panel); border-radius: 16px; }
+.foundation-lesson .foundation-steps { gap: 8px; padding: 4px; border: 0; border-radius: 12px; background: var(--surface-muted); margin-bottom: 24px; }
+.foundation-lesson .foundation-steps button { gap: 8px; border: 0; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.foundation-lesson .foundation-steps button[aria-pressed="true"] { color: var(--brand); background: var(--panel); }
+.foundation-lesson .foundation-steps b { font-size: 12px; font-variant-numeric: tabular-nums; }
+.foundation-lesson .foundation-work > h2 { font-size: 22px; margin: 0 0 12px; }
+.foundation-lesson .foundation-work > .page-intro { border: 0; background: transparent; padding: 0; margin: 0 0 24px; font-size: 14px; color: var(--muted); }
+.foundation-lesson .explanation-question { display: grid; gap: 8px; margin: 0 0 24px; }
+.foundation-lesson .explanation-question > span { font-size: 15px; line-height: 1.7; margin: 0; }
+.foundation-lesson .explanation-question textarea { font-size: 15px; padding: 14px 16px; min-height: 150px; }
+.foundation-lesson .explanation-question small { font-size: 12px; margin: 0; }
+.foundation-lesson .explanation-feedback > section { border: 0; border-top: 1px solid var(--line); border-radius: 0; margin: 24px 0 0; padding: 24px 0 0; }
+.foundation-lesson .explanation-feedback h3 { padding: 0; margin: 0 0 16px; font-size: 16px; }
+.foundation-lesson .explanation-feedback p { margin: 12px 0; font-size: 15px; line-height: 1.8; }
+.foundation-lesson .explanation-feedback p strong { color: var(--brand); font-size: 13px; margin-bottom: 6px; }
+.foundation-lesson .foundation-requirements { margin: 16px 0 24px; padding-left: 22px; font-size: 15px; line-height: 1.8; }
+.foundation-lesson .foundation-editor { margin: 24px 0; }
+.foundation-lesson .foundation-editor h3 { font-size: 16px; margin: 0 0 12px; }
+.foundation-lesson .foundation-editor > p { font-size: 13px; line-height: 1.7; }
+.foundation-lesson .foundation-editor .cm-editor { border: 0; border-radius: 10px; font-size: 14px; }
+.foundation-lesson .foundation-work > .muted, .foundation-lesson .foundation-work > small { font-size: 12px; line-height: 1.6; margin: 16px 0; }
+.foundation-lesson .foundation-actions { margin: 20px 0 12px; gap: 12px; }
+.foundation-lesson .foundation-result { margin-top: 24px; padding: 20px; border: 0; background: var(--surface-muted); border-radius: 12px; }
+.foundation-lesson .foundation-result h3 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.foundation-lesson .foundation-check { padding: 16px 0; gap: 12px; }
+.foundation-lesson .foundation-check > span { padding-top: 3px; }
+.foundation-lesson .foundation-check strong { font-size: 14px; }
+.foundation-lesson .foundation-check small { font-size: 12px; }
+.foundation-lesson .foundation-check pre { font-size: 13px; margin-bottom: 0; }
+@media (max-width: 900px) {
+  .foundation-visual .visual-stage-layout { grid-template-columns: minmax(0,1fr); gap: 20px; }
+  .foundation-visual .visual-stage > svg { max-height: 280px; }
+}
+@media (max-width: 700px) {
+  .foundation-lesson .foundation-lesson-heading { flex-direction: column; gap: 16px; }
+  .foundation-lesson-heading > :is(a,button) { width: 100%; }
+  .foundation-lesson .foundation-visual, .foundation-lesson .foundation-work, .foundation-concept .concept-chapter { padding: 20px; }
+  .foundation-visual .section-heading h2 { font-size: 16px; }
+  .foundation-visual .visual-stage { padding: 12px; }
+  .foundation-visual .visual-controls { gap: 6px; }
+  .foundation-visual .visual-controls button { font-size: 12px; padding-inline: 4px; }
+  .foundation-visual .visual-inputs { flex-wrap: wrap; }
+  .foundation-visual .visual-inputs button { flex: none; }
+  .foundation-concept .visual-experiment { flex-direction: column; gap: 8px; padding: 16px 20px; }
+  .foundation-concept .concept-intro { padding: 20px; }
+  .foundation-concept .concept-intro p { font-size: 16px; }
+  .foundation-concept .concept-start { flex-direction: column; align-items: stretch; padding: 20px; gap: 16px; }
+  .foundation-lesson .foundation-steps button { font-size: 12px; padding: 10px 6px; gap: 6px; }
+  .foundation-lesson .foundation-work > h2 { font-size: 20px; }
+  .foundation-lesson .foundation-actions > button { width: 100%; }
+}
+.foundation-lesson .foundation-mode > a { display: inline-flex; align-items: center; padding: 8px 16px; text-decoration: none; }
+.foundation-visual.visual-linked-list .visual-stage-layout { grid-template-columns: minmax(0,1fr); }
+.foundation-visual.visual-linked-list .visual-console { grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 16px 24px; }
+.foundation-visual.visual-linked-list .visual-caption { grid-row: 1 / 3; }
+.foundation-visual.visual-linked-list .visual-timeline, .foundation-visual.visual-linked-list .visual-controls { grid-column: 2; }
+@media (max-width: 900px) {
+  .foundation-visual.visual-linked-list .visual-console { grid-template-columns: minmax(0,1fr); }
+  .foundation-visual.visual-linked-list .visual-caption { grid-row: auto; }
+  .foundation-visual.visual-linked-list .visual-timeline, .foundation-visual.visual-linked-list .visual-controls { grid-column: 1; }
+}
+.foundation-help { border: 0; border-radius: 16px; padding: 24px; overflow-y: auto; }
+.foundation-help::backdrop { background: #18181866; backdrop-filter: none; }
+.foundation-help h2 { font-size: 22px; margin: 0 0 12px; }
+.foundation-help h3 { font-size: 17px; line-height: 1.5; }
+.foundation-help section { margin-block: 24px; }
+.foundation-help .help-current > h3 { color: var(--brand); }
+.foundation-help .help-flow { gap: 12px; margin: 24px 0; }
+.foundation-help .help-flow > span { border: 0; border-radius: 10px; background: var(--surface-muted); padding: 14px; }
+.foundation-help .help-flow b { color: var(--brand); }
+.foundation-help .foundation-steps { gap: 4px; padding: 4px; border: 0; border-radius: 10px; background: var(--surface-muted); }
+.foundation-help .foundation-steps button { border: 0; border-radius: 8px; font-size: 13px; padding: 10px; }
+.foundation-help .foundation-steps button[aria-pressed="true"] { background: var(--panel); color: var(--brand); }
+@media (max-width: 700px) { .foundation-help { padding: 20px; } .foundation-help h2 { font-size: 20px; } }

@@ -8,6 +8,18 @@ class StudyTest(unittest.TestCase):
     tearDown = test_app.AppTest.tearDown
     make_set = test_app.AppTest.make_set
 
+    def test_retired_practice_entries_stay_in_history_but_not_today_or_ai_candidates(self):
+        for kind in ('problem', 'worksheet'):
+            target = {'kind': kind, 'id': kind, 'unit_id': '', 'href': '/' + kind,
+                      'title': 'retired', 'revision': 1}
+            db.execute('INSERT INTO study_locations VALUES (?,?,?,?)',
+                       (self.owner, target['href'], service.dump(target), service.now()))
+        before = db.all('SELECT * FROM study_locations WHERE owner=?', (self.owner,))
+        with patch.object(study.learning_links, 'resolve', side_effect=AssertionError('retired target was resolved')):
+            self.assertEqual(study.today(self.owner)['resume'], [])
+            self.assertFalse(any(item['title'] == 'retired' for item in study.snapshot(self.owner)['items']))
+        self.assertEqual(before, db.all('SELECT * FROM study_locations WHERE owner=?', (self.owner,)))
+
     def test_question_policy_snooze_hide_and_reopen_without_duplicates(self):
         question = self.client.post('/api/questions', json={'text': '오래된 질문', 'request_id': 'study-question'}).json()
         db.execute('UPDATE question_memos SET created_at=? WHERE id=?', ('2026-11-01T00:00:00+00:00', question['id']))

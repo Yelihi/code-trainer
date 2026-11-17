@@ -1,0 +1,36 @@
+{
+  "checks": [
+    "home@1440",
+    "policy@1440",
+    "home@1024",
+    "policy@1024",
+    "home@768",
+    "policy@768",
+    "home@390",
+    "policy@390",
+    "recommendations-empty@1440",
+    "recommendations-running@1440",
+    "recommendations-failed@1440",
+    "recommendations-fetch-error@1440",
+    "recommendations-filled@1440",
+    "recommendations-empty@390",
+    "recommendations-running@390",
+    "recommendations-failed@390",
+    "recommendations-fetch-error@390",
+    "recommendations-filled@390"
+  ],
+  "interactions": [
+    "settings route",
+    "number range/empty validation",
+    "save failure preserves input",
+    "save spinner",
+    "save payload preserves other values",
+    "home reflects saved setting",
+    "no automatic AI",
+    "explicit AI",
+    "empty home",
+    "load failure/retry"
+  ],
+  "errors": [],
+  "unknown": []
+}

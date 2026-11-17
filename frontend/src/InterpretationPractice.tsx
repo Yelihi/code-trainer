@@ -29,7 +29,7 @@ export function StartWorksheet({ interpretationId, retryId = '' }: { interpretat
     finally { sending.current = false; if (alive.current) setBusy(false); }
   }
   return <><ErrorNotice error={error} />{warning && <p role="status" className="notice">{warning}</p>}
-    <Button className="primary" disabled={busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : retryId ? '같은 해석으로 다시 생성' : '실습용 질문지 만들기'}</Button>
+    <Button loading={!!(busy)} className="primary" disabled={busy || !userId || !health?.ai} onClick={() => void start()}>{busy ? '요청 중…' : retryId ? '같은 해석으로 다시 생성' : '실습용 질문지 만들기'}</Button>
     {health && !health.ai && <p className="reference-state">질문지를 만들려면 AI 설정이 필요합니다. 기존 기록은 계속 읽을 수 있습니다.</p>}</>;
 }
 

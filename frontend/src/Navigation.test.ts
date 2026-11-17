@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 test('three learning menus preserve current page and admin visibility', async () => {
   const server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
-    const { Navigation, PracticeEntry } = await server.ssrLoadModule('/src/Navigation.tsx');
+    const { Navigation, PracticeEntry, PracticeCatalog } = await server.ssrLoadModule('/src/Navigation.tsx');
     const render = (path: string, isAdmin = false) => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Navigation, { isAdmin, onNavigate() {} })));
     const html = render('/library');
     assert.deepEqual([...html.matchAll(/<nav aria-label="([^"]+)"/g)].map(match => match[1]), ['주요 메뉴', '설정과 기록']);
@@ -18,7 +18,7 @@ test('three learning menus preserve current page and admin visibility', async ()
     const cases = [
       ['/', '/'], ['/learn/context/units/unit', '/library'], ['/practice/set-id', '/library'], ['/questions/id', '/'],
       ['/library/source-id/edit', '/library'], ['/library/new/reference', '/library'], ['/references/new', '/library'],
-      ['/interpretations/id', '/library'], ['/explore?page=2', '/library'], ['/courses', '/library'],
+      ['/interpretations/id', '/library'], ['/explore?page=2', '/library'], ['/courses', '/library'], ['/explore/practice/catalog', '/library'],
       ['/problem-books', '/library'], ['/problem-books/problems/new', '/library'], ['/foundations', '/library'], ['/worksheets/id', '/library'], ['/technical-references/id', '/technical-references'], ['/reviews/material/id', '/'],
     ];
     for (const [path, target] of cases) {
@@ -34,16 +34,22 @@ test('three learning menus preserve current page and admin visibility', async ()
     for (const path of ['/library', '/library/id', '/problem-books/problems/new', '/courses', '/foundations', '/interpretations/id']) {
       const menu = materialMenu(path);
       assert.match(menu, /aria-label="자료 메뉴"/);
-      assert.match(menu, /href="\/problem-books"/);
+      assert.doesNotMatch(menu, /href="\/problem-books"/);
+      assert.equal([...menu.matchAll(/<a /g)].length, 2);
       assert.doesNotMatch(menu, /<details/);
       assert.equal([...menu.matchAll(/aria-current="page"/g)].length, 1);
     }
     assert.equal(materialMenu('/'), '');
-    assert.match(materialMenu('/problem-books/id'), /<a[^>]*aria-current="page"[^>]*href="\/problem-books"/);
+    assert.match(materialMenu('/problem-books/id'), /<a[^>]*aria-current="page"[^>]*href="\/explore\/practice"/);
     const practice = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Routes, null,
       createElement(Route, { element: createElement(Outlet, { context: { userId: 'fixture-owner', health: null } }) },
         createElement(Route, { path: '*', element: createElement(PracticeEntry) })))));
-    assert.match(practice, /href="\/foundations"/);
+    assert.match(practice, /href="\/explore\/practice\/catalog"/);
+    assert.doesNotMatch(practice, /href="\/foundations"/);
+    const catalog = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(PracticeCatalog)));
+    assert.match(catalog, /href="\/foundations"/);
+    assert.match(catalog, /자료구조 · 알고리즘/);
     assert.match(practice, /href="\/courses"/);
+    assert.doesNotMatch(practice, /framework-practice|질문지/);
   } finally { await server.close(); }
 });

@@ -1,5 +1,5 @@
 import { Rss } from 'lucide-react';
-import { EmptyState } from './WorkspaceUI';
+import { EmptyState, PageHeading } from './WorkspaceUI';
 import { NativeSelect } from './components/ui/native-select';
 import { AnimatedDetails } from './AnimatedDetails';
 import { LoadingSkeleton } from './LoadingSkeleton';
@@ -27,7 +27,7 @@ export function FeedInbox() {
   const [url, setUrl] = useState('');
   const selected = data?.feeds.find(feed => feed.id === feedId);
   async function refresh(id: string) {
-    setBusy(id); setActionError(''); setNotice('');
+    setBusy('refresh:' + id); setActionError(''); setNotice('');
     try {
       const result = await api<{ updated: boolean }>(`/feed-sources/${id}/refresh`, 'POST', {});
       setNotice(result.updated ? '새 글 확인을 마쳤습니다.' : '갱신하지 않았습니다. 수집 상태를 확인하고 마지막 시도로부터 1분 후 다시 시도해주세요.');
@@ -45,26 +45,25 @@ export function FeedInbox() {
     finally { setBusy(''); }
   }
   async function toggle(feed: Feed) {
-    setBusy(feed.id); setActionError(''); setNotice('');
+    setBusy('toggle:' + feed.id); setActionError(''); setNotice('');
     try { await api(`/feed-sources/${feed.id}`, 'PATCH', { enabled: !feed.enabled }); reload(); }
     catch (error) { setActionError(errorMessage(error)); }
     finally { setBusy(''); }
   }
   return <main className="page narrow-page">
     <div className="breadcrumb">Workspace<span>/</span> 자동 등록 대기 (RSA)</div>
-    <span className="eyebrow">READ. CHOOSE. COLLECT.</span><h1>자동 등록 대기</h1>
-    <p className="page-intro">등록한 사이트의 새 글을 한 시간마다 모읍니다.<br />읽어보고 선택한 글의 원문을 자료 보관함에 담으세요.</p>
+    <PageHeading title="자동 수집" description="읽고 싶은 기술 글을 골라 원자료에 추가하세요." />
     <AnimatedDetails className="feed-settings" summary={<>수집 출처 {data ? `· ${data.feeds.length}개` : ''}{isAdmin ? ' · 관리' : ''}</>}>
-      <p className="muted">공개 RSS/Atom 주소를 사용합니다. 출처는 함께 사용하고 원문 등록 여부는 사용자별로 기록합니다. 일시정지해도 수집된 글은 남습니다.</p>
+      <p className="feed-settings-hint">공개 RSS·Atom 피드를 연결하세요. 일시정지해도 가져온 글은 유지됩니다.</p>
       <div className="feed-source-list">{data?.feeds.map(feed => <div className="feed-source" key={feed.id}>
-        <div><strong>{feed.name}</strong><span className="muted"> · {feed.enabled ? '수집 중' : '일시정지'}</span><a href={safeSourceUrl(feed.url)} target="_blank" rel="noreferrer">{feed.url}</a><small className="muted">{feed.succeeded ? `마지막 수집 ${timestamp(feed.succeeded)}` : '수집 기록 없음'}</small>{feed.error && <p className="notice error">{feed.error}</p>}</div>
-        <div className="feed-actions"><Button disabled={!!busy || !feed.enabled} onClick={() => void refresh(feed.id)} aria-label={`${feed.name} 새 글 확인`}>새 글 확인</Button>{isAdmin && <Button disabled={!!busy} onClick={() => void toggle(feed)} aria-label={`${feed.name} ${feed.enabled ? '수집 일시정지' : '수집 재개'}`}>{feed.enabled ? '일시정지' : '수집 재개'}</Button>}</div>
+        <div className="feed-source-info"><div className="feed-source-heading"><strong>{feed.name}</strong><span className={'feed-status' + (feed.enabled ? ' is-active' : '')}>{feed.enabled ? '수집 중' : '일시정지'}</span></div><a href={safeSourceUrl(feed.url)} target="_blank" rel="noreferrer">{feed.url}</a><small>{feed.succeeded ? `마지막 수집 ${timestamp(feed.succeeded)}` : '수집 기록 없음'}</small>{feed.error && <p className="notice error">{feed.error}</p>}</div>
+        <div className="feed-actions"><Button loading={busy === 'refresh:' + feed.id} disabled={!!busy || !feed.enabled} onClick={() => void refresh(feed.id)} aria-label={`${feed.name} 새 글 확인`}>새 글 확인</Button>{isAdmin && <Button loading={busy === 'toggle:' + feed.id} disabled={!!busy} onClick={() => void toggle(feed)} aria-label={`${feed.name} ${feed.enabled ? '수집 일시정지' : '수집 재개'}`}>{feed.enabled ? '일시정지' : '수집 재개'}</Button>}</div>
       </div>)}</div>
       {isAdmin && <form className="feed-add-form" onSubmit={event => void add(event)}>
-        <h2>출처 추가</h2><Label htmlFor="feed-name">출처 이름</Label><Input id="feed-name" value={name} onChange={event => setName(event.target.value)} maxLength={100} required disabled={!!busy} placeholder="예: 개발 블로그" />
-        <Label htmlFor="feed-url">RSS / Atom 주소</Label><Input id="feed-url" type="url" value={url} onChange={event => setUrl(event.target.value)} maxLength={2000} required disabled={!!busy} placeholder="https://example.com/feed.xml" />
-        <p className="muted">사이트 홈 주소가 아닌 피드 주소를 입력해주세요. 추가할 때 피드를 확인하고 최근 글을 가져옵니다. 최대 20개 출처를 등록할 수 있습니다.</p>
-        <Button className="primary" disabled={!!busy}>{busy === 'add' ? '피드 확인 중…' : '출처 추가'}</Button>
+        <h2>출처 추가</h2>
+        <div className="feed-add-fields"><Label htmlFor="feed-name">출처 이름<Input id="feed-name" value={name} onChange={event => setName(event.target.value)} maxLength={100} required disabled={!!busy} placeholder="예: 개발 블로그" /></Label>
+        <Label htmlFor="feed-url">RSS / Atom 주소<Input id="feed-url" type="url" value={url} onChange={event => setUrl(event.target.value)} maxLength={2000} required disabled={!!busy} placeholder="https://example.com/feed.xml" aria-describedby="feed-url-hint" /></Label></div>
+        <div className="feed-add-footer"><p id="feed-url-hint">홈 주소 대신 피드 주소 입력 · 최대 20개</p><Button loading={busy === 'add'} className="primary" disabled={!!busy || !name.trim() || !url.trim()}>출처 추가</Button></div>
       </form>}
     </AnimatedDetails>
     <div className="feed-filter"><Label htmlFor="feed-filter">출처별 보기</Label><NativeSelect id="feed-filter" value={feedId} onChange={event => { setFeedId(event.target.value); setPage(1); setNotice(''); }}><option value="">모든 출처</option>{data?.feeds.map(feed => <option key={feed.id} value={feed.id}>{feed.name}{!feed.enabled && ' · 일시정지'}</option>)}</NativeSelect></div>

@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { GraduationCap } from 'lucide-react';
 import { EmptyState, MaterialsNavigation, PageHeading } from './WorkspaceUI';
 import { ContextQuestions } from './ContextQuestions';
@@ -123,9 +124,9 @@ export function GenerationStatus({ generation }: { generation: Generation }) {
   const validationFailures = events.slice(events.map(event => event.message).lastIndexOf('코드 검증 시작'))
     .filter(event => event.code === 'code_validation_failed');
   return <div className="generation-status">
-    <div role="status"><span className={`status-dot ${isPending(generation) ? 'pulsing' : generation.state === 'ready' ? 'online' : ''}`} /><strong>{generation.state === 'ready' ? generation.set_id ? '문제 준비가 끝났습니다' : '개념 학습 준비가 끝났습니다' : failed ? '생성을 완료하지 못했습니다' : '연습을 준비하고 있습니다'}</strong>
+    {isPending(generation) ? <LoadingState compact status={generation.state === 'queued' ? '생성 대기' : '생성 중'} title="연습을 준비하고 있어요" description={generation.stage} /> : <div role="status"><span className={`status-dot ${generation.state === 'ready' ? 'online' : ''}`} /><strong>{generation.state === 'ready' ? generation.set_id ? '문제 준비가 끝났습니다' : '개념 학습 준비가 끝났습니다' : failed ? '생성을 완료하지 못했습니다' : '연습을 준비하고 있습니다'}</strong>
       <p>{failed && events.length ? `중단 단계: ${generation.stage}${lastPhase?.phase === '단원별 세트 생성' && lastPhase.kind ? ` · ${lastPhase.kind}` : ''}` : generation.stage}</p>
-    </div>
+    </div>}
     <div className="generation-steps">{stages.map((stage, index) => <span key={stage}>{index + 1}. {stage}</span>)}</div>
     {generation.error && <ErrorNotice error={generation.error} />}
     {failed && <div className="generation-help">

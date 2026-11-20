@@ -1,0 +1,21 @@
+.loading-state { display: flex; align-items: center; gap: 24px; padding: 36px; margin: 24px 0; border-radius: 16px; background: var(--panel); min-width: 0; }
+.loading-state-mark { display: grid; place-items: center; width: 64px; height: 64px; flex: 0 0 auto; border-radius: 20px; background: var(--surface-muted); color: var(--primary); }
+.loading-state-mark svg { width: 28px; height: 28px; animation: loading-state-spin 1.2s linear infinite; }
+.loading-state-copy { min-width: 0; }
+.loading-state-copy h3 { margin: 12px 0 0; font-size: 20px; line-height: 1.5; overflow-wrap: anywhere; }
+.loading-state-copy p { margin: 8px 0 0; max-width: 65ch; color: var(--muted); line-height: 1.7; }
+.loading-state-compact { gap: 16px; padding: 20px 0; border-radius: 0; background: transparent; }
+.loading-state-compact .loading-state-mark { width: 44px; height: 44px; border-radius: 14px; }
+.loading-state-compact .loading-state-mark svg { width: 22px; height: 22px; }
+.loading-state-compact .loading-state-copy h3 { font-size: 16px; margin-top: 8px; }
+@keyframes loading-state-spin { to { transform: rotate(360deg); } }
+@media (max-width: 600px) { .loading-state { align-items: flex-start; gap: 16px; padding: 24px 20px; } .loading-state-mark { width: 48px; height: 48px; border-radius: 16px; } .loading-state-copy h3 { font-size: 18px; } .loading-state-compact { padding: 20px 0; } }
+@media (prefers-reduced-motion: reduce) { .loading-state-mark svg { animation: none; } }
+
+.resource-loading { padding: 12px 24px 24px; margin: 24px 0; border-radius: 16px; background: var(--panel); }
+.resource-loading .loading-state { margin: 0; }
+.resource-loading .resource-recovery-actions { justify-content: flex-start; }
+
+.recommendation-loading { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; }
+.recommendation-loading .loading-state { flex: 1 1 280px; margin: 0; }
+.recommendation-loading > button { margin: 0 0 20px; }

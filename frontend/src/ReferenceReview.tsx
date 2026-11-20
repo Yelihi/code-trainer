@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { AnimatedDetails } from './AnimatedDetails';
 import { useEffect, useState } from 'react';
@@ -71,7 +72,7 @@ function ReviewConversation({ id }: { id: string }) {
         <span className="eyebrow">{turn.role === 'user' ? '나의 설명' : i === 0 ? '첫 번째 질문' : 'AI 피드백 · 꼬리 질문'}</span>
         {turn.role === 'user' ? <p className="prose">{turn.answer}</p> : <>{turn.feedback && <Markdown language="">{turn.feedback}</Markdown>}<h2>{turn.question}</h2><div className="reference-citations">{turn.citations.map(citation => { const source = review.sources.find(s => s.id === citation); return source && <a key={citation} href={'#source-' + source.id}>{source.title} · v{source.version}</a>; })}</div></>}
       </article>)}
-      {review.state === 'running' && <p className="notice" role="status">설명을 저장했습니다. 연결된 노트를 참고해 다음 질문을 준비하고 있습니다…</p>}
+      {review.state === 'running' && <LoadingState compact status="질문 생성 중" title="저장한 설명에서 다음 질문을 준비하고 있어요" />}
       <ErrorNotice error={review.error} />
       {review.state === 'failed' && <Button disabled={busy} onClick={() => void send(true)}>저장한 설명으로 질문 다시 받기</Button>}
       <form className="reference-answer" onSubmit={e => { e.preventDefault(); void send(); }}><Label htmlFor="reference-answer">내 생각을 이어서 설명해보세요</Label><Textarea id="reference-answer" value={answer} onChange={e => {

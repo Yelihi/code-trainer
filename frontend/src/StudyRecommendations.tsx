@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { ArrowRight, CircleAlert, Compass, History, MousePointer2 } from 'lucide-react';
 import { SectionHeading } from './WorkspaceUI';
 import { useEffect, useState } from 'react';
@@ -23,7 +24,8 @@ export function StudyRecommendations() {
   return <section className="learning-section home-recommendations">
     <SectionHeading title="다음 학습 제안" action={hasItems ? generateButton : undefined} />
     {!data && !error && <LoadingSkeleton layout="list" label="저장된 추천을 불러오는 중…" />}
-    {!hasItems && (data || error) && <div className="recommendation-state">
+    {generating && <div className="recommendation-loading"><LoadingState compact status="제안 생성 중" title="다음에 배울 내용을 찾고 있어요" description="질문과 최근 학습의 연결을 살펴보고 있어요." />{!hasItems&&generateButton}</div>}
+    {!generating && !hasItems && (data || error) && <div className="recommendation-state">
       <div className="recommendation-state-icon" aria-hidden="true">{failure ? <CircleAlert /> : <Compass />}</div>
       <div className="recommendation-state-copy">
         <h3>{generating ? '다음에 배울 내용을 찾고 있어요' : failure ? '학습 제안을 불러오지 못했어요' : data?.stale ? '새 기록에서 다음 학습을 찾아보세요' : '남겨둔 질문, 다음 학습으로 이어가세요'}</h3>

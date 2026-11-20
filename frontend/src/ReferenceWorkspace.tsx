@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useBlocker, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Check, FileCode2, FileText, Plus, ArrowRight, History, FolderOpen } from 'lucide-react';
@@ -83,7 +84,7 @@ function ReferenceDetail({id}:{id:string}) {
   async function apply(jobId:string) {if(!window.confirm('현재 파일을 이 생성 결과로 바꿀까요? 현재 내용은 변경 이력에 남습니다.'))return;setBusy(true);setError('');try{const result=await api<Package>(`/technical-references/${id}/package/from-job`,'POST',{revision:pkg?.revision??0,job_id:jobId});update({package:result});}catch(cause){setError(errorMessage(cause));}finally{setBusy(false);}}
   return <main className="page reference-workspace"><Link className="text-link" to="/technical-references">레퍼런스</Link><ErrorNotice error={error||packageError}/>{(error||packageError)&&<Button onClick={()=>{reload();reloadPackage();}}>다시 불러오기</Button>}{!ref&&!error&&<LoadingSkeleton layout="article" label="레퍼런스를 불러오는 중…"/>}
   {ref&&<><PageHeading title={ref.title} meta={badge(pkg?.status??null)} actions={<><Link className="button" to={'/technical-references/'+id+'/legacy'}>근거·이전 설명</Link><Button loading={busy||pending} disabled={busy||pending||editing} onClick={()=>void generate()}>{pending?'Skill 생성 중':'Skill '+(pkg?'다시 생성':'생성')}</Button></>}/><ErrorNotice error={actionError}/>
-  {pending&&<div className="reference-job-state" role="status">선택한 근거로 Skill을 만들고 있습니다. 완료되면 이 화면에 표시됩니다.</div>}
+  {pending&&<LoadingState compact={!!pkg} status="Skill 생성 중" title="선택한 학습을 Skill로 정리하고 있어요" description="완료된 파일은 이곳에서 검토할 수 있어요." />}
   {!pkg&&!packageLoading&&!packageError&&!pending&&<EmptyState icon={FileCode2} title="아직 생성된 Skill이 없습니다" action={<Button className="primary" loading={busy} disabled={busy} onClick={()=>void generate()}>Skill 생성하기</Button>}/>}
   {pkg&&<>{pkg.stale&&<p className="notice" role="status">생성에 사용한 근거가 변경됐습니다. 현재 파일을 검토해주세요.</p>}
   <div className="reference-detail-layout"><section className="reference-package-panel">{editing?<PackageEditor key={id} id={id} pkg={pkg} onRefresh={value=>update({package:value})} onSaved={value=>{update({package:value});setEditing(false);}} onCancel={()=>setEditing(false)}/>:<><div className="reference-file-toolbar"><h2>Skill 파일</h2><Button disabled={busy||pending} onClick={()=>setEditing(true)}>파일 수정</Button></div><PackageFiles files={pkg.files}/></>}</section>
@@ -123,4 +124,4 @@ function PackageHistory({id,revision,createdAt}:{id:string;revision:number;creat
 function HistoryFiles({id,revision}:{id:string;revision:number}) {const {data,error}=useResource<Package>(`/technical-references/${id}/package/versions/${revision}`);return <div className="reference-history-content"><ErrorNotice error={error}/>{!data&&!error&&<LoadingSkeleton layout="article" label="변경 이력을 불러오는 중…"/>}{data&&<>{badge(data.status)}<PackageFiles files={data.files}/></>}</div>;}
 
 function GeneratedResult({id,jobId}:{id:string;jobId:string}) {const [open,setOpen]=useState(false);return <details onToggle={e=>setOpen(e.currentTarget.open)}><summary>생성 결과 보기</summary>{open&&<GeneratedFiles id={id} jobId={jobId}/>}</details>;}
-function GeneratedFiles({id,jobId}:{id:string;jobId:string}) {const {data,error}=useResource<{files:Record<string,string>}>(`/technical-references/${id}/skills/${jobId}`);return <div className="reference-generated-files"><ErrorNotice error={error}/>{data?.files&&<PackageFiles files={data.files}/>}</div>;}
+function GeneratedFiles({id,jobId}:{id:string;jobId:string}) {const {data,error}=useResource<{files:Record<string,string>}>(`/technical-references/${id}/skills/${jobId}`);return <div className="reference-generated-files"><ErrorNotice error={error}/>{!data&&!error&&<LoadingSkeleton layout="article" label="생성된 파일을 불러오는 중…"/>}{data?.files&&<PackageFiles files={data.files}/>}</div>;}

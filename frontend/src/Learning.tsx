@@ -69,7 +69,7 @@ function UnitPractice({ course, unitId, disabled = false }: { course: ReturnType
   }
   if (set) return <div className="unit-practice">{set.withdrawn ? <p className="muted">문제 제공 중단</p> : <Link className="button" to={`/practice/${set.id}`}>연습 {set.completed} / {set.total}</Link>}</div>;
   return <section className="unit-practice" aria-label="단원 문제 생성">
-    <Button className="primary" disabled={disabled || course.busy || !!course.pending || health?.ai === false || health?.sandbox === false} onClick={() => void course.generate(unitId)}>
+    <Button className="primary" loading={course.busy || !!(generation && isPending(generation))} disabled={disabled || course.busy || !!course.pending || health?.ai === false || health?.sandbox === false} onClick={() => void course.generate(unitId)}>
       {generation && isPending(generation) ? '문제 생성 중…' : generation?.state === 'failed' ? '문제 생성 다시 시도' : '이 단원 문제 생성'}
     </Button>
     {course.pending && course.pending.unit_id !== unitId && <p className="muted">다른 단원을 생성 중입니다. 개념 학습은 계속할 수 있습니다.</p>}

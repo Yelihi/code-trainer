@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { AddToReview } from './SpacedReviews';
 import { FileText } from 'lucide-react';
 import { EmptyState } from './WorkspaceUI';
@@ -136,7 +137,7 @@ function Detail({ id }: { id: string }) {
     {data && <><header className="reference-page-heading"><div><Badge variant="secondary">{data.archived ? '삭제한 해석' : states[data.state]}</Badge><h1>{data.document?.title ?? data.source_name}</h1><p>원문 v{data.revision} 기준 · {timestamp(data.created_at)}</p></div><div className="interpretation-detail-actions"><Link className="button" to={'/library/' + data.resource_id}>원문과 버전 보기</Link><Button disabled={busy || data.state === 'queued' || data.state === 'running'} onClick={() => void changeArchive(!data.archived)}>{data.archived ? '해석 복원' : '해석 자료 삭제'}</Button></div></header>
       <aside className="interpretation-provenance"><strong>{data.source_name} · 본문 v{data.revision}</strong><p>AI가 작성한 해석입니다. 인용한 원문과 비교하며 읽어보세요.{data.current_revision !== data.revision && ` 원문에는 더 최신인 v${data.current_revision}가 있습니다. 이 문서는 v${data.revision} 해석을 그대로 보존합니다.`}</p></aside>
       {data.state === 'ready' && !data.archived && <div className="interpretation-retry"><StartInterpretation resourceId={data.resource_id} revision={data.revision} retryId={data.id} /></div>}
-      {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><Badge variant="secondary">{states[data.state]}</Badge><p>개념과 원문 근거를 정리하고 있습니다.<br />다른 화면으로 이동해도 해석 기록에서 다시 확인할 수 있습니다.</p></section>}
+      {(data.state === 'queued' || data.state === 'running') && <LoadingState status={states[data.state]} title="원문에서 개념과 근거를 정리하고 있어요" description="완료된 문서는 해석 기록에 보관돼요. 다른 화면으로 이동해도 괜찮아요." compact={!!data.document} />}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>같은 원문 v{data.revision}에서 이 해석 자료를 다시 생성합니다.</p>{!data.archived && <Button className="primary" loading={busy} disabled={busy || !health?.ai} onClick={() => void retry()}>{busy ? '요청 중…' : '이 해석에서 다시 시도'}</Button>}</section>}
       {data.document && <div className="reading-workspace">
         <aside className="reading-navigation" aria-label="해석 목차"><h2>이 문서에서</h2><a className="reading-link" href="#interpretation-summary">핵심 개념</a><InterpretationOutline document={data.document} /><a className="reading-link" href="#interpretation-source">원문 확인</a>{data.state === 'ready' && <a className="reading-link" href="#interpretation-next">읽은 다음</a>}<Link className="reading-link" to={'/explore?resource=' + data.resource_id}>이 자료의 해석 기록</Link></aside>

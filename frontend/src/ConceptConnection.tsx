@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { useEffect, useState } from 'react';
 import { api, errorMessage } from './api';
 import { Markdown } from './Markdown';
@@ -32,7 +33,7 @@ export function ConceptConnection({ candidate, original, matches, selected, deci
     <div className="concept-original"><small>이번 자료의 개념</small><strong>{original.pref_label || '아래에서 개념명을 입력해주세요.'}</strong>
       {original.definition && <Markdown language="">{original.definition}</Markdown>}<span>범위 · {original.scope || '미지정'}</span>
     </div>
-    {loading && <p role="status">비슷한 이름과 별칭을 찾고 있습니다…</p>}
+    {loading && <LoadingState compact status="검색 중" title="비슷한 이름과 별칭을 찾고 있어요" />}
     {error && <p role="alert">기존 개념 검색을 완료하지 못했습니다. {error} <Button type="button" onClick={() => setRetry(v => v + 1)}>다시 검색</Button></p>}
     {!loading && !error && found.lookup === lookup && !options.length && <p className="muted">현재 추천 후보가 없습니다. 다른 이름으로 저장돼 있을 수 있으니 기존 개념 검색도 확인해주세요.</p>}
     <div className="concept-match-list">{options.map(match => <article className="concept-match" key={match.concept.id}>

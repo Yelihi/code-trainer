@@ -28,7 +28,7 @@ try{
   await page.setViewportSize({width,height:1000});
   for(mode of ['failed','fetching','ready','failed-old']){
    await page.goto('http://127.0.0.1:5173/library/resource');await page.getByRole('heading',{name:resource.name,exact:true}).waitFor();
-   if(mode==='failed'||mode==='fetching'){await page.locator('.resource-recovery').waitFor();assert.equal(await page.locator('.reading-workspace').count(),0);}
+   if(mode==='failed'||mode==='fetching'){await page.locator(mode==='fetching'?'.resource-loading':'.resource-recovery').waitFor();assert.equal(await page.locator('.reading-workspace').count(),0);}
    else await page.locator('.reading-workspace').waitFor();
    assert.ok(await page.locator('[data-slot=badge]').count());assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    if(width!==768)await page.screenshot({path:`${out}${mode}-${width}.png`,fullPage:true});checks.push(`${mode}@${width}`);

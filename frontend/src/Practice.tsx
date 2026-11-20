@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { AnimatedDetails } from './AnimatedDetails';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -448,7 +449,7 @@ function PracticeEditor({
                   <span>예시 정답 · 읽기 전용</span>
                   <Button className="text-button" onClick={() => setSolutionOpen(false)}>정답 닫기</Button>
                 </div>
-                {solutionLoading && <p role="status">정답 불러오는 중…</p>}
+                {solutionLoading && <LoadingState compact status="불러오는 중" title="정답을 불러오고 있어요" />}
                 <ErrorNotice error={solutionError} />
                 {solution && <CodeMirror
                   onCreateEditor={(view) => view.contentDOM.setAttribute("aria-label", "예시 정답 편집기")}
@@ -551,7 +552,7 @@ function PracticeEditor({
               </Label>
             ) : (
               <div className="result-content" role="status">
-                {!result ? (
+                {busy ? <LoadingState compact status="실행 중" title="코드를 실행하고 있어요" /> : !result ? (
                   <p className="console-placeholder">
                     아직 실행한 코드가 없습니다.
                     <br />
@@ -682,7 +683,7 @@ function PracticeEditor({
             </Button>
           </div>
           <section className="solution-section">
-            <Button onClick={() => void showSolution()} disabled={solutionLoading}
+            <Button loading={solutionLoading} onClick={() => void showSolution()} disabled={solutionLoading}
               aria-expanded={solutionOpen} aria-controls="exercise-solution">
               {solutionLoading ? "정답 불러오는 중…" : solutionOpen ? "정답 닫기" : "정답 보기"}
             </Button>

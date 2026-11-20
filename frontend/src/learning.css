@@ -384,7 +384,7 @@ button.text-button, .page button.text-button { background: transparent; border-c
 .button-loading-label { opacity: 0; display: inline-flex; align-items: center; gap: 8px; }
 .button-spinner { position: absolute; left: calc(50% - 9px); top: calc(50% - 9px); width: 18px; height: 18px; animation: button-spin .8s linear infinite; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .button-spinner { animation-duration: 1.8s; } }
+@media (prefers-reduced-motion: reduce) { .button-spinner { animation: none; } }
 /* Practice selects a mode, then a book, then a unit. */
 .practice-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
 .practice-path { display: flex; flex-direction: column; align-items: start; min-width: 0; padding: 32px; border-radius: 18px; background: var(--panel); color: var(--text); transition: background-color 160ms ease; }

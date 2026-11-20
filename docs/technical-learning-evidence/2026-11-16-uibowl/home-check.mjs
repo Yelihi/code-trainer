@@ -72,7 +72,7 @@ try {
       aiMade = state === 'filled'; recommendationState = ['running', 'failed'].includes(state) ? state : ''; failRecommendation = state === 'fetch-error';
       await page.goto('http://127.0.0.1:5173/');
       const section = page.locator('.home-recommendations');
-      await section.locator(state === 'filled' ? '.learning-row' : '.recommendation-state').waitFor();
+      await section.locator(state === 'filled' ? '.learning-row' : state === 'running' ? '.loading-state' : '.recommendation-state').waitFor();
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, state + '@' + width);
       if (state === 'running') { assert.equal(await section.locator('button[aria-busy="true"] .button-spinner').count(), 1); assert.equal(await section.getByRole('button').isDisabled(), true); }
       if (state === 'failed' || state === 'fetch-error') await section.getByRole('alert').waitFor();

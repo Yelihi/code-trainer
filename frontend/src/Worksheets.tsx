@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, timestamp } from './api';
@@ -61,7 +62,7 @@ function Detail({ id }: { id: string }) {
     {!data && !error && <LoadingSkeleton layout="editor" label="질문지를 불러오는 중…" />}
     {data && <><header className="reference-page-heading"><div><span className="eyebrow">{states[data.state]}</span><h1>{data.document?.title ?? data.interpretation_title}</h1><p>원문 v{data.revision} 기준 · {timestamp(data.created_at)}</p></div><Link className="button" to={'/interpretations/' + data.interpretation_id}>관련 해석 보기</Link></header>
       <aside className="interpretation-provenance"><strong>{data.source_name} · 원문 v{data.revision}</strong><p>이 질문지는 「{data.interpretation_title}」 해석을 바탕으로 AI가 만들었습니다.{data.current_revision !== data.revision && ` 원문에는 최신 v${data.current_revision}가 있지만, 이 질문지는 원래 해석에 연결되어 있습니다.`}</p><Link to={'/library/' + data.resource_id}>원문과 버전 보기</Link></aside>
-      {(data.state === 'queued' || data.state === 'running') && <section className="reference-empty" role="status"><h2>{states[data.state]}입니다.</h2><p>다른 화면으로 이동해도 실습하기에서 다시 확인할 수 있습니다.</p></section>}
+      {(data.state === 'queued' || data.state === 'running') && <LoadingState status={states[data.state]} title="실습 문제를 준비하고 있어요" description="완료되면 실습하기에서 확인할 수 있어요." />}
       {(data.state === 'failed' || data.state === 'interrupted') && <section className="interpretation-recovery"><p role="alert">{data.error}</p><p>이 기록을 보존하고 같은 해석에서 새 질문지를 만듭니다.</p><StartWorksheet interpretationId={data.interpretation_id} retryId={data.id} /></section>}
       {data.document && <><WorksheetDocument document={data.document} interpretationId={data.interpretation_id} /><Link className="button primary" to={'/worksheets/' + data.id + '/practice'}>내 답변·요약 작성하기</Link></>}
       <Link className="text-link" to={'/explore/practice?interpretation=' + data.interpretation_id}>이 해석의 질문지 기록</Link>

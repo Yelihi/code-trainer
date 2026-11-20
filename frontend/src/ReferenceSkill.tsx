@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import { useEffect, useRef, useState } from 'react';
 import { api, errorMessage, timestamp } from './api';
 import { ErrorNotice, useResource } from './App';
@@ -21,5 +22,5 @@ function SkillPreview({ id, jobId }: { id: string; jobId: string }) {
   const { data, error, reload } = useResource<Preview>(`/technical-references/${id}/skills/${jobId}`, { preserveData: true });
   const pending = data?.state === 'queued' || data?.state === 'running';
   useEffect(() => { if (!pending) return; const timer = setInterval(reload, 2000); return () => clearInterval(timer); }, [pending, reload]);
-  return <div className="skill-preview"><ErrorNotice error={error || data?.error || ''} />{pending && <p role="status">Skill을 준비하고 있습니다…</p>}{data?.markdown && <>{data.stale && <p className="notice">이 Skill은 이전 작성 내용이나 근거를 기준으로 만들었습니다.</p>}<p>기준: 사용자 작성 v{data.reference_revision} · {timestamp(data.created_at)}</p><details><summary>SKILL.md 미리보기</summary><pre className="skill-markdown"><code>{data.markdown}</code></pre></details><a className="button primary" href={`/api/technical-references/${id}/skills/${jobId}/download`} download>확인한 Skill ZIP 다운로드</a><p className="muted">SKILL.md와 참고 문서를 포함합니다. 자동 설치나 외부 공개는 하지 않습니다.</p></>}</div>;
+  return <div className="skill-preview"><ErrorNotice error={error || data?.error || ''} />{pending && <LoadingState compact status="Skill 생성 중" title="Skill 파일을 준비하고 있어요" />}{data?.markdown && <>{data.stale && <p className="notice">이 Skill은 이전 작성 내용이나 근거를 기준으로 만들었습니다.</p>}<p>기준: 사용자 작성 v{data.reference_revision} · {timestamp(data.created_at)}</p><details><summary>SKILL.md 미리보기</summary><pre className="skill-markdown"><code>{data.markdown}</code></pre></details><a className="button primary" href={`/api/technical-references/${id}/skills/${jobId}/download`} download>확인한 Skill ZIP 다운로드</a><p className="muted">SKILL.md와 참고 문서를 포함합니다. 자동 설치나 외부 공개는 하지 않습니다.</p></>}</div>;
 }

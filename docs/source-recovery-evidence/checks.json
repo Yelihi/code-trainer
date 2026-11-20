@@ -1,0 +1,30 @@
+{
+  "checks": [
+    "failed@1440",
+    "fetching@1440",
+    "ready@1440",
+    "failed-old@1440",
+    "list-hover@1440",
+    "failed@768",
+    "fetching@768",
+    "ready@768",
+    "failed-old@768",
+    "list-hover@768",
+    "failed@390",
+    "fetching@390",
+    "ready@390",
+    "failed-old@390",
+    "list-hover@390"
+  ],
+  "interactions": [
+    "version selection preserves source URL",
+    "whole row hover with inner padding",
+    "status badges",
+    "manual paste keeps URL and identity",
+    "paste failure preserves draft",
+    "reload draft recovery",
+    "retry fetch"
+  ],
+  "errors": [],
+  "unknown": []
+}

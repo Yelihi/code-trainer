@@ -1,3 +1,4 @@
+import { Badge } from './components/ui/badge';
 import { Rss } from 'lucide-react';
 import { EmptyState, PageHeading } from './WorkspaceUI';
 import { NativeSelect } from './components/ui/native-select';
@@ -56,7 +57,7 @@ export function FeedInbox() {
     <AnimatedDetails className="feed-settings" summary={<>수집 출처 {data ? `· ${data.feeds.length}개` : ''}{isAdmin ? ' · 관리' : ''}</>}>
       <p className="feed-settings-hint">공개 RSS·Atom 피드를 연결하세요. 일시정지해도 가져온 글은 유지됩니다.</p>
       <div className="feed-source-list">{data?.feeds.map(feed => <div className="feed-source" key={feed.id}>
-        <div className="feed-source-info"><div className="feed-source-heading"><strong>{feed.name}</strong><span className={'feed-status' + (feed.enabled ? ' is-active' : '')}>{feed.enabled ? '수집 중' : '일시정지'}</span></div><a href={safeSourceUrl(feed.url)} target="_blank" rel="noreferrer">{feed.url}</a><small>{feed.succeeded ? `마지막 수집 ${timestamp(feed.succeeded)}` : '수집 기록 없음'}</small>{feed.error && <p className="notice error">{feed.error}</p>}</div>
+        <div className="feed-source-info"><div className="feed-source-heading"><strong>{feed.name}</strong><Badge variant="secondary" className={'feed-status' + (feed.enabled ? ' is-active' : '')}>{feed.enabled ? '수집 중' : '일시정지'}</Badge></div><a href={safeSourceUrl(feed.url)} target="_blank" rel="noreferrer">{feed.url}</a><small>{feed.succeeded ? `마지막 수집 ${timestamp(feed.succeeded)}` : '수집 기록 없음'}</small>{feed.error && <p className="notice error">{feed.error}</p>}</div>
         <div className="feed-actions"><Button loading={busy === 'refresh:' + feed.id} disabled={!!busy || !feed.enabled} onClick={() => void refresh(feed.id)} aria-label={`${feed.name} 새 글 확인`}>새 글 확인</Button>{isAdmin && <Button loading={busy === 'toggle:' + feed.id} disabled={!!busy} onClick={() => void toggle(feed)} aria-label={`${feed.name} ${feed.enabled ? '수집 일시정지' : '수집 재개'}`}>{feed.enabled ? '일시정지' : '수집 재개'}</Button>}</div>
       </div>)}</div>
       {isAdmin && <form className="feed-add-form" onSubmit={event => void add(event)}>

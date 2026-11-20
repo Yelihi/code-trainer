@@ -1,0 +1,29 @@
+{
+  "checks": [
+    "list@1440",
+    "create@1440",
+    "detail@1440",
+    "list@768",
+    "create@768",
+    "detail@768",
+    "list@390",
+    "create@390",
+    "detail@390"
+  ],
+  "interactions": [
+    "explicit generation only",
+    "backlog-active-merged-backlog keeps ID",
+    "destination",
+    "file add/edit",
+    "conflict retains draft",
+    "reload recovers draft",
+    "explicit conflict recovery loads latest files",
+    "script stays text",
+    "history read",
+    "failure keeps files",
+    "recommendation selection",
+    "job polling and spinner"
+  ],
+  "errors": [],
+  "unknown": []
+}

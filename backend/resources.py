@@ -175,10 +175,13 @@ def archive(owner, resource_id, archived):
     return view(owner, resource_id)
 
 
-def register(owner, data):
+def register(owner, data, manual_content=None):
     from . import service
     # Keep persisted pre-RSA request hashes replayable when no post was supplied.
-    payload_hash = hashlib.sha256(data.model_dump_json(exclude={'feed_post_id'} if data.feed_post_id is None else set()).encode()).hexdigest()
+    payload = data.model_dump_json(exclude={'feed_post_id'} if data.feed_post_id is None else set())
+    if manual_content is not None:
+        payload = json.dumps({'request': payload, 'manual_content': manual_content}, ensure_ascii=False)
+    payload_hash = hashlib.sha256(payload.encode()).hexdigest()
     now = service.now()
     with db.connect(write=True) as c:
         request = c.execute('SELECT * FROM resource_requests WHERE owner=? AND request_id=?', (owner, data.request_id)).fetchone()
@@ -201,6 +204,8 @@ def register(owner, data):
                 raise service.Error('이미 이 글의 원문을 가져오고 있습니다. 잠시 후 확인해주세요.', 409)
         resource_id = data.resource_id
         existing = view(owner, resource_id, c) if resource_id else None
+        if manual_content is not None and (not existing or existing['kind'] != 'url' or existing['revision'] != data.revision):
+            raise service.Error('자료가 변경되었습니다. 입력한 본문을 복사한 뒤 최신 자료를 확인해주세요.', 409)
         if existing and (existing['kind'] != data.kind or existing['note_id']):
             raise service.Error('자료 종류는 변경할 수 없습니다.', 409)
         if existing and existing['archived']:
@@ -244,8 +249,8 @@ def register(owner, data):
                 ON CONFLICT(owner,post_id) DO UPDATE SET resource_id=excluded.resource_id,request_id=excluded.request_id''',
                 (owner, data.feed_post_id, resource_id, data.request_id))
     # Network IO must not hold the SQLite writer lock. The request token fences late results.
-    content, error = data.content, ''
-    if data.kind == 'url':
+    content, error = manual_content if manual_content is not None else data.content, ''
+    if data.kind == 'url' and manual_content is None:
         try:
             content = source.fetch(data.url)
         except source.SourceError as exc:
@@ -282,3 +287,13 @@ def register(owner, data):
         result = view(owner, resource_id, c)
         c.execute('UPDATE resource_requests SET response=? WHERE owner=? AND request_id=?', (json.dumps(result, ensure_ascii=False), owner, data.request_id))
         return result
+
+
+def paste(owner, identifier, body):
+    from .resource_schema import ResourceInput
+    from . import service
+    current = view(owner, identifier)
+    if current['kind'] != 'url': raise service.Error('URL 자료에만 본문을 직접 입력할 수 있습니다.',422)
+    data = ResourceInput(request_id=body.request_id,resource_id=identifier,revision=body.revision,
+                         kind='url',name=current['name'],url=current['url'])
+    return register(owner,data,manual_content=body.content)

@@ -401,3 +401,20 @@ class ResourceRegistrationTest(unittest.TestCase):
         self.assertEqual(replay.status_code, 200, replay.text)
         self.assertEqual(replay.json(), response.json())
         fetch.assert_not_called()
+
+
+    def test_pasted_url_body_preserves_identity_url_history_and_replay(self):
+        from unittest.mock import patch
+        from . import resources, source
+        from .resource_schema import ResourceInput, ResourceContent
+        with patch.object(source,'fetch',side_effect=source.SourceError('접근 제한')):
+            failed=resources.register(self.owner,ResourceInput(request_id='failed-url',kind='url',name='원문',url='https://example.com/post'))
+        with patch.object(source,'fetch',side_effect=AssertionError('manual body must not fetch')):
+            body=ResourceContent(request_id='paste-content',revision=0,content='원문에서 직접 복사한 본문입니다.')
+            saved=resources.paste(self.owner,failed['id'],body)
+            self.assertEqual(resources.paste(self.owner,failed['id'],body),saved)
+        self.assertEqual((saved['id'],saved['url'],saved['state']),(failed['id'],'https://example.com/post','ready'))
+        self.assertEqual(saved['content'],body.content)
+        self.assertEqual(self.client.post('/api/resources/'+failed['id']+'/content',json={'request_id':'stale-paste','revision':0,'content':'오래된 변경'}).status_code,409)
+        with self.assertRaises(service.Error): resources.paste('other',failed['id'],body)
+        self.assertEqual(self.client.post('/api/resources/'+failed['id']+'/content',json={'request_id':'empty-paste','revision':1,'content':' '}).status_code,422)

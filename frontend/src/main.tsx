@@ -1,4 +1,4 @@
-import { TechnicalReferences, TechnicalReferenceRoute } from './TechnicalReferences';
+import { TechnicalReferences, TechnicalReferenceRoute } from './ReferenceWorkspace';
 import { SpacedReviewRoute } from './SpacedReviews';
 import { PracticeCatalog, PracticeEntry } from './Navigation';
 import { InterpretationCode } from './InterpretationCode';
@@ -36,6 +36,7 @@ const router = createBrowserRouter([{ element: <App />, children: [
   { path: '/technical-references', element: <TechnicalReferences /> },
   { path: '/technical-references/new', element: <TechnicalReferenceRoute /> },
   { path: '/technical-references/:id', element: <TechnicalReferenceRoute /> },
+  { path: '/technical-references/:id/legacy', element: <TechnicalReferenceRoute /> },
   { path: '/courses', element: <Home /> },
   { path: '/settings/questions', element: <QuestionPolicySettings /> },
   { path: '/settings/records', element: <RecordSettings /> },

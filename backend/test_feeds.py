@@ -354,3 +354,23 @@ class FeedTest(unittest.TestCase):
             fetch.assert_not_called()
         self.client.cookies.clear()
         self.assertEqual(self.client.post('/api/resources', json=body).status_code, 401)
+
+    def test_https_fetch_uses_default_https_host_without_port_and_keeps_dns_pin(self):
+        connection=source.http.client.HTTPSConnection('example.com',443)
+        transport=MagicMock()
+        response=MagicMock(status=200)
+        response.getheader.side_effect=lambda name,default=None:{'Content-Type':'text/plain'}.get(name,default)
+        response.read1.side_effect=[b'A public article long enough.',b'']
+        original_request=connection.request
+        def capture_request(*args,**kwargs):
+            original_request(*args,**kwargs)
+            sent=b''.join(call.args[0] for call in transport.sendall.call_args_list)
+            self.assertIn(b'Host: example.com\r\n',sent)
+            self.assertNotIn(b'Host: example.com:443',sent)
+        connection.request=capture_request
+        connection.getresponse=MagicMock(return_value=response)
+        with patch.object(source,'public_address',return_value='93.184.216.34'), patch.object(source.socket,'create_connection',return_value=transport) as connect, patch.object(source.ssl,'create_default_context') as tls, patch.object(source.http.client,'HTTPSConnection',return_value=connection):
+            tls.return_value.wrap_socket.return_value=transport
+            self.assertEqual(source.fetch('https://example.com/post'),'A public article long enough.')
+        connect.assert_called_once_with(('93.184.216.34',443),timeout=8)
+        tls.return_value.wrap_socket.assert_called_once_with(transport,server_hostname='example.com')

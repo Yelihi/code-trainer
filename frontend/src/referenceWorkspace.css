@@ -1,0 +1,79 @@
+.reference-workspace { max-width: 1180px; }
+.reference-workspace .workspace-heading { margin-top: 24px; }
+.reference-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 16px; }
+.reference-workspace button[aria-pressed=true] { background: var(--accent); color: var(--brand); border-color: var(--brand); }
+.reference-list { background: var(--panel); border-radius: 16px; padding: 0 24px; }
+.reference-list-row { display: flex; align-items: center; gap: 20px; padding: 24px 0; color: var(--text); text-decoration: none; }
+.reference-list-row + .reference-list-row { border-top: 1px solid var(--line); }
+.reference-list-row:hover { background: var(--surface-hover); border-radius: 10px; }
+.reference-list-row > div { flex: 1; min-width: 0; }
+.reference-list-row h2 { font-size: 16px; margin: 0 0 12px; overflow-wrap: anywhere; }
+.reference-row-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
+.reference-status { display: inline-flex; padding: 4px 8px; border-radius: 6px; background: var(--surface-muted); color: var(--muted); font-size: 12px; font-weight: 600; }
+.reference-status.active { background: var(--success-surface); color: var(--green); }
+.reference-status.merged { background: var(--accent); color: var(--brand); }
+.reference-create-layout { display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 24px; align-items: start; margin-top: 24px; }
+.reference-source-panel, .reference-selection, .reference-package-panel, .reference-management { background: var(--panel); border-radius: 16px; padding: 24px; min-width: 0; }
+.reference-source-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
+.reference-source-toolbar input { min-width: 0; }
+.reference-source-toolbar button { flex: none; }
+.reference-source-list { display: grid; gap: 4px; }
+.reference-workspace .reference-source-list button.reference-source-row { display: flex; justify-content: flex-start; text-align: left; gap: 16px; padding: 16px 12px; width: 100%; min-height: 76px; border: 0; border-radius: 10px; background: transparent; color: var(--text); }
+.reference-workspace .reference-source-list button.reference-source-row:hover { background: var(--surface-hover); }
+.reference-source-row > span:last-child { min-width: 0; }
+.reference-source-row small { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+.reference-source-row strong { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.reference-source-check { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border: 1px solid var(--line); border-radius: 5px; }
+.reference-source-row[aria-pressed=true] .reference-source-check { background: var(--brand); color: white; }
+.reference-selection { display: grid; gap: 16px; }
+.reference-selection h2, .reference-management h2, .reference-file-toolbar h2, .reference-jobs h2 { margin: 0; font-size: 17px; }
+.reference-selection h2 span { float: right; font-size: 13px; color: var(--muted); }
+.reference-selection ul { list-style: none; margin: 0; padding: 0; }
+.reference-selection li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; font-size: 13px; }
+.reference-selection li + li { border-top: 1px solid var(--line); }
+.reference-selection .muted { margin: 0; font-size: 12px; line-height: 1.6; }
+.reference-detail-layout { display: grid; grid-template-columns: minmax(0,1fr) 300px; align-items: start; gap: 24px; margin-top: 24px; }
+.reference-file-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.reference-file-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 20px; }
+.reference-file-tabs button { max-width: 100%; overflow-wrap: anywhere; white-space: normal; text-align: left; font-size: 12px; }
+.reference-file-content { min-height: 360px; padding-top: 24px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.reference-file-content .prose { max-width: 72ch; }
+.reference-file-content pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.reference-file-note { font-size: 12px; color: var(--muted); padding-top: 16px; border-top: 1px solid var(--line); }
+.reference-management { display: grid; gap: 16px; }
+.reference-current-state { margin: 0; }
+.reference-status-actions { display: grid; gap: 8px; }
+.reference-management small { font-size: 12px; line-height: 1.6; }
+.reference-management-section { display: grid; gap: 12px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; }
+.reference-management-section h3 { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0; }
+.reference-management-section details { min-width: 0; }
+.reference-history-content { padding: 16px 0; }
+.reference-history-content .reference-file-content { min-height: 0; }
+.reference-job-state { padding: 20px 24px; border-radius: 12px; background: var(--panel); font-size: 14px; }
+.reference-jobs { margin-top: 32px; }
+.reference-job-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.reference-job-row small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+.reference-job-row p { margin-bottom: 0; color: var(--error); }
+.reference-package-editor { display: grid; gap: 16px; }
+.reference-workspace textarea.reference-code-input { min-height: 540px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 13px; line-height: 1.8; }
+.reference-add-file { display: flex; align-items: center; gap: 12px; }
+.reference-add-file input { min-width: 0; }
+.reference-add-file button { flex: none; }
+@media (max-width: 850px) {
+  .reference-create-layout, .reference-detail-layout { grid-template-columns: minmax(0,1fr); }
+  .reference-selection { grid-row: 1; }
+}
+@media (max-width: 600px) {
+  .reference-source-panel, .reference-selection, .reference-package-panel, .reference-management { padding: 20px; }
+  .reference-source-toolbar { flex-wrap: wrap; }
+  .reference-list { padding-inline: 16px; }
+  .reference-list-row { padding-block: 20px; gap: 12px; }
+  .reference-list-row > svg:first-child { display: none; }
+  .reference-workspace textarea.reference-code-input { min-height: 420px; }
+  .reference-add-file { flex-wrap: wrap; }
+}
+.reference-file-content .reference-skill-metadata { margin: 0 0 24px; padding: 12px 16px; border-radius: 8px; background: var(--surface-muted); color: var(--muted); font-size: 12px; line-height: 1.7; }
+.reference-workspace .reference-source-list button.reference-source-row { align-items: center; }
+.reference-unapplied-job { width: 100%; display: grid; gap: 16px; }
+.reference-unapplied-job > button { justify-self: start; }
+.reference-generated-files { margin-top: 16px; padding: 20px; border-radius: 12px; background: var(--panel); }

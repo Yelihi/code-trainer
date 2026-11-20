@@ -381,7 +381,7 @@ button.text-button, .page button.text-button { background: transparent; border-c
   border-color: var(--brand); outline: 1px solid var(--brand); outline-offset: -1px; box-shadow: none;
 }
 .button-loading { position: relative; }
-.button-loading-label { visibility: hidden; display: inline-flex; align-items: center; gap: 8px; }
+.button-loading-label { opacity: 0; display: inline-flex; align-items: center; gap: 8px; }
 .button-spinner { position: absolute; left: calc(50% - 9px); top: calc(50% - 9px); width: 18px; height: 18px; animation: button-spin .8s linear infinite; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .button-spinner { animation-duration: 1.8s; } }

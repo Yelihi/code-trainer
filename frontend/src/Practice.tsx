@@ -400,10 +400,12 @@ function PracticeEditor({
                   {filenames[problemSet.language]}
                 </span>
                 <span className="save-status" role="status">
-                  {saving ? "저장 중…" : dirty ? "저장하지 않은 변경" : "저장됨"}
+                  <Badge variant="secondary">{saving ? "저장 중" : dirty ? "미저장" : "저장됨"}</Badge>
                 </span>
                 <Button
-                  className="text-button"
+                  className="editor-save-button"
+                  variant="ghost"
+                  loading={saving}
                   onClick={() => void save()}
                   disabled={saving || !dirty || conflict}
                 >
@@ -515,7 +517,7 @@ function PracticeEditor({
                 {codeTests ? "내 테스트 코드" : "직접 실행 입력"}
               </Button>}
               {(resultTab === "result" || !!busy) && <span className="muted">
-                {busy && actionLabels[busy] ? `${actionLabels[busy]} 중…` : result ? actionLabels[result.action] : "실행 대기"}
+                <Badge variant="secondary">{busy && actionLabels[busy] ? `${actionLabels[busy]} 중` : result ? actionLabels[result.action] : "실행 대기"}</Badge>
               </span>}
             </div>
             {resultTab === "stdin" && codeTests ? (
@@ -760,37 +762,35 @@ function PracticeEditor({
           {finishing ? '저장하고 마무리하는 중…' : '학습 마무리'}
         </Button>
       </section>}
-      {blocker.state === "blocked" && (
-        <div className="auth-backdrop">
-          <section
-            className="confirm-card"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="leave-title"
-          >
-            <h2 id="leave-title">연습 화면을 나갈까요?</h2>
-            <p>
-              {busy || saving
-                ? "요청을 처리 중입니다. 제출은 화면을 떠나도 계속될 수 있습니다."
-                : "저장하지 않은 내용이 있습니다."}
-            </p>
-            <Button onClick={() => blocker.reset()}>계속 작성</Button>
-            <Button
-              disabled={!!busy || saving}
-              onClick={() =>
-                void save().then((ok) => {
-                  if (ok) blocker.proceed();
-                })
-              }
-            >
-              저장 후 이동
-            </Button>
-            <Button className="text-button" onClick={() => blocker.proceed()}>
-              저장하지 않고 이동
-            </Button>
-          </section>
-        </div>
-      )}
+      {blocker.state === "blocked" && <PracticeLeaveDialog
+        busy={!!busy} saving={saving} conflict={conflict} error={error}
+        onStay={() => blocker.reset()} onDiscard={() => blocker.proceed()}
+        onSave={() => void save().then(ok => { if (ok) blocker.proceed(); })}
+      />}
+
     </main>
   );
+}
+
+function PracticeLeaveDialog({ busy, saving, conflict, error, onStay, onDiscard, onSave }: {
+  busy: boolean; saving: boolean; conflict: boolean; error: string;
+  onStay: () => void; onDiscard: () => void; onSave: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const element = dialog.current;
+    element?.showModal();
+    return () => element?.close();
+  }, []);
+  return <dialog ref={dialog} className="practice-leave-dialog" aria-labelledby="leave-title" aria-describedby="leave-description"
+    onCancel={event => { event.preventDefault(); if (!saving) onStay(); }}>
+    <h2 id="leave-title">연습 화면을 나갈까요?</h2>
+    <p id="leave-description">{busy || saving ? "요청을 처리 중입니다. 제출은 화면을 떠나도 계속될 수 있습니다." : "저장하지 않은 내용이 있습니다."}</p>
+    <ErrorNotice error={error} />
+    <div className="practice-leave-actions">
+      <Button autoFocus disabled={saving} onClick={onStay}>계속 작성</Button>
+      <Button className="primary" loading={saving} disabled={busy || saving || conflict} onClick={onSave}>저장 후 이동</Button>
+    </div>
+    <Button className="practice-leave-discard" variant="ghost" disabled={saving} onClick={onDiscard}>저장하지 않고 이동</Button>
+  </dialog>;
 }

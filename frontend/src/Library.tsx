@@ -10,10 +10,11 @@ import { libraryPage, readResourceFile, resourceKinds, restoreResourceDraft, typ
 import './referenceNotes.css';
 import './library.css';
 import { Input } from './components/ui/input';
+import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Textarea } from './components/ui/textarea';
 import { Label } from './components/ui/label';
-import { FilePlus2, FilePenLine, Link2, Rss } from 'lucide-react';
+import { FilePlus2, FilePenLine, Link2, Rss, FileWarning } from 'lucide-react';
 import { ActionCard, EmptyState, PageHeading } from './WorkspaceUI';
 
 export function Library() {
@@ -33,7 +34,7 @@ function LibraryList() {
     <ErrorNotice error={error} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!data && !error && <LoadingSkeleton layout="list" label="자료를 불러오는 중…" />}
     {data && <><div className="reference-list-caption"><span>{archived ? '삭제된 원문과 기록' : '나의 원문과 기록'}</span><span>{data.total}개의 자료</span></div>
-      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" to={'/library/' + item.id} key={item.id}><div><small>{resourceKinds[item.kind]} · {archived ? '삭제됨' : item.state === 'failed' ? '수집 실패 · 다시 가져오기 가능' : item.state === 'fetching' ? '원문 수집 중' : `본문 v${item.revision}`}</small><h2>{item.name}</h2><p>{item.excerpt || item.url || '아직 가져온 본문이 없습니다.'}</p><footer><span>{item.kind === 'note' ? '내 언어로 남긴 기록' : '원자료'}</span><span>{timestamp(item.updated_at)}</span></footer></div></Link>)}</div> : <EmptyState icon={FilePlus2} title={query ? '검색한 자료가 없습니다' : archived ? '삭제된 자료가 없습니다' : '첫 자료를 추가해보세요'} description={query ? '다른 검색어나 자료 종류로 찾아보세요.' : archived ? '삭제한 자료는 이곳에서 복원할 수 있습니다.' : 'URL, 텍스트, 파일을 저장하거나 직접 작성할 수 있습니다.'} action={!archived && !query ? <Link className="button" to="/library/new/reference">자료 추가</Link> : undefined} />}
+      {data.items.length ? <div className="reference-list">{data.items.map(item => <Link className="reference-list-item" to={'/library/' + item.id} key={item.id}><div><div className="resource-list-meta"><small>{resourceKinds[item.kind]}</small><Badge variant="secondary" className={'resource-status resource-status-'+item.state}>{archived?'삭제됨':item.state==='failed'?'수집 실패':item.state==='fetching'?'수집 중':item.kind==='url'?'본문 준비됨':'저장됨'}</Badge>{item.revision>0&&<span>v{item.revision}</span>}</div><h2>{item.name}</h2><p>{item.excerpt || item.url || '아직 가져온 본문이 없습니다.'}</p><footer><span>{item.kind === 'note' ? '내 언어로 남긴 기록' : '원자료'}</span><span>{timestamp(item.updated_at)}</span></footer></div></Link>)}</div> : <EmptyState icon={FilePlus2} title={query ? '검색한 자료가 없습니다' : archived ? '삭제된 자료가 없습니다' : '첫 자료를 추가해보세요'} description={query ? '다른 검색어나 자료 종류로 찾아보세요.' : archived ? '삭제한 자료는 이곳에서 복원할 수 있습니다.' : 'URL, 텍스트, 파일을 저장하거나 직접 작성할 수 있습니다.'} action={!archived && !query ? <Link className="button" to="/library/new/reference">자료 추가</Link> : undefined} />}
       {data.pages > 1 && <nav className="pagination" aria-label="자료 페이지"><Button disabled={data.page <= 1} onClick={() => setParams({ q: query, kind, page: String(data.page - 1), ...(archived ? { archived: 'true' } : {}) })}>이전</Button><span>{data.page} / {data.pages}</span><Button disabled={data.page >= data.pages} onClick={() => setParams({ q: query, kind, page: String(data.page + 1), ...(archived ? { archived: 'true' } : {}) })}>다음</Button></nav>}
     </>}
     <div className="library-notes-link"><Link className="text-link" to="/library?archived=true">삭제된 자료 보기</Link></div>
@@ -152,6 +153,7 @@ function Detail({ id }: { id: string }) {
   const navigate = useNavigate();
   const { data, error, reload } = useResource<Resource>('/resources/' + id);
   const [result, setResult] = useState<Resource | null>(null), [old, setOld] = useState<ResourceVersion | null>(null);
+  const [manual,setManual]=useState(false);
   const [busy, setBusy] = useState(false), [actionError, setActionError] = useState(''), [message, setMessage] = useState('');
   const alive = useRef(true), requestId = useRef(crypto.randomUUID()), versionRequest = useRef(0);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
@@ -163,7 +165,7 @@ function Detail({ id }: { id: string }) {
       const next = await api<Resource>('/resources', 'POST', { request_id: requestId.current, resource_id: id, revision: 0, kind: 'url', name: current.name, url: current.url, content: '' });
       if (!alive.current) return;
       setResult(next); setOld(null); versionRequest.current++;
-      setMessage(next.state === 'failed' ? '주소를 보존했습니다. 잠시 후 다시 가져와주세요.' : next.revision === current.revision ? '본문이 같아 기존 버전을 유지했습니다.' : `변경된 본문을 v${next.revision}로 저장했습니다.`);
+      setMessage(next.state === 'failed' ? '' : next.revision === current.revision ? '본문이 같아 기존 버전을 유지했습니다.' : `변경된 본문을 v${next.revision}로 저장했습니다.`);
       requestId.current = crypto.randomUUID();
     } catch (e) { if (alive.current) setActionError(errorMessage(e)); }
     finally { if (alive.current) setBusy(false); }
@@ -190,24 +192,31 @@ function Detail({ id }: { id: string }) {
     finally { if (alive.current) setBusy(false); }
   }
   const url = safeSourceUrl(current?.url ?? undefined);
-  return <main className="page reference-page library-detail"><div className="breadcrumb"><Link to="/library">자료 보관함</Link><span>/</span> 원문 상세</div>
+  const content=old?old.content:current?.content;
+  const hasBody=!!content?.trim();
+  return <main className="page reference-page library-detail resource-reader"><div className="breadcrumb"><Link to="/library">원자료</Link><span>/</span> 원문 상세</div>
     <ErrorNotice error={error || actionError} />{error && <Button onClick={reload}>다시 불러오기</Button>}
     {!current && !error && <LoadingSkeleton layout="editor" label="자료를 불러오는 중…" />}
-    {current && <><header className="reference-page-heading"><div><span className="eyebrow">{resourceKinds[current.kind]}</span><h1>{current.name}</h1><p>본문 {current.revision ? `v${current.revision}` : '수집 대기'} · {timestamp(current.updated_at)}</p></div><div className="reference-actions">{current.archived ? <Button loading={!!(busy)} disabled={busy} onClick={() => void changeArchive(false)}>{busy ? '복원 중…' : '자료 복원'}</Button> : <>{current.note_id ? <Link className="button primary" to={'/references/' + current.note_id}>노트 열기 · 편집</Link> : current.kind === 'url' ? <><Link className="button" to={'/library/' + id + '/edit'}>원문 URL 수정</Link><Button className="primary" loading={busy} disabled={busy} onClick={() => void refresh()}>{busy ? '가져오는 중…' : '다시 가져오기'}</Button></> : <Link className="button primary" to={'/library/' + id + '/edit'}>본문 수정</Link>}<Button disabled={busy} onClick={() => void changeArchive(true)}>자료 삭제</Button></>}</div></header>
-      {!!current.archived && <p className="notice" role="status">삭제된 자료입니다. 복원하면 다시 보관함에 표시됩니다. 이전 본문과 학습 기록은 보존됩니다.</p>}
-      {url && <p className="library-source"><a className="button" href={url} target="_blank" rel="noreferrer">원문 페이지 열기</a><span>{current.url}</span></p>}
-      {current.state === 'failed' && <p className="notice error" role="alert">{current.error || '아직 가져온 본문이 없습니다.'}{current.revision > 0 && ' 마지막으로 저장한 본문을 표시합니다.'}</p>}
-      {current.feed_pending && <p className="notice">RSA 등록 대기 상태입니다. 원문 수집에 성공하면 등록이 완료됩니다. <Link to="/inbox">대기 목록에서 URL 확인·수정하기</Link></p>}
-      {current.state === 'fetching' && <p role="status" className="notice">원문 수집 중입니다. <Button onClick={() => { setResult(null); reload(); }}>상태 확인</Button></p>}
-      {message && <p className="reference-state" role="status">{message}</p>}
-      <div className="reading-workspace">
-        <aside className="reading-navigation" aria-label="자료 탐색"><Link className="reading-link" to="/library">자료 보관함으로</Link><a className="reading-link" href="#resource-body">원문 읽기</a><section className="library-versions"><h2>본문 버전 · {current.versions.length}</h2>{current.kind !== 'note' && <p>본문이나 원문 URL이 바뀐 시점의 기록입니다. 이전 버전도 다시 읽을 수 있습니다.</p>}<div className="reference-version-list">{current.versions.map(v => <Button key={v.revision} aria-pressed={(old?.revision ?? current.revision) === v.revision} onClick={() => void showVersion(v.revision)}><span>v{v.revision}{v.revision === current.revision ? ' · 최신' : ''}</span><small>{timestamp(v.created_at)}</small></Button>)}</div></section></aside>
-        <article id="resource-body" className="reference-reading reading-content"><header className="reading-document-heading"><div><h2>{old?.name ?? current.name}</h2><p className="reading-meta">원문 · v{old?.revision ?? current.revision}</p></div>{old && <Button onClick={() => { versionRequest.current++; setOld(null); }}>최신 본문으로</Button>}</header>
-          {old && safeSourceUrl(old.url ?? undefined) && <p className="library-version-url">당시 원문 URL · {old.url}</p>}
-          {(old ? old.content : current.content) !== null ? <Markdown language="" images={!!current.note_id}>{(old ? old.content : current.content)!}</Markdown> : <EmptyState icon={FilePlus2} title="아직 수집된 본문이 없습니다" description="원문 주소는 저장되어 있습니다. 다시 가져오기를 눌러 재시도하세요." />}
-        </article>
-        <aside className="reading-context" aria-label="이 자료로 탐구하기">{!current.archived && <ResourceInterpretations resourceId={id} revision={old?.revision ?? current.revision} content={old ? old.content : current.content} />}<div className="reading-context-note"><h2>읽고, 이해하고, 연결하기</h2><p>해석에서 원문 근거를 확인하고, 질문지에 내 설명을 남겨보세요. 검토한 내용은 지식으로 연결할 수 있습니다.</p></div></aside>
-      </div>
+    {current && <><PageHeading title={current.name} meta={<div className="resource-heading-meta"><Badge variant="secondary" className={'resource-status resource-status-'+current.state}>{current.archived?'삭제됨':current.state==='failed'?(current.revision?'갱신 실패':'수집 실패'):current.state==='fetching'?'수집 중':current.kind==='url'?'본문 준비됨':'저장됨'}</Badge>{current.feed_pending&&<Badge variant="outline">RSA 등록 대기</Badge>}{current.revision>0&&<span>본문 v{current.revision}</span>}<time>{timestamp(current.updated_at)}</time></div>}
+      actions={current.archived?<Button loading={busy} onClick={()=>void changeArchive(false)}>자료 복원</Button>:<>{current.note_id?<Link className="button" to={'/references/'+current.note_id}>노트 수정</Link>:current.kind!=='url'?<Link className="button" to={'/library/'+id+'/edit'}>본문 수정</Link>:hasBody&&<><Link className="button" to={'/library/'+id+'/edit'}>URL 수정</Link><Button loading={busy} disabled={busy} onClick={()=>void refresh()}>다시 가져오기</Button></>}<Button variant="ghost" disabled={busy} onClick={()=>void changeArchive(true)}>자료 삭제</Button></>}/>
+      {url&&<div className="resource-origin"><Link2 size={18} aria-hidden="true"/><span>{current.url}</span><a className="button" href={url} target="_blank" rel="noreferrer">원문 열기</a></div>}
+      {!!current.archived&&<p className="notice" role="status">삭제된 자료입니다. 복원하면 다시 보관함에 표시됩니다.</p>}
+      {message&&<p className="reference-state resource-heading-meta" role="status"><Badge variant="secondary">확인 완료</Badge>{message}</p>}
+      {manual?<ManualResourceBody key={id} resource={current} onSaved={next=>{setResult(next);setOld(null);setManual(false);versionRequest.current++;setMessage('직접 입력한 본문을 저장했습니다.');}} onCancel={()=>setManual(false)}/>:
+      !hasBody?<section className="resource-recovery" aria-labelledby="resource-recovery-title"><span className="resource-recovery-icon" aria-hidden="true">{current.state==='failed'?<FileWarning size={28}/>:<FilePlus2 size={28}/>}</span><h2 id="resource-recovery-title">{current.state==='fetching'?'원문을 가져오고 있어요':'본문을 가져오지 못했어요'}</h2><p role={current.state==='failed'?'alert':'status'}>{current.error||'원문 주소는 저장되어 있습니다. 본문 수집 상태를 확인해주세요.'}</p><div className="resource-recovery-actions">{!current.archived&&<>{current.state==='fetching'?<Button onClick={()=>{setResult(null);reload();}}>상태 확인</Button>:<><Button className="primary" loading={busy} disabled={busy} onClick={()=>void refresh()}>다시 가져오기</Button><Button disabled={busy} onClick={()=>setManual(true)}>본문 직접 입력</Button><Link className="button" to={'/library/'+id+'/edit'}>URL 수정</Link></>}</>}</div>{current.feed_pending&&<div className="resource-feed-state"><Badge variant="outline">RSA 등록 대기</Badge><Link className="text-link" to="/inbox">자동 수집 목록</Link></div>}</section>:
+      <>{current.state==='failed'&&<section className="resource-refresh-error" role="alert"><Badge variant="secondary" className="resource-status resource-status-failed">갱신 실패</Badge><span>{current.error} 마지막 저장 본문은 유지했습니다.</span>{!current.archived&&<Button disabled={busy} onClick={()=>setManual(true)}>본문 직접 입력</Button>}</section>}
+      <div className="reading-workspace resource-body-layout"><article id="resource-body" className="reference-reading reading-content"><header className="reading-document-heading"><h2>원문</h2><Label className="resource-version-select">본문 버전<NativeSelect aria-label="본문 버전" value={String(old?.revision??current.revision)} onChange={e=>{if(Number(e.target.value)===current.revision){versionRequest.current++;setOld(null);}else void showVersion(Number(e.target.value));}}>{current.versions.map(v=><option key={v.revision} value={String(v.revision)}>v{v.revision}{v.revision===current.revision?' · 최신':''} · {timestamp(v.created_at)}</option>)}</NativeSelect></Label></header>
+      {old&&old.url!==current.url&&<p className="library-version-url">당시 원문 URL · {old.url}</p>}<Markdown language="" images={!!current.note_id}>{content!}</Markdown></article><aside className="reading-context" aria-label="이 자료로 탐구하기">{!current.archived&&<ResourceInterpretations resourceId={id} revision={old?.revision??current.revision} content={content??null}/>}</aside></div></>}
     </>}
   </main>;
+}
+function ManualResourceBody({resource,onSaved,onCancel}:{resource:Resource;onSaved:(value:Resource)=>void;onCancel:()=>void}) {
+  const {userId}=useApp(), key='resource-body:'+userId+':'+resource.id;
+  const [content,setContent]=useState(()=>{try{return localStorage.getItem(key)??'';}catch{return '';}}),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const request=useRef(crypto.randomUUID());
+  const blocker=useBlocker(!!content&&!busy);
+  useEffect(()=>{if(blocker.state==='blocked'){if(window.confirm('입력한 본문을 임시 보관하고 이동할까요?'))blocker.proceed();else blocker.reset();}},[blocker]);
+  useEffect(()=>{if(!content)return;const leave=(event:BeforeUnloadEvent)=>event.preventDefault();window.addEventListener('beforeunload',leave);return()=>window.removeEventListener('beforeunload',leave);},[content]);
+  async function save(){setBusy(true);setError('');try{const result=await api<Resource>('/resources/'+resource.id+'/content','POST',{request_id:request.current,revision:resource.revision,content});try{localStorage.removeItem(key);}catch{/* Server copy is saved. */}onSaved(result);}catch(cause){setError(errorMessage(cause));}finally{setBusy(false);}}
+  return <form className="resource-paste" onSubmit={event=>{event.preventDefault();void save();}}><h2>원문 본문 직접 입력</h2><p>원문에서 복사한 본문을 붙여넣으세요. URL과 이전 본문 버전은 유지합니다.</p><Label htmlFor="resource-pasted-body">본문</Label><Textarea id="resource-pasted-body" required rows={14} maxLength={60000} value={content} disabled={busy} onChange={event=>{setContent(event.target.value);request.current=crypto.randomUUID();try{localStorage.setItem(key,event.target.value);}catch{setError('임시 저장을 사용할 수 없습니다. 이동 전 본문을 복사해주세요.');}}}/><div className="resource-paste-meta"><span>{content.length.toLocaleString()} / 60,000자</span><Badge variant="secondary">직접 입력</Badge></div><ErrorNotice error={error}/><div className="resource-recovery-actions"><Button className="primary" loading={busy} disabled={busy||!content.trim()}>본문 저장</Button><Button type="button" disabled={busy} onClick={onCancel}>취소</Button></div></form>;
 }

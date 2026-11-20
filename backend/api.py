@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import service, learning, access, practice, usage, operations, feeds, diagnostics, foundations, knowledge, reference_notes, ontology, db, github_sharing
 from typing import Literal
 from . import resources, interpretations, worksheets, practice_records, problem_books, questions, framework_preview
-from . import project_brain, wiki, study, technical_references, preview
+from . import project_brain, wiki, study, technical_references, reference_packages, preview
 from .project_brain import SourceInput as BrainSourceInput, RecordInput as BrainRecordInput, RevisionInput as BrainRevisionInput, LinkInput as BrainLinkInput, DraftInput as BrainDraftInput
 from .questions import Create as QuestionCreate, Update as QuestionUpdate, GuideRequest, DailySave
 from .problem_books import ProblemInput, BookInput, AttemptInput, AssessmentInput, VerifyInput, CodeExecutionInput
@@ -25,7 +25,7 @@ from .insight_schema import InsightRequest, InsightChoice, ExplorationNotes, Ins
 from .spaced_review_schema import ReviewEnrollment, ReviewResponse, ReviewKind
 from .material_schema import MaterialKind, MaterialReviewInput, MaterialProposalInput
 from .interpretation_schema import InterpretationInput, InterpretationRetryInput
-from .resource_schema import ResourceInput
+from .resource_schema import ResourceInput, ResourceContent
 from .github_schema import GitHubConnection, GitHubRepository, GitHubDefaultRepository, GitHubSource, GitHubPublish, GitHubRecovery
 from .note_schema import ReferenceInput, ImageInput, RevisionInput, RegisterKnowledge, ReviewStart, ReviewAnswer, ArchiveInput, ConceptLookup, ApplyNoteSuggestions
 from .schema import FeedInput, FeedUpdate, Credentials, DraftInput, ExecutionInput, GenerationInput, ReportInput, ReportUpdate
@@ -432,6 +432,37 @@ def wiki_inspection(current=Depends(user)):
     return wiki.inspection(current['id'])
 
 
+@app.get('/api/technical-reference-sources')
+def reference_sources(q: str = Query(default='', max_length=160), current=Depends(user)):
+    return reference_packages.sources(current['id'], q)
+
+
+@app.get('/api/technical-references/{identifier}/package')
+def reference_package(identifier: str, current=Depends(user)):
+    return {'package': reference_packages.read(current['id'], identifier)}
+
+
+@app.put('/api/technical-references/{identifier}/package')
+def reference_package_save(identifier: str, body: reference_packages.Edit, current=Depends(user)):
+    return reference_packages.save(current['id'], identifier, body)
+
+
+@app.post('/api/technical-references/{identifier}/package/from-job')
+def reference_package_apply(identifier: str, body: reference_packages.ApplyJob, current=Depends(user)):
+    return reference_packages.apply_job(current['id'], identifier, body)
+
+
+@app.get('/api/technical-references/{identifier}/package/download')
+def reference_package_download(identifier: str, current=Depends(user)):
+    return Response(reference_packages.download(current['id'], identifier), media_type='application/zip',
+                    headers={'Content-Disposition': 'attachment; filename="reference-skill.zip"'})
+
+
+@app.get('/api/technical-references/{identifier}/package/versions/{revision}')
+def reference_package_version(identifier: str, revision: int, current=Depends(user)):
+    return reference_packages.version(current['id'], identifier, revision)
+
+
 @app.post('/api/technical-references/{identifier}/skills', status_code=202)
 def technical_skill_generate(identifier: str, body: technical_references.Generate, background: BackgroundTasks, current=Depends(user)):
     job, fresh = technical_references.begin(current['id'], identifier, body, kind='skill')
@@ -452,8 +483,8 @@ def technical_skill_download(identifier: str, job_id: str, current=Depends(user)
 
 
 @app.get('/api/technical-references')
-def reference_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1), current=Depends(user)):
-    return technical_references.listing(current['id'], q, page)
+def reference_list(q: str = Query(default='', max_length=160), page: int = Query(default=1, ge=1), status: str = Query(default='', pattern='^(backlog|active|merged)?$'), current=Depends(user)):
+    return technical_references.listing(current['id'], q, page, status)
 
 
 @app.post('/api/technical-references')
@@ -904,6 +935,11 @@ def interpretation_code(identifier: str, section_id: str = Query(pattern=r'^s[1-
 @app.post('/api/resources')
 def resource_register(body: ResourceInput, current=Depends(user)):
     return resources.register(current['id'], body)
+
+
+@app.post('/api/resources/{resource_id}/content')
+def resource_paste(resource_id: str, body: ResourceContent, current=Depends(user)):
+    return resources.paste(current['id'], resource_id, body)
 
 
 @app.get('/api/resources/{resource_id}')

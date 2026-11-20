@@ -6,7 +6,7 @@ import zipfile
 from . import db, service
 
 # Explicit allowlist: credentials, sessions and integration secrets never enter an archive.
-TABLES = '''technical_references technical_reference_versions technical_reference_saves technical_reference_jobs study_policy study_locations study_choices study_recommendations contexts generations progress attempts reports generation_reports learning_summaries
+TABLES = '''reference_packages reference_package_versions technical_references technical_reference_versions technical_reference_saves technical_reference_jobs study_policy study_locations study_choices study_recommendations contexts generations progress attempts reports generation_reports learning_summaries
 feed_choices assistance review_schedule review_sessions ai_usage foundation_progress foundation_reviews
 foundation_attempts resources resource_versions resource_registrations resource_requests resource_feed_posts
 interpretations interpretation_requests interpretation_retries worksheets worksheet_requests

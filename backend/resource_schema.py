@@ -25,3 +25,14 @@ class ResourceInput(Model):
         if self.kind == 'url' and (not self.url or self.content):
             raise ValueError('URL 등록에는 주소만 입력해주세요.')
         return self
+
+
+class ResourceContent(Model):
+    request_id: str = Field(min_length=8, max_length=80)
+    revision: int = Field(ge=0)
+    content: str = Field(min_length=1, max_length=60000)
+
+    @model_validator(mode='after')
+    def nonempty(self):
+        if not self.content.strip(): raise ValueError('본문을 입력해주세요.')
+        return self

@@ -280,3 +280,9 @@ The home page prioritizes resume, due reviews, saved questions and other ongoing
 Home does not embed recommendation policy forms or expansion animations. `/settings/questions` owns the four question revisit values. Use one neutral row per setting, label and short description on the left, a compact 64–86px numeric field plus unbroken unit on the right. Preserve arbitrary valid integer values and server limits. Inputs use required/min/max/step and the shared focus treatment. Settings save is explicit, keeps edits on failure and disables unchanged saves. Reference and evidence: `docs/home-ui-review.md`.
 
 2026-11-17 create-form follow-up: remove the sample-start card and its frontend generation branch. Keep normal text/URL/file registration and generation. The source textarea has 10 rows with a 320px desktop / 260px mobile minimum and a concise placeholder. Home question-inbox footer links keep 8px vertical and 12px horizontal padding in normal and hover states; never remove one side merely to align text.
+
+## 레퍼런스 Skill 작업 화면 · 2026-11-18
+
+Operate/Read 모드. 기존 산세리프·플럼/핑크·회색 배경·흰 표면을 유지한다. 목록은 상태와 수정 시점을 갖는 행이며 생성은 학습 선택과 선택 내역을 나눈다. 모바일에서 선택 내역을 먼저 보여준다. 상세는 파일 열람/편집과 상태 관리를 구분하며 850px 이하에서 한 열로 배치한다. SKILL.md 메타데이터는 본문 제목으로 오인되지 않도록 작은 코드 영역으로 표시한다. 생성 상태와 backlog/active/merged는 분리한다. 로딩 버튼은 중앙 스피너와 접근 가능한 이름을 함께 유지한다.
+
+2026-11-20 상태 표시는 문장에 섞지 않고 공통 Badge로 표시한다. 오류 원인·복구 방법은 배지 아래 본문으로 구분한다. 자료 목록은 링크 행 전체를 호버 표면으로 사용하고, 24px(모바일 20px) 패딩을 링크 내부에 둔다. 수집 실패는 단일 복구 영역에 재시도·본문 입력·URL 수정을 배치한다. 연습 이탈 확인은 native modal과 반투명 배경, 동일 폭의 주요 버튼 두 개, 별도 줄의 보조 이탈 행동으로 구성한다.

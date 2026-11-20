@@ -160,7 +160,8 @@ def fetch_bytes(url, content_types=('text/html', 'text/plain', 'text/markdown'),
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise SourceError('문서 가져오기 시간이 초과되었습니다.')
-            connection = http.client.HTTPConnection(parts.hostname, port, timeout=min(8, remaining))
+            connection_type = http.client.HTTPSConnection if parts.scheme == 'https' else http.client.HTTPConnection
+            connection = connection_type(parts.hostname, port, timeout=min(8, remaining))
             try:
                 connection.sock = socket.create_connection((address, port), timeout=min(8, remaining))
                 if parts.scheme == 'https':
@@ -174,8 +175,14 @@ def fetch_bytes(url, content_types=('text/html', 'text/plain', 'text/markdown'),
                         raise SourceError('문서의 이동 주소를 확인할 수 없습니다.')
                     url = urljoin(url, location)
                     continue
-                if response.status != 200 or response.getheader('Content-Encoding', 'identity') != 'identity':
-                    raise SourceError('문서를 가져오지 못했습니다. 본문을 붙여넣어주세요.')
+                if response.status == 404:
+                    raise SourceError('원문 서버가 404를 반환했습니다. 글이 이동·삭제됐는지 URL을 확인해주세요.')
+                if response.status in (401, 403):
+                    raise SourceError('원문 서버가 접근을 제한했습니다. 공개 글인지 확인하거나 본문을 직접 입력해주세요.')
+                if response.status != 200:
+                    raise SourceError(f'원문 서버가 HTTP {response.status}로 응답했습니다. 잠시 후 다시 시도해주세요.')
+                if response.getheader('Content-Encoding', 'identity') != 'identity':
+                    raise SourceError('원문 응답 형식을 처리하지 못했습니다. 본문을 직접 입력해주세요.')
                 content_type = response.getheader('Content-Type', '').split(';')[0]
                 if content_type not in content_types:
                     raise SourceError('텍스트 또는 HTML 문서를 사용해주세요.')
